@@ -9,6 +9,7 @@ from gherkin_log_correlator import GherkinParser, LogEntry, correlate_logs_with_
 
 # Import timeline generators directly from reports.visualizations
 from reports.visualizations import generate_timeline_image, generate_cluster_timeline_image, generate_visualization_placeholder
+from utils.path_validator import check_html_references
 
 # Import Config for feature flags - if it exists
 try:
@@ -656,6 +657,17 @@ def generate_step_report(
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(html)
         
+        try:
+            html_issues = check_html_references(report_path)
+            total_issues = sum(len(v) for v in html_issues.values())
+            if total_issues > 0:
+                logging.warning(f"HTML reference issues detected in step report {report_path}:")
+                for issue_type, issues in html_issues.items():
+                    for issue in issues:
+                        logging.warning(f"  {issue_type}: {issue}")
+        except Exception as e:
+            logging.error(f"Failed to validate HTML references: {e}")
+
         logging.info(f"Generated step-aware HTML report with {timeline_type} timeline image: {report_path}")
         return report_path
     
