@@ -1,0 +1,3261 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "timestamp": "2025-05-15T15:00:00Z",
+    "document_type": "code_interface_documentation",
+    "purpose": "This document enables comprehensive knowledge transfer of the Orbit Analyzer system architecture, component relationships, and implementation details. It provides sufficient information for developers or AI systems to understand the complete system without access to the original source code, facilitating onboarding, maintenance, and system evolution.",
+    "context_requirements": ["orbit-project-architecture-overview", "component-handling-system", "environment-configuration"]
+  },
+  "system_overview": {
+    "name": "Orbit Analyzer",
+    "description": "Orbit Analyzer is a sophisticated log analysis system designed to process test logs, identify errors, cluster similar issues, and generate detailed reports. The system uses component identification, clustering algorithms, and AI-powered summarization to provide actionable insights into test failures.",
+    "design_philosophy": "The Orbit Analyzer follows a modular, component-aware design philosophy with emphasis on:  1) Multi-layered component identification to attribute errors to specific system components, 2) Preservation of component information throughout the processing pipeline, 3) Thread-safe visualization generation with fallback mechanisms, 4) Platform-independent implementation, 5) Standardized path handling, and 6) Comprehensive multi-format reporting.",
+    "core_capabilities": [
+      "Component-aware log analysis",
+      "Error clustering and root cause detection",
+      "Multi-format report generation (Excel, DOCX, HTML, JSON, Markdown)",
+      "Thread-safe visualization generation",
+      "Standardized path handling",
+      "AI-powered summary generation",
+      "Gherkin test step correlation"
+    ]
+  },
+  "modules": {
+    "controller": {
+      "name": "Controller",
+      "file": "controller.py",
+      "description": "Main orchestrator of the log analysis pipeline",
+      "responsibilities": [
+        "Coordinate the overall analysis process",
+        "Collect logs and images",
+        "Extract errors from logs",
+        "Identify components for errors",
+        "Cluster similar errors",
+        "Generate summary and reports"
+      ],
+      "dependencies": [
+        "config.py", 
+        "log_segmenter.py", 
+        "log_analyzer.py", 
+        "error_clusterer.py", 
+        "ocr_processor.py", 
+        "gpt_summarizer.py", 
+        "reports.py"
+      ],
+      "functions": [
+        {
+          "name": "run_pipeline",
+          "signature": "run_pipeline(test_id: str, gpt_model: str = None, enable_ocr: bool = None, test_type: str = \"ymir\") -> Tuple[str, Optional[str]]",
+          "description": "Run the log analysis pipeline programmatically",
+          "parameters": [
+            {"name": "test_id", "type": "str", "description": "Test ID to analyze"},
+            {"name": "gpt_model", "type": "str", "description": "GPT model to use (default: from Config)", "optional": true},
+            {"name": "enable_ocr", "type": "bool", "description": "Whether to enable OCR (default: from Config)", "optional": true},
+            {"name": "test_type", "type": "str", "description": "Type of test (\"ymir\" or \"installer\")", "optional": true}
+          ],
+          "returns": "Tuple of (result_message, step_report_path)",
+          "example": "result_message, step_report = run_pipeline('SXM-123456', gpt_model='gpt-3.5-turbo')"
+        },
+        {
+          "name": "run_pipeline_interactive",
+          "signature": "run_pipeline_interactive()",
+          "description": "Interactive command-line interface for the log analyzer",
+          "parameters": [],
+          "returns": "None",
+          "example": "run_pipeline_interactive()"
+        },
+        {
+          "name": "run_gherkin_correlation",
+          "signature": "run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors=None, error_clusters=None, component_analysis=None) -> Tuple[Optional[str], Optional[Dict]]",
+          "description": "Run the Gherkin log correlation and generate step-aware report with cluster visualization",
+          "parameters": [
+            {"name": "feature_file", "type": "str", "description": "Path to Gherkin feature file"},
+            {"name": "log_files", "type": "List[str]", "description": "List of log file paths"},
+            {"name": "output_dir", "type": "str", "description": "Directory for output files"},
+            {"name": "test_id", "type": "str", "description": "Test ID"},
+            {"name": "errors", "type": "List[Dict]", "description": "List of detected errors", "optional": true},
+            {"name": "error_clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary of error clusters", "optional": true},
+            {"name": "component_analysis", "type": "Dict", "description": "Results from component analysis", "optional": true}
+          ],
+          "returns": "Tuple of (report_path, step_to_logs)",
+          "example": "report_path, step_data = run_gherkin_correlation('feature.file', ['log1.log', 'log2.log'], './output', 'SXM-123456')"
+        },
+        {
+          "name": "diagnose_output_structure",
+          "signature": "diagnose_output_structure(test_id: str) -> Dict[str, Any]",
+          "description": "Run diagnostics on the output directory structure",
+          "parameters": [
+            {"name": "test_id", "type": "str", "description": "Test ID to diagnose"}
+          ],
+          "returns": "Diagnostic results with file structure issues and HTML reference issues",
+          "example": "diagnostics = diagnose_output_structure('SXM-123456')"
+        }
+      ]
+    },
+    "config": {
+      "name": "Configuration",
+      "file": "config.py",
+      "description": "Manages system configuration settings and environment variables",
+      "responsibilities": [
+        "Provide centralized configuration",
+        "Handle environment variables with fallbacks",
+        "Set up UTF-8 compliant logging",
+        "Provide feature flags for conditional functionality",
+        "Configure visualization settings"
+      ],
+      "classes": [
+        {
+          "name": "Config",
+          "description": "Configuration settings for the log analyzer",
+          "attributes": [
+            {"name": "LOG_BASE_DIR", "type": "str", "description": "Directory containing log files", "default": "./logs"},
+            {"name": "OUTPUT_BASE_DIR", "type": "str", "description": "Directory for output reports", "default": "./output"},
+            {"name": "OPENAI_API_KEY", "type": "str", "description": "Authentication key for OpenAI API", "default": ""},
+            {"name": "ENABLE_OCR", "type": "bool", "description": "Whether to enable OCR", "default": "True"},
+            {"name": "DEFAULT_MODEL", "type": "str", "description": "Default GPT model to use", "default": "gpt-3.5-turbo"},
+            {"name": "LOG_LEVEL", "type": "str", "description": "Logging verbosity", "default": "INFO"},
+            {"name": "LOG_FILE", "type": "str", "description": "File to write logs", "default": "orbit_analyzer.log"},
+            {"name": "ENABLE_CLUSTER_TIMELINE", "type": "bool", "description": "Enable cluster timeline visualization", "default": false},
+            {"name": "ENABLE_COMPONENT_DISTRIBUTION", "type": "bool", "description": "Enable component distribution charts", "default": true},
+            {"name": "ENABLE_COMPONENT_RELATIONSHIPS", "type": "bool", "description": "Enable component relationship diagrams", "default": true},
+            {"name": "ENABLE_ERROR_PROPAGATION", "type": "bool", "description": "Enable error propagation visualization", "default": false},
+            {"name": "ENABLE_STEP_REPORT_IMAGES", "type": "bool", "description": "Enable step report images", "default": false},
+            {"name": "ENABLE_COMPONENT_REPORT_IMAGES", "type": "bool", "description": "Enable component report images", "default": true}
+          ],
+          "methods": [
+            {
+              "name": "setup_logging",
+              "signature": "@classmethod\ndef setup_logging(cls)",
+              "description": "Set up logging configuration with proper UTF-8 handling",
+              "behavior": [
+                "Checks if logging is already configured to prevent duplicates",
+                "Sets PYTHONIOENCODING environment variable to utf-8",
+                "Configures logger with appropriate log level",
+                "Creates UTF-8 enabled file handler",
+                "Creates UTF-8 enabled console handler",
+                "Marks logging as initialized"
+              ]
+            },
+            {
+              "name": "validate",
+              "signature": "@classmethod\ndef validate(cls)",
+              "description": "Validate configuration settings",
+              "behavior": [
+                "Creates base directories if they don't exist",
+                "Checks OpenAI API key if using GPT models",
+                "Validates model settings against known values",
+                "Issues warnings for potential configuration issues"
+              ]
+            },
+            {
+              "name": "configure_matplotlib",
+              "signature": "@classmethod\ndef configure_matplotlib(cls)",
+              "description": "Configure matplotlib settings for consistent visualization",
+              "behavior": [
+                "Forces Agg backend for headless environments and thread safety",
+                "Configures global matplotlib settings for consistent appearance",
+                "Handles exceptions gracefully"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "UTF8LoggingHandler",
+          "description": "Logging handler that ensures UTF-8 encoding for all log messages",
+          "extends": "logging.StreamHandler",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "__init__(self, stream=None)",
+              "description": "Initialize handler with UTF-8 encoded stream",
+              "parameters": [
+                {"name": "stream", "type": "TextIO", "description": "Stream to write to", "optional": true}
+              ]
+            },
+            {
+              "name": "emit",
+              "signature": "emit(self, record)",
+              "description": "Emit a log record with UTF-8 encoding",
+              "parameters": [
+                {"name": "record", "type": "logging.LogRecord", "description": "Log record to emit"}
+              ]
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "determine_optimal_cluster_count",
+          "signature": "determine_optimal_cluster_count(error_count: int) -> int",
+          "description": "Calculate the optimal number of clusters based on the dataset size",
+          "parameters": [
+            {"name": "error_count", "type": "int", "description": "Number of errors"}
+          ],
+          "returns": "Recommended number of clusters based on a heuristic formula",
+          "behavior": [
+            "For very small datasets (≤5 errors), returns 1-2 clusters",
+            "For small datasets (≤20 errors), returns 2-3 clusters",
+            "For medium datasets (≤50 errors), returns 3-5 clusters",
+            "For large datasets (>50 errors), returns 8 clusters"
+          ]
+        }
+      ]
+    },
+    "log_segmenter": {
+      "name": "Log Segmenter",
+      "file": "log_segmenter.py",
+      "description": "Handles the collection of log files and images",
+      "responsibilities": [
+        "Collect log files from directories",
+        "Collect image files from directories",
+        "Filter files by supported extensions"
+      ],
+      "constants": [
+        {"name": "SUPPORTED_LOG_EXTENSIONS", "value": "('.log', '.txt', '.chlsj', '.har')", "description": "Extensions for log files"},
+        {"name": "SUPPORTED_IMAGE_EXTENSIONS", "value": "('.png', '.jpg', '.jpeg', '.bmp', '.tiff')", "description": "Extensions for image files"}
+      ],
+      "functions": [
+        {
+          "name": "collect_log_files",
+          "signature": "collect_log_files(base_dir: str) -> List[str]",
+          "description": "Recursively collects all log files from a directory tree",
+          "parameters": [
+            {"name": "base_dir", "type": "str", "description": "Directory to scan"}
+          ],
+          "returns": "List of full paths to log files with supported extensions",
+          "example": "log_files = collect_log_files('./logs/SXM-123456')"
+        },
+        {
+          "name": "collect_image_files",
+          "signature": "collect_image_files(base_dir: str) -> List[str]",
+          "description": "Recursively collects all image files from a directory tree",
+          "parameters": [
+            {"name": "base_dir", "type": "str", "description": "Directory to scan"}
+          ],
+          "returns": "List of full paths to image files with supported extensions",
+          "example": "image_files = collect_image_files('./logs/SXM-123456')"
+        },
+        {
+          "name": "collect_all_supported_files",
+          "signature": "collect_all_supported_files(base_dir: str) -> Tuple[List[str], List[str]]",
+          "description": "Collects both logs and images for processing",
+          "parameters": [
+            {"name": "base_dir", "type": "str", "description": "Directory to scan"}
+          ],
+          "returns": "Tuple of (logs, images) with full file paths",
+          "example": "logs, images = collect_all_supported_files('./logs/SXM-123456')"
+        }
+      ]
+    },
+    "log_analyzer": {
+      "name": "Log Analyzer",
+      "file": "log_analyzer.py",
+      "description": "Parses log files to extract errors and other relevant information",
+      "responsibilities": [
+        "Parse various log formats",
+        "Extract errors from logs",
+        "Determine error severity",
+        "Perform initial component identification",
+        "Filter out false positives"
+      ],
+      "functions": [
+        {
+          "name": "parse_logs",
+          "signature": "parse_logs(log_paths: List[str], context_lines: int = 3) -> List[Dict]",
+          "description": "Parse log files to extract errors and their context",
+          "parameters": [
+            {"name": "log_paths", "type": "List[str]", "description": "List of paths to log files"},
+            {"name": "context_lines", "type": "int", "description": "Number of preceding lines to include as context", "optional": true}
+          ],
+          "returns": "List of error dictionaries with file, line number, text, severity, and context",
+          "example": "errors = parse_logs(['log1.log', 'log2.log'])",
+          "behavior": [
+            "Handles multiple log formats including HAR files",
+            "Performs initial component identification based on filename",
+            "Uses component_analyzer if available for enhanced identification"
+          ]
+        },
+        {
+          "name": "parse_log_entries",
+          "signature": "parse_log_entries(log_path: str) -> List[Dict]",
+          "description": "Parse a log file to extract all entries (not just errors)",
+          "parameters": [
+            {"name": "log_path", "type": "str", "description": "Path to the log file"}
+          ],
+          "returns": "List of log entry dictionaries with timestamps and text",
+          "example": "entries = parse_log_entries('app_debug.log')"
+        },
+        {
+          "name": "parse_har_file",
+          "signature": "parse_har_file(path: str, lines: List[str]) -> List[Dict]",
+          "description": "Parse HAR file to extract HTTP errors",
+          "parameters": [
+            {"name": "path", "type": "str", "description": "Path to the HAR file"},
+            {"name": "lines", "type": "List[str]", "description": "Lines read from the HAR file"}
+          ],
+          "returns": "List of error dictionaries extracted from the HAR file",
+          "example": "http_errors = parse_har_file('network.har', har_lines)"
+        },
+        {
+          "name": "identify_component_from_filename",
+          "signature": "identify_component_from_filename(filename: str) -> Tuple[str, str]",
+          "description": "Identify component based on filename pattern",
+          "parameters": [
+            {"name": "filename", "type": "str", "description": "Filename to analyze"}
+          ],
+          "returns": "Tuple of (component, source) where source indicates how component was identified",
+          "example": "component, source = identify_component_from_filename('app_debug.log')"
+        },
+        {
+          "name": "determine_severity",
+          "signature": "determine_severity(error_text: str) -> str",
+          "description": "Determine error severity based on text content",
+          "parameters": [
+            {"name": "error_text", "type": "str", "description": "Error text to analyze"}
+          ],
+          "returns": "Severity level ('High', 'Medium', or 'Low') based on keyword matching",
+          "example": "severity = determine_severity('Fatal: Application crashed')"
+        },
+        {
+          "name": "is_false_positive",
+          "signature": "is_false_positive(line: str) -> bool",
+          "description": "Check if an error line is likely a false positive",
+          "parameters": [
+            {"name": "line", "type": "str", "description": "Log line to check"}
+          ],
+          "returns": "True if the line appears to be a false positive error",
+          "example": "if not is_false_positive(line):"
+        },
+        {
+          "name": "analyze_error_clusters",
+          "signature": "analyze_error_clusters(errors: List[Dict], num_clusters: int = None) -> Dict[str, Any]",
+          "description": "Analyze errors by clustering them and extracting common patterns",
+          "parameters": [
+            {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"},
+            {"name": "num_clusters", "type": "int", "description": "Optional number of clusters to create", "optional": true}
+          ],
+          "returns": "Dictionary with cluster analysis results including common patterns",
+          "example": "cluster_analysis = analyze_error_clusters(errors)"
+        }
+      ]
+    },
+    "error_clusterer": {
+      "name": "Error Clusterer",
+      "file": "error_clusterer.py",
+      "description": "Groups similar errors using NLP and ML techniques",
+      "responsibilities": [
+        "Cluster errors based on text similarity",
+        "Normalize error text for better clustering",
+        "Determine optimal cluster count",
+        "Preserve component information during clustering"
+      ],
+      "functions": [
+        {
+          "name": "perform_error_clustering",
+          "signature": "perform_error_clustering(errors: List[Dict], num_clusters: int = None) -> Dict[int, List[Dict]]",
+          "description": "Cluster errors based on similarity with enhanced component preservation",
+          "parameters": [
+            {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"},
+            {"name": "num_clusters", "type": "int", "description": "Number of clusters to create (auto-determined if None)", "optional": true}
+          ],
+          "returns": "Dictionary mapping cluster IDs to lists of errors",
+          "example": "error_clusters = perform_error_clustering(errors)",
+          "behavior": [
+            "Uses TF-IDF vectorization and K-means clustering",
+            "Preserves component information during clustering process",
+            "Includes handling for extremely unbalanced clusters",
+            "Returns errors grouped by similarity with component fields intact"
+          ]
+        },
+        {
+          "name": "_normalize_error_text",
+          "signature": "_normalize_error_text(text: str) -> str",
+          "description": "Normalize error text for better clustering by removing variable parts",
+          "parameters": [
+            {"name": "text", "type": "str", "description": "Original error text"}
+          ],
+          "returns": "Normalized text for better clustering",
+          "behavior": "Replaces variable elements like timestamps, IDs, etc. with constants"
+        },
+        {
+          "name": "_determine_optimal_clusters",
+          "signature": "_determine_optimal_clusters(matrix: np.ndarray, num_errors: int, user_specified: Optional[int] = None) -> int",
+          "description": "Determine the optimal number of clusters based on dataset size",
+          "parameters": [
+            {"name": "matrix", "type": "np.ndarray", "description": "TF-IDF matrix"},
+            {"name": "num_errors", "type": "int", "description": "Number of errors"},
+            {"name": "user_specified", "type": "Optional[int]", "description": "User-specified number of clusters", "optional": true}
+          ],
+          "returns": "Recommended number of clusters based on heuristics",
+          "behavior": [
+            "Uses sqrt of errors divided by 2",
+            "Caps between 2 and max_clusters (default 8)",
+            "Adjusts based on feature density",
+            "Ensures clusters don't exceed number of samples"
+          ]
+        }
+      ],
+      "aliases": [
+        {"name": "cluster_errors", "refers_to": "perform_error_clustering", "note": "Backward compatibility alias for external callers"}
+      ]
+    },
+    "ocr_processor": {
+      "name": "OCR Processor",
+      "file": "ocr_processor.py",
+      "description": "Extracts text from images using Tesseract OCR",
+      "responsibilities": [
+        "Process images with OCR",
+        "Extract text from screenshots",
+        "Filter out low-quality or empty results"
+      ],
+      "functions": [
+        {
+          "name": "extract_ocr_data",
+          "signature": "extract_ocr_data(image_paths: List[str], min_length: int = 15) -> List[Dict]",
+          "description": "Performs OCR on each image. Skips blank or too-short results",
+          "parameters": [
+            {"name": "image_paths", "type": "List[str]", "description": "List of paths to image files"},
+            {"name": "min_length", "type": "int", "description": "Minimum text length to include in results", "optional": true}
+          ],
+          "returns": "List of {'file': filename, 'text': ocr_text} dictionaries",
+          "example": "ocr_results = extract_ocr_data(image_files)",
+          "notes": "Depends on the external 'pytesseract' library and Tesseract OCR installation"
+        }
+      ]
+    },
+    "components": {
+      "name": "Component Analysis System",
+      "description": "System for identifying components, analyzing relationships, and tracking component information",
+      "modules": [
+        {
+          "name": "Direct Component Analyzer",
+          "file": "direct_component_analyzer.py",
+          "description": "Identifies components from log entries based on file names and content analysis",
+          "classes": [
+            {
+              "name": "ComponentCache",
+              "description": "A caching mechanism for component identification to improve performance",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, max_size: int = 1000)",
+                  "description": "Initialize with maximum cache size",
+                  "parameters": [
+                    {"name": "max_size", "type": "int", "description": "Maximum number of entries to cache", "optional": true}
+                  ]
+                },
+                {
+                  "name": "get",
+                  "signature": "get(self, text: str) -> Optional[str]",
+                  "description": "Get component from cache if it exists",
+                  "parameters": [
+                    {"name": "text", "type": "str", "description": "Text to look up"}
+                  ],
+                  "returns": "Component identifier or None if not in cache",
+                  "behavior": "Uses hash of lowercased text as key for efficiency"
+                },
+                {
+                  "name": "set",
+                  "signature": "set(self, text: str, component: str) -> None",
+                  "description": "Add component to cache, manage cache size",
+                  "parameters": [
+                    {"name": "text", "type": "str", "description": "Text to cache"},
+                    {"name": "component", "type": "str", "description": "Component identifier"}
+                  ],
+                  "behavior": "Implements simple LRU-like behavior by clearing half the cache when full"
+                }
+              ]
+            },
+            {
+              "name": "ComponentAnalyzer",
+              "description": "Analyzes error components and identifies relationships",
+              "methods": [
+                {
+                  "name": "reset",
+                  "signature": "reset(self) -> None",
+                  "description": "Reset internal state for a new analysis"
+                },
+                {
+                  "name": "assign_component_to_error",
+                  "signature": "assign_component_to_error(self, error: Dict) -> None",
+                  "description": "Assign component to a single error based on analysis rules",
+                  "parameters": [
+                    {"name": "error", "type": "Dict", "description": "Error dictionary to be updated with component info"}
+                  ],
+                  "behavior": "Uses caching to avoid redundant processing"
+                },
+                {
+                  "name": "identify_primary_component",
+                  "signature": "identify_primary_component(self) -> str",
+                  "description": "Identify the primary component with issues based on component counts",
+                  "returns": "Primary issue component string",
+                  "behavior": "Applies special logic for SOA vs Android determination"
+                },
+                {
+                  "name": "generate_component_summary",
+                  "signature": "generate_component_summary(self) -> List[Dict]",
+                  "description": "Generate summary of components for error report",
+                  "returns": "List of component summary dictionaries",
+                  "behavior": "Includes component metadata from COMPONENT_INFO"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "identify_component_from_filename",
+              "signature": "identify_component_from_filename(filename: str) -> Tuple[str, str]",
+              "description": "Identify component based on filename pattern",
+              "parameters": [
+                {"name": "filename", "type": "str", "description": "Filename to analyze"}
+              ],
+              "returns": "Tuple of (component, source)",
+              "behavior": [
+                "Special cases for known file patterns",
+                "Fallback to using base filename as component name"
+              ]
+            },
+            {
+              "name": "assign_components_and_relationships",
+              "signature": "assign_components_and_relationships(errors: List[Dict]) -> Tuple[List[Dict], List[Dict], str]",
+              "description": "Assign components to errors and identify relationships",
+              "parameters": [
+                {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"}
+              ],
+              "returns": "Tuple of (updated errors, component summary, primary issue component)",
+              "example": "errors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)",
+              "note": "Main entry point used by controller.py for component analysis"
+            }
+          ]
+        },
+        {
+          "name": "Component Analyzer",
+          "file": "components/component_analyzer.py",
+          "description": "Schema-based component analyzer that identifies components and relationships",
+          "classes": [
+            {
+              "name": "ComponentAnalyzer",
+              "description": "Analyzer for identifying components and their relationships in log entries",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, component_schema_path: str)",
+                  "description": "Initialize the component analyzer with the schema",
+                  "parameters": [
+                    {"name": "component_schema_path", "type": "str", "description": "Path to the component schema JSON file"}
+                  ],
+                  "behavior": "Loads schema, extracts patterns, builds component graph"
+                },
+                {
+                  "name": "identify_component_from_log_entry",
+                  "signature": "identify_component_from_log_entry(self, log_entry: Any) -> str",
+                  "description": "Identify which component generated this log entry",
+                  "parameters": [
+                    {"name": "log_entry", "type": "Any", "description": "A log entry object with file attribute"}
+                  ],
+                  "returns": "Component ID or \"unknown\" if no match found",
+                  "behavior": "Uses simplified filename-based approach with fallbacks"
+                },
+                {
+                  "name": "enrich_log_entries_with_components",
+                  "signature": "enrich_log_entries_with_components(self, log_entries: List[Any]) -> List[Any]",
+                  "description": "Enrich log entries with component information",
+                  "parameters": [
+                    {"name": "log_entries", "type": "List[Any]", "description": "List of log entry objects"}
+                  ],
+                  "returns": "Enriched log entries",
+                  "behavior": "Updates entries in-place with component identifiers"
+                },
+                {
+                  "name": "analyze_component_failures",
+                  "signature": "analyze_component_failures(self, errors: List[Any]) -> Dict[str, Any]",
+                  "description": "Analyze component failures and their relationships",
+                  "parameters": [
+                    {"name": "errors", "type": "List[Any]", "description": "List of error objects"}
+                  ],
+                  "returns": "Analysis results containing component statistics and relationships"
+                },
+                {
+                  "name": "_identify_root_cause_component",
+                  "signature": "_identify_root_cause_component(self, errors: List[Any]) -> Optional[str]",
+                  "description": "Attempt to identify the root cause component based on error timing and relationships",
+                  "behavior": "Uses temporal analysis and severity scoring"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Component Integration",
+          "file": "components/component_integration.py",
+          "description": "Integrates different component analysis approaches for comprehensive analysis",
+          "classes": [
+            {
+              "name": "ComponentIntegration",
+              "description": "Integration layer for component relationship analysis, visualizations, and enhanced error clustering",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, component_schema_path: str)",
+                  "description": "Initialize with component schema",
+                  "parameters": [
+                    {"name": "component_schema_path", "type": "str", "description": "Path to component schema JSON"}
+                  ],
+                  "behavior": [
+                    "Initializes component modules:",
+                    "- ComponentAnalyzer",
+                    "- ComponentVisualizer",
+                    "- ContextAwareClusterer"
+                  ]
+                },
+                {
+                  "name": "analyze_logs",
+                  "signature": "analyze_logs(self, log_entries: List[Any], errors: List[Any], output_dir: str, test_id: str) -> Dict[str, Any]",
+                  "description": "Perform comprehensive component-aware analysis",
+                  "parameters": [
+                    {"name": "log_entries", "type": "List[Any]", "description": "List of log entries from all files"},
+                    {"name": "errors", "type": "List[Any]", "description": "List of detected errors"},
+                    {"name": "output_dir", "type": "str", "description": "Directory for output files"},
+                    {"name": "test_id", "type": "str", "description": "Test ID for file naming"}
+                  ],
+                  "returns": "Analysis results and paths to generated files",
+                  "steps": [
+                    "Step 1: Enrich logs with component information",
+                    "Step 2: Generate baseline component relationship diagram",
+                    "Step 3: Analyze component errors",
+                    "Step 4: Generate error propagation visualization",
+                    "Step 5: Generate component error heatmap",
+                    "Step 6: Perform context-aware error clustering"
+                  ]
+                },
+                {
+                  "name": "get_enhanced_report_data",
+                  "signature": "get_enhanced_report_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]",
+                  "description": "Generate additional data for enhancing test reports",
+                  "parameters": [
+                    {"name": "analysis_results", "type": "Dict[str, Any]", "description": "Results from analyze_logs"}
+                  ],
+                  "returns": "Report enhancement data",
+                  "behavior": [
+                    "Extracts component analysis diagrams",
+                    "Extracts root cause component info",
+                    "Extracts affected components",
+                    "Extracts enhanced clustering data"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Component Visualizer",
+          "file": "components/component_visualizer.py",
+          "description": "Generates visualizations for component relationships and interactions",
+          "classes": [
+            {
+              "name": "ComponentVisualizer",
+              "description": "Generates visualizations of component relationships and error propagation",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, component_schema_path: str)",
+                  "description": "Initialize the visualizer with the component schema",
+                  "parameters": [
+                    {"name": "component_schema_path", "type": "str", "description": "Path to the component schema JSON file"}
+                  ],
+                  "behavior": "Sets up color mappings for components and severity levels"
+                },
+                {
+                  "name": "generate_component_relationship_diagram",
+                  "signature": "generate_component_relationship_diagram(self, output_dir: str, test_id: str = None) -> str",
+                  "description": "Generate a component relationship diagram",
+                  "parameters": [
+                    {"name": "output_dir", "type": "str", "description": "Directory to save the diagram"},
+                    {"name": "test_id", "type": "str", "description": "Test ID for the filename", "optional": true}
+                  ],
+                  "returns": "Path to the generated image",
+                  "behavior": [
+                    "Uses matplotlib to draw the component graph",
+                    "Includes error handling and fallback to placeholder"
+                  ]
+                },
+                {
+                  "name": "generate_error_propagation_diagram",
+                  "signature": "generate_error_propagation_diagram(self, output_dir: str, component_errors: Dict[str, int], root_cause_component: Optional[str] = None, propagation_paths: List[List[str]] = None, test_id: str = \"Unknown\") -> str",
+                  "description": "Generate a diagram showing error propagation through components",
+                  "parameters": [
+                    {"name": "output_dir", "type": "str", "description": "Directory to save the diagram"},
+                    {"name": "component_errors", "type": "Dict[str, int]", "description": "Dictionary mapping component IDs to error counts"},
+                    {"name": "root_cause_component", "type": "Optional[str]", "description": "The component identified as the root cause", "optional": true},
+                    {"name": "propagation_paths", "type": "List[List[str]]", "description": "List of paths showing how errors propagated", "optional": true},
+                    {"name": "test_id", "type": "str", "description": "Test ID for the title", "optional": true}
+                  ],
+                  "returns": "Path to the generated image",
+                  "behavior": "Returns placeholder path if feature is disabled"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "reports": {
+      "name": "Report Generation System",
+      "description": "Handles generation of reports in various formats",
+      "modules": [
+        {
+          "name": "Report Base",
+          "file": "reports/base.py",
+          "description": "Common utilities and base classes for report generation",
+          "constants": [
+            {
+              "name": "COMPONENT_FIELDS",
+              "description": "Define component-related fields globally to ensure consistency across the codebase",
+              "value": {
+                "fields": ["component", "component_source", "source_component", "root_cause_component",
+                "primary_issue_component", "affected_components", "expected_component",
+                "component_scores", "component_distribution", "parent_component", "child_components"]
+              }
+            }
+          ],
+          "classes": [
+            {
+              "name": "DateTimeEncoder",
+              "description": "Custom JSON encoder that handles datetime objects",
+              "extends": "json.JSONEncoder",
+              "behavior": "Converts datetime objects to ISO format strings"
+            },
+            {
+              "name": "ComponentAwareEncoder",
+              "description": "Enhanced JSON encoder that carefully preserves component information during serialization",
+              "extends": "DateTimeEncoder",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, *args, primary_issue_component=None, **kwargs)",
+                  "description": "Initialize encoder with optional primary_issue_component reference",
+                  "parameters": [
+                    {"name": "primary_issue_component", "type": "str", "description": "Primary component for reference only", "optional": true},
+                    {"name": "*args", "description": "Standard encoder parameters"},
+                    {"name": "**kwargs", "description": "Standard encoder parameters"}
+                  ]
+                },
+                {
+                  "name": "default",
+                  "signature": "default(self, obj)",
+                  "description": "Enhanced encoding that preserves component information without modification"
+                },
+                {
+                  "name": "_preserve_component_fields",
+                  "signature": "_preserve_component_fields(self, data_dict)",
+                  "description": "Carefully preserve component fields in a dictionary and all nested structures"
+                },
+                {
+                  "name": "_extract_component_info",
+                  "signature": "_extract_component_info(self, data_dict)",
+                  "description": "Extract all component-related information from a dictionary"
+                },
+                {
+                  "name": "_apply_component_info",
+                  "signature": "_apply_component_info(self, data_dict, component_info)",
+                  "description": "Apply component information to a dictionary"
+                }
+              ]
+            },
+            {
+              "name": "ReportConfig",
+              "description": "Configuration settings for report generation",
+              "constructor": {
+                "signature": "__init__(self, output_dir: str, test_id: str, primary_issue_component: str = \"unknown\", enable_excel: bool = True, enable_markdown: bool = True, enable_json: bool = True, enable_docx: bool = True, enable_component_report: bool = True)",
+                "parameters": [
+                  {"name": "output_dir", "type": "str", "description": "Directory to write reports to"},
+                  {"name": "test_id", "type": "str", "description": "Test ID for reports"},
+                  {"name": "primary_issue_component", "type": "str", "description": "Primary component for issue", "optional": true},
+                  {"name": "enable_excel", "type": "bool", "description": "Whether to generate Excel reports", "optional": true},
+                  {"name": "enable_markdown", "type": "bool", "description": "Whether to generate Markdown reports", "optional": true},
+                  {"name": "enable_json", "type": "bool", "description": "Whether to generate JSON reports", "optional": true},
+                  {"name": "enable_docx", "type": "bool", "description": "Whether to generate DOCX reports", "optional": true},
+                  {"name": "enable_component_report", "type": "bool", "description": "Whether to generate component reports", "optional": true}
+                ]
+              }
+            },
+            {
+              "name": "ReportData",
+              "description": "Container for data used in report generation",
+              "constructor": {
+                "signature": "__init__(self, errors: List[Dict], summary: str, clusters: Dict[int, List[Dict]], ocr_data: List[Dict] = None, background_text: str = \"\", scenario_text: str = \"\", ymir_flag: bool = False, component_analysis: Dict[str, Any] = None, component_diagnostic: Dict[str, Any] = None)",
+                "parameters": [
+                  {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"},
+                  {"name": "summary", "type": "str", "description": "AI-generated summary"},
+                  {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary mapping cluster IDs to lists of errors"},
+                  {"name": "ocr_data", "type": "List[Dict]", "description": "List of OCR data dictionaries", "optional": true},
+                  {"name": "background_text", "type": "str", "description": "Background section from feature file", "optional": true},
+                  {"name": "scenario_text", "type": "str", "description": "Scenario section from feature file", "optional": true},
+                  {"name": "ymir_flag", "type": "bool", "description": "Whether this is a Ymir test", "optional": true},
+                  {"name": "component_analysis", "type": "Dict[str, Any]", "description": "Results from component relationship analysis", "optional": true},
+                  {"name": "component_diagnostic", "type": "Dict[str, Any]", "description": "Additional diagnostic information for components", "optional": true}
+                ]
+              }
+            },
+            {
+              "name": "ReportGenerator",
+              "description": "Base class for report generators",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, config: ReportConfig)",
+                  "description": "Initialize a report generator",
+                  "parameters": [
+                    {"name": "config", "type": "ReportConfig", "description": "Report configuration"}
+                  ]
+                },
+                {
+                  "name": "generate",
+                  "signature": "generate(self, data: ReportData) -> str",
+                  "description": "Generate a report",
+                  "parameters": [
+                    {"name": "data", "type": "ReportData", "description": "Report data"}
+                  ],
+                  "returns": "Path to the generated report",
+                  "note": "Abstract method to be implemented by subclasses"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "ensure_datetime",
+              "signature": "ensure_datetime(timestamp_value)",
+              "description": "Ensure a timestamp is a datetime object",
+              "parameters": [
+                {"name": "timestamp_value", "description": "A timestamp which could be a string or datetime object"}
+              ],
+              "returns": "datetime object or None if conversion fails",
+              "behavior": "Handles multiple timestamp formats with fallbacks"
+            },
+            {
+              "name": "sanitize_text",
+              "signature": "sanitize_text(value)",
+              "description": "Sanitize a string value for safe output in reports",
+              "parameters": [
+                {"name": "value", "description": "Value to sanitize"}
+              ],
+              "returns": "Sanitized string value",
+              "behavior": "Removes control characters and potentially problematic strings"
+            }
+          ]
+        },
+        {
+          "name": "Report Manager",
+          "file": "reports/report_manager.py",
+          "description": "Orchestrates the report generation process",
+          "classes": [
+            {
+              "name": "ReportManager",
+              "description": "Orchestrates the report generation process",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, config: ReportConfig)",
+                  "description": "Initialize the report manager",
+                  "parameters": [
+                    {"name": "config", "type": "ReportConfig", "description": "Report configuration"}
+                  ],
+                  "behavior": [
+                    "Creates output directory structures",
+                    "Initializes report generators based on enabled flags"
+                  ]
+                },
+                {
+                  "name": "generate_reports",
+                  "signature": "generate_reports(self, data: ReportData) -> Dict[str, Any]",
+                  "description": "Generate all reports",
+                  "parameters": [
+                    {"name": "data", "type": "ReportData", "description": "Report data"}
+                  ],
+                  "returns": "Dictionary with report paths and metadata",
+                  "steps": [
+                    "STEP 1: Preprocess errors with enhanced component handling",
+                    "STEP 2: Preprocess clusters with consistent component handling",
+                    "STEP 3: Build or update component analysis",
+                    "STEP 4: Normalize timestamps and validate components",
+                    "STEP 5: Generate component report",
+                    "STEP 6: Generate visualizations",
+                    "STEP 7: Generate reports using path utilities",
+                    "STEP 8: Save component preservation diagnostic info"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "JSON Generator",
+          "file": "reports/json_generator.py",
+          "description": "Generator for JSON reports",
+          "classes": [
+            {
+              "name": "JsonReportGenerator",
+              "description": "Generator for JSON reports",
+              "extends": "ReportGenerator",
+              "methods": [
+                {
+                  "name": "generate",
+                  "signature": "generate(self, data: ReportData) -> str",
+                  "description": "Generate a JSON report",
+                  "parameters": [
+                    {"name": "data", "type": "ReportData", "description": "Report data"}
+                  ],
+                  "returns": "Path to the generated report"
+                },
+                {
+                  "name": "write_json_report",
+                  "signature": "write_json_report(self, data: Dict, filename: str) -> str",
+                  "description": "Write JSON report with component-preserving encoding",
+                  "parameters": [
+                    {"name": "data", "type": "Dict", "description": "Data to serialize"},
+                    {"name": "filename", "type": "str", "description": "Output filename"}
+                  ],
+                  "returns": "Path to the written file",
+                  "behavior": [
+                    "Uses ComponentAwareEncoder for preserving component information",
+                    "Verifies component counts after serialization"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Excel Generator",
+          "file": "reports/excel_generator.py",
+          "description": "Generator for Excel reports",
+          "classes": [
+            {
+              "name": "ExcelReportGenerator",
+              "description": "Generator for Excel reports",
+              "extends": "ReportGenerator",
+              "methods": [
+                {
+                  "name": "generate",
+                  "signature": "generate(self, data: ReportData) -> str",
+                  "description": "Generate an Excel report",
+                  "parameters": [
+                    {"name": "data", "type": "ReportData", "description": "Report data"}
+                  ],
+                  "returns": "Path to the generated report",
+                  "behavior": "Handles Excel file-in-use errors gracefully"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "DOCX Generator",
+          "file": "reports/docx_generator.py",
+          "description": "Generator for DOCX reports",
+          "classes": [
+            {
+              "name": "DocxReportGenerator",
+              "description": "Generator for DOCX reports",
+              "extends": "ReportGenerator",
+              "methods": [
+                {
+                  "name": "generate",
+                  "signature": "generate(self, data: ReportData) -> str",
+                  "description": "Generate a DOCX report",
+                  "parameters": [
+                    {"name": "data", "type": "ReportData", "description": "Report data"}
+                  ],
+                  "returns": "Path to the generated report",
+                  "behavior": "Handles missing python-docx gracefully"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "generate_bug_document",
+              "signature": "generate_bug_document(output_dir: str, test_id: str, summary: str, errors: List[Dict], ocr_data: List[Dict], clusters: Dict[int, List[Dict]], background_text: str = \"\", scenario_text: str = \"\", component_analysis: Optional[Dict[str, Any]] = None, primary_issue_component: str = \"unknown\", component_report_path: Optional[str] = None) -> str",
+              "description": "Generate a DOCX file formatted for Jira bug submission",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save the document"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the document title"},
+                {"name": "summary", "type": "str", "description": "Analysis summary text"},
+                {"name": "errors", "type": "List[Dict]", "description": "List of errors"},
+                {"name": "ocr_data", "type": "List[Dict]", "description": "OCR text from screenshots"},
+                {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary of error clusters"},
+                {"name": "background_text", "type": "str", "description": "Background section from feature file", "optional": true},
+                {"name": "scenario_text", "type": "str", "description": "Scenario section from feature file", "optional": true},
+                {"name": "component_analysis", "type": "Optional[Dict[str, Any]]", "description": "Optional component relationship analysis results", "optional": true},
+                {"name": "primary_issue_component", "type": "str", "description": "Primary component identified as causing issues", "optional": true},
+                {"name": "component_report_path", "type": "Optional[str]", "description": "Path to component report file", "optional": true}
+              ],
+              "returns": "Path to the generated document",
+              "behavior": "Falls back to text file if python-docx is unavailable"
+            }
+          ]
+        },
+        {
+          "name": "Visualizations",
+          "file": "reports/visualizations.py",
+          "description": "Provides visualization generation capabilities with enhanced error handling and fallbacks",
+          "functions": [
+            {
+              "name": "generate_timeline_image",
+              "signature": "generate_timeline_image(step_to_logs, step_dict, output_dir, test_id) -> str",
+              "description": "Generate a PNG image of the timeline visualization",
+              "parameters": [
+                {"name": "step_to_logs", "type": "Dict[int, List]", "description": "Dictionary mapping step numbers to log entries"},
+                {"name": "step_dict", "type": "Dict[int, Any]", "description": "Dictionary mapping step numbers to step objects"},
+                {"name": "output_dir", "type": "str", "description": "Directory to write the image"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the filename"}
+              ],
+              "returns": "Path to the generated image",
+              "behavior": [
+                "Creates visualization with error severity coloring",
+                "Includes fallback for missing timestamps",
+                "Enhanced error handling with placeholder generation"
+              ]
+            },
+            {
+              "name": "generate_cluster_timeline_image",
+              "signature": "generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id) -> str",
+              "description": "Generate a cluster timeline image",
+              "parameters": [
+                {"name": "step_to_logs", "type": "Dict[int, List]", "description": "Dictionary mapping step numbers to log entries"},
+                {"name": "step_dict", "type": "Dict[int, Any]", "description": "Dictionary mapping step numbers to step objects"},
+                {"name": "clusters", "type": "Dict[int, List]", "description": "Dictionary mapping cluster IDs to lists of errors"},
+                {"name": "output_dir", "type": "str", "description": "Directory to write the image"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the filename"}
+              ],
+              "returns": "Path to the generated image",
+              "behavior": [
+                "Checks Config.ENABLE_CLUSTER_TIMELINE feature flag",
+                "Enhanced error-to-cluster mapping with multiple identification methods",
+                "Improves visualization with better fallbacks"
+              ]
+            },
+            {
+              "name": "generate_component_visualization",
+              "signature": "generate_component_visualization(output_dir, test_id, components=None, relationships=None, primary_component=None) -> str",
+              "description": "Generate a visualization of component relationships",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save the visualization"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the filename"},
+                {"name": "components", "type": "List[Dict]", "description": "List of component dictionaries", "optional": true},
+                {"name": "relationships", "type": "List[Dict]", "description": "List of relationship dictionaries", "optional": true},
+                {"name": "primary_component", "type": "str", "description": "ID of the primary issue component", "optional": true}
+              ],
+              "returns": "Path to the generated visualization file",
+              "behavior": [
+                "Enhanced with improved debugging information",
+                "Better handling for empty or limited data",
+                "Returns visualization path or placeholder for missing data"
+              ]
+            },
+            {
+              "name": "generate_component_error_distribution",
+              "signature": "generate_component_error_distribution(output_dir, test_id, component_summary=None, clusters=None, primary_component=None) -> str",
+              "description": "Generate a visualization of error distribution across components",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save the visualization"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the filename"},
+                {"name": "component_summary", "type": "List[Dict]", "description": "List of component summary dictionaries", "optional": true},
+                {"name": "clusters", "type": "Dict", "description": "Dictionary of error clusters", "optional": true},
+                {"name": "primary_component", "type": "str", "description": "ID of the primary issue component", "optional": true}
+              ],
+              "returns": "Path to the generated visualization file",
+              "behavior": [
+                "Checks Config.ENABLE_COMPONENT_DISTRIBUTION feature flag",
+                "Creates horizontal bar chart of error counts by component",
+                "Highlights primary issue component",
+                "Enhanced error handling for missing data with placeholder"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "utils": {
+      "name": "Path Utilities",
+      "description": "Utilities for path handling and validation",
+      "modules": [
+        {
+          "name": "Path Utils",
+          "file": "utils/path_utils.py",
+          "description": "Standardized path handling utilities for consistent file placement",
+          "classes": [
+            {
+              "name": "OutputType",
+              "description": "Enumeration of output file types with their destinations",
+              "type": "Enum",
+              "values": [
+                {"name": "PRIMARY_REPORT", "value": "primary", "description": "Goes in root directory (Excel, DOCX, HTML)"},
+                {"name": "JSON_DATA", "value": "json", "description": "Goes in json/ subdirectory"},
+                {"name": "VISUALIZATION", "value": "image", "description": "Goes in supporting_images/ subdirectory"},
+                {"name": "DEBUGGING", "value": "debug", "description": "Goes in debug/ subdirectory (optional)"}
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "normalize_test_id",
+              "signature": "normalize_test_id(test_id: str) -> str",
+              "description": "Normalize test ID to standard SXM-#### format",
+              "parameters": [
+                {"name": "test_id", "type": "str", "description": "Input test ID"}
+              ],
+              "returns": "Normalized test ID with SXM- prefix",
+              "example": "normalized_id = normalize_test_id('1234567')  # Returns 'SXM-1234567'"
+            },
+            {
+              "name": "sanitize_base_directory",
+              "signature": "sanitize_base_directory(base_dir: str, expected_subdir: str = None) -> str",
+              "description": "Sanitize the base directory to prevent nested subdirectories",
+              "parameters": [
+                {"name": "base_dir", "type": "str", "description": "Base directory path to sanitize"},
+                {"name": "expected_subdir", "type": "str", "description": "Optional subdirectory to check for", "optional": true}
+              ],
+              "returns": "Sanitized base directory path that doesn't contain subdirectories",
+              "example": "sanitized_dir = sanitize_base_directory('/path/with/nested/supporting_images', 'supporting_images')"
+            },
+            {
+              "name": "get_output_path",
+              "signature": "get_output_path(base_dir: str, test_id: str, filename: str, output_type: OutputType = OutputType.PRIMARY_REPORT, create_dirs: bool = True) -> str",
+              "description": "Get standardized output path based on file type",
+              "parameters": [
+                {"name": "base_dir", "type": "str", "description": "Base output directory"},
+                {"name": "test_id", "type": "str", "description": "Test ID (will be normalized)"},
+                {"name": "filename", "type": "str", "description": "Filename to use"},
+                {"name": "output_type", "type": "OutputType", "description": "Type of output determining subdirectory", "optional": true},
+                {"name": "create_dirs", "type": "bool", "description": "Whether to create directories if they don't exist", "optional": true}
+              ],
+              "returns": "Full path for the output file",
+              "example": "json_path = get_output_path('./output', 'SXM-123456', 'data.json', OutputType.JSON_DATA)"
+            },
+            {
+              "name": "setup_output_directories",
+              "signature": "setup_output_directories(base_dir: str, test_id: str) -> Dict[str, str]",
+              "description": "Create standard output directory structure",
+              "parameters": [
+                {"name": "base_dir", "type": "str", "description": "Base output directory"},
+                {"name": "test_id", "type": "str", "description": "Test ID"}
+              ],
+              "returns": "Dictionary of paths for each directory",
+              "example": "paths = setup_output_directories('./output', 'SXM-123456')"
+            },
+            {
+              "name": "get_standardized_filename",
+              "signature": "get_standardized_filename(test_id: str, file_type: str, extension: str) -> str",
+              "description": "Create standardized filename with test ID prefix",
+              "parameters": [
+                {"name": "test_id", "type": "str", "description": "Test ID (will be normalized)"},
+                {"name": "file_type", "type": "str", "description": "Type identifier (e.g., log_analysis, component_report)"},
+                {"name": "extension", "type": "str", "description": "File extension (without dot)"}
+              ],
+              "returns": "Standardized filename in format \"{test_id}_{file_type}.{extension}\"",
+              "example": "filename = get_standardized_filename('SXM-123456', 'component_report', 'html')"
+            }
+          ]
+        },
+        {
+          "name": "Path Validator",
+          "file": "utils/path_validator.py",
+          "description": "Validates correct file placement within the output structure",
+          "functions": [
+            {
+              "name": "validate_file_structure",
+              "signature": "validate_file_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+              "description": "Validate that files are in their proper locations",
+              "parameters": [
+                {"name": "base_dir", "type": "str", "description": "Base output directory"},
+                {"name": "test_id", "type": "str", "description": "Test ID"}
+              ],
+              "returns": "Dictionary of misplaced files by category",
+              "example": "issues = validate_file_structure('./output', 'SXM-123456')"
+            },
+            {
+              "name": "check_html_references",
+              "signature": "check_html_references(html_file: str) -> Dict[str, List[str]]",
+              "description": "Check HTML file for correct references to supporting files",
+              "parameters": [
+                {"name": "html_file", "type": "str", "description": "Path to HTML file"}
+              ],
+              "returns": "Dictionary of issues",
+              "example": "html_issues = check_html_references('./output/SXM-123456/component_report.html')"
+            },
+            {
+              "name": "fix_directory_structure",
+              "signature": "fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+              "description": "Find and fix directory structure issues",
+              "parameters": [
+                {"name": "base_dir", "type": "str", "description": "Base output directory"},
+                {"name": "test_id", "type": "str", "description": "Test ID"}
+              ],
+              "returns": "Dictionary of fixes made by category",
+              "example": "fixes = fix_directory_structure('./output', 'SXM-123456')"
+            }
+          ]
+        }
+      ]
+    },
+    "gpt_summarizer": {
+      "name": "GPT Summarizer",
+      "file": "gpt_summarizer.py",
+      "description": "Generates AI-powered summaries and analysis",
+      "responsibilities": [
+        "Generate summaries using OpenAI's GPT models",
+        "Manage token limits and optimize prompts",
+        "Sanitize text for API submission",
+        "Provide fallback when API is unavailable"
+      ],
+      "functions": [
+        {
+          "name": "generate_summary_from_clusters",
+          "signature": "generate_summary_from_clusters(clusters: Dict[int, List[Dict]], ocr_data: List[Dict], test_id: str, scenario_text: str = \"\", use_gpt: bool = True, model: str = \"gpt-3.5-turbo\", step_to_logs: Optional[Dict[int, List[Any]]] = None, feature_file: Optional[str] = None, component_analysis: Optional[Dict[str, Any]] = None) -> str",
+          "description": "Generate a summary from clustered errors using GPT with enhanced component analysis",
+          "parameters": [
+            {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary mapping cluster IDs to lists of errors"},
+            {"name": "ocr_data", "type": "List[Dict]", "description": "OCR data extracted from images"},
+            {"name": "test_id", "type": "str", "description": "Test ID"},
+            {"name": "scenario_text", "type": "str", "description": "Feature file scenario text (optional)", "optional": true},
+            {"name": "use_gpt", "type": "bool", "description": "Whether to use GPT for summary generation", "optional": true},
+            {"name": "model", "type": "str", "description": "GPT model to use", "optional": true},
+            {"name": "step_to_logs", "type": "Optional[Dict[int, List[Any]]]", "description": "Dictionary mapping step numbers to log entries", "optional": true},
+            {"name": "feature_file", "type": "Optional[str]", "description": "Path to the feature file", "optional": true},
+            {"name": "component_analysis", "type": "Optional[Dict[str, Any]]", "description": "Results from component relationship analysis", "optional": true}
+          ],
+          "returns": "Generated summary",
+          "example": "summary = generate_summary_from_clusters(error_clusters, ocr_data, 'SXM-123456', component_analysis=component_results)",
+          "behavior": [
+            "Applies direct component mapping if component_analysis is not provided",
+            "Sanitizes all text before sending to API",
+            "Falls back to fallback_summary if GPT is disabled or API key missing"
+          ]
+        },
+        {
+          "name": "send_to_openai_chat",
+          "signature": "send_to_openai_chat(prompt: str, model: str = \"gpt-3.5-turbo\", max_tokens: int = None) -> str",
+          "description": "Send a prompt to OpenAI's Chat API and return the response",
+          "parameters": [
+            {"name": "prompt", "type": "str", "description": "Formatted prompt for GPT"},
+            {"name": "model", "type": "str", "description": "GPT model to use", "optional": true},
+            {"name": "max_tokens", "type": "int", "description": "Maximum tokens for response", "optional": true}
+          ],
+          "returns": "GPT-generated response",
+          "behavior": [
+            "Adds privacy-related headers like \"OpenAI-Beta\": \"optout=train\"",
+            "Logs token counts for prompt and response",
+            "Includes error handling with detailed diagnostics",
+            "Returns error message if API call fails"
+          ]
+        },
+        {
+          "name": "sanitize_text_for_api",
+          "signature": "sanitize_text_for_api(text: str) -> str",
+          "description": "Sanitize text before sending to API to remove potentially sensitive information",
+          "parameters": [
+            {"name": "text", "type": "str", "description": "Text to sanitize"}
+          ],
+          "returns": "Sanitized text string",
+          "behavior": [
+            "Redacts IP addresses, emails, file paths with usernames",
+            "Redacts API keys, tokens, and secrets",
+            "Preserves meaning while removing sensitive data"
+          ]
+        },
+        {
+          "name": "fallback_summary",
+          "signature": "fallback_summary(errors: List[Dict], clusters: Dict[int, List[Dict]], component_summary: List[Dict] = None, primary_issue_component: str = \"unknown\") -> str",
+          "description": "Generate a basic summary when GPT is not available",
+          "parameters": [
+            {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"},
+            {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary mapping cluster IDs to lists of errors"},
+            {"name": "component_summary", "type": "List[Dict]", "description": "Summary of components involved", "optional": true},
+            {"name": "primary_issue_component", "type": "str", "description": "The component identified as root cause", "optional": true}
+          ],
+          "returns": "Basic summary of errors based on severity and components",
+          "example": "offline_summary = fallback_summary(errors, error_clusters, component_summary, 'soa')"
+        }
+      ]
+    },
+    "gherkin": {
+      "name": "Gherkin Log Correlation",
+      "description": "Correlates logs with Gherkin feature file steps",
+      "modules": [
+        {
+          "name": "Gherkin Log Correlator",
+          "file": "gherkin_log_correlator.py",
+          "description": "Correlates log entries with steps in Gherkin feature files",
+          "classes": [
+            {
+              "name": "GherkinStep",
+              "description": "Represents a single step in a Gherkin feature file",
+              "properties": [
+                {"name": "keyword", "type": "str", "description": "Given, When, Then, And, But, *"},
+                {"name": "text", "type": "str", "description": "The step text without the keyword"},
+                {"name": "original_line", "type": "str", "description": "The full original line"},
+                {"name": "line_number", "type": "int", "description": "Line number in the feature file"},
+                {"name": "step_number", "type": "int", "description": "Sequential step number in the scenario"},
+                {"name": "scenario_name", "type": "str", "description": "Name of the parent scenario"}
+              ]
+            },
+            {
+              "name": "LogEntry",
+              "description": "Represents a parsed log entry with metadata",
+              "constructor": {
+                "signature": "__init__(self, text: str, file: str, line_number: int, timestamp: Optional[datetime.datetime] = None)",
+                "parameters": [
+                  {"name": "text", "type": "str", "description": "Log entry text"},
+                  {"name": "file", "type": "str", "description": "Source file"},
+                  {"name": "line_number", "type": "int", "description": "Line number in source file"},
+                  {"name": "timestamp", "type": "Optional[datetime.datetime]", "description": "Timestamp of log entry", "optional": true}
+                ]
+              }
+            },
+            {
+              "name": "GherkinParser",
+              "description": "Parser for Gherkin feature files",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, feature_file_path: str)",
+                  "description": "Initialize with feature file path",
+                  "parameters": [
+                    {"name": "feature_file_path", "type": "str", "description": "Path to feature file"}
+                  ]
+                },
+                {
+                  "name": "parse",
+                  "signature": "parse(self) -> List[GherkinStep]",
+                  "description": "Parse the feature file and extract all steps",
+                  "returns": "List of GherkinStep objects",
+                  "behavior": [
+                    "Handles Background and Scenario sections",
+                    "Returns list of GherkinStep objects"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "GherkinLogCorrelator",
+              "description": "Correlates Gherkin steps with log entries",
+              "methods": [
+                {
+                  "name": "__init__",
+                  "signature": "__init__(self, feature_file_path: str, log_file_paths: List[str])",
+                  "description": "Initialize with paths to feature file and log files",
+                  "parameters": [
+                    {"name": "feature_file_path", "type": "str", "description": "Path to feature file"},
+                    {"name": "log_file_paths", "type": "List[str]", "description": "Paths to log files"}
+                  ]
+                },
+                {
+                  "name": "analyze",
+                  "signature": "analyze(self) -> Dict[int, List[LogEntry]]",
+                  "description": "Analyze logs and correlate them with Gherkin steps",
+                  "returns": "Dictionary mapping step numbers to log entries",
+                  "behavior": [
+                    "Parse Gherkin feature",
+                    "Parse logs",
+                    "Find step transitions in logs",
+                    "Assign logs to steps by timestamp",
+                    "Enhance with keyword matching"
+                  ]
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "correlate_logs_with_steps",
+              "signature": "correlate_logs_with_steps(feature_file_path: str, log_file_paths: List[str]) -> Dict[int, List[LogEntry]]",
+              "description": "Correlate log entries with Gherkin steps",
+              "parameters": [
+                {"name": "feature_file_path", "type": "str", "description": "Path to the Gherkin feature file"},
+                {"name": "log_file_paths", "type": "List[str]", "description": "List of paths to log files"}
+              ],
+              "returns": "Dictionary mapping step numbers to lists of log entries",
+              "example": "step_to_logs = correlate_logs_with_steps('feature.file', ['log1.log', 'log2.log'])"
+            }
+          ]
+        },
+        {
+          "name": "Step Aware Analyzer",
+          "file": "step_aware_analyzer.py",
+          "description": "Generates step-aware reports with visualizations for Gherkin tests",
+          "functions": [
+            {
+              "name": "generate_step_report",
+              "signature": "generate_step_report(feature_file: str, logs_dir: str, step_to_logs: Dict[int, List[LogEntry]], output_dir: str, test_id: str, clusters: Optional[Dict[int, List[Dict]]] = None, component_analysis: Optional[Dict[str, Any]] = None) -> str",
+              "description": "Generate an HTML report showing logs correlated with Gherkin steps",
+              "parameters": [
+                {"name": "feature_file", "type": "str", "description": "Path to the feature file"},
+                {"name": "logs_dir", "type": "str", "description": "Directory containing logs"},
+                {"name": "step_to_logs", "type": "Dict[int, List[LogEntry]]", "description": "Dictionary mapping step numbers to log entries"},
+                {"name": "output_dir", "type": "str", "description": "Directory to write the report"},
+                {"name": "test_id", "type": "str", "description": "Test ID for the report title"},
+                {"name": "clusters", "type": "Optional[Dict[int, List[Dict]]]", "description": "Optional dictionary of error clusters", "optional": true},
+                {"name": "component_analysis", "type": "Optional[Dict[str, Any]]", "description": "Optional component analysis results", "optional": true}
+              ],
+              "returns": "Path to the generated HTML report",
+              "behavior": [
+                "Creates HTML report with step-by-step log analysis",
+                "Includes timeline visualization if available",
+                "Includes component information if available"
+              ]
+            },
+            {
+              "name": "run_step_aware_analysis",
+              "signature": "run_step_aware_analysis(test_id: str, feature_file: str, logs_dir: str, output_dir: str, clusters: Optional[Dict[int, List[Dict]]] = None, errors: Optional[List[Dict]] = None, component_analysis: Optional[Dict[str, Any]] = None) -> Optional[str]",
+              "description": "Run a step-aware analysis and generate HTML report",
+              "parameters": [
+                {"name": "test_id", "type": "str", "description": "The test ID (e.g., SXM-123456)"},
+                {"name": "feature_file", "type": "str", "description": "Path to the Gherkin feature file"},
+                {"name": "logs_dir", "type": "str", "description": "Directory containing log files"},
+                {"name": "output_dir", "type": "str", "description": "Directory for output reports"},
+                {"name": "clusters", "type": "Optional[Dict[int, List[Dict]]]", "description": "Optional dictionary of error clusters", "optional": true},
+                {"name": "errors", "type": "Optional[List[Dict]]", "description": "Optional list of errors from log_analyzer", "optional": true},
+                {"name": "component_analysis", "type": "Optional[Dict[str, Any]]", "description": "Optional component analysis results", "optional": true}
+              ],
+              "returns": "Path to the generated report or None if analysis failed",
+              "behavior": [
+                "Finds log files",
+                "Correlates logs with steps",
+                "Enriches logs with error information",
+                "Generates HTML report"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "batch_processor": {
+      "name": "Batch Processor",
+      "file": "batch_processor.py",
+      "description": "Processes multiple tests in batch mode",
+      "functions": [
+        {
+          "name": "find_test_folders",
+          "signature": "find_test_folders() -> List[str]",
+          "description": "Automatically discover all SXM-* folders in the logs directory",
+          "returns": "List of test IDs (folder names)",
+          "behavior": "Scans Config.LOG_BASE_DIR for SXM-* folders"
+        },
+        {
+          "name": "process_single_test",
+          "signature": "process_single_test(test_id: str) -> Dict[str, Any]",
+          "description": "Process a single test case and return results",
+          "parameters": [
+            {"name": "test_id", "type": "str", "description": "Test ID to process"}
+          ],
+          "returns": "Dictionary with processing results and metadata",
+          "behavior": "Calls run_pipeline from controller.py"
+        },
+        {
+          "name": "process_batch",
+          "signature": "process_batch(test_ids: List[str], parallel: bool = False) -> Dict[str, Dict]",
+          "description": "Process multiple test IDs either sequentially or in parallel",
+          "parameters": [
+            {"name": "test_ids", "type": "List[str]", "description": "List of test IDs to process"},
+            {"name": "parallel", "type": "bool", "description": "Whether to use parallel processing", "optional": true}
+          ],
+          "returns": "Dictionary mapping test IDs to their processing results",
+          "behavior": "Processes tests sequentially or using multiprocessing"
+        },
+        {
+          "name": "generate_batch_report",
+          "signature": "generate_batch_report(results: Dict[str, Dict], output_file: str = None) -> str",
+          "description": "Generate a summary report for the batch processing results",
+          "parameters": [
+            {"name": "results", "type": "Dict[str, Dict]", "description": "Dictionary mapping test IDs to processing results"},
+            {"name": "output_file", "type": "str", "description": "Path to write the report (optional)", "optional": true}
+          ],
+          "returns": "Report text",
+          "behavior": [
+            "Generates summary of successful/failed tests",
+            "Writes report to file if output_file provided"
+          ]
+        }
+      ]
+    }
+  },
+  "processing_flows": {
+    "main_pipeline": {
+      "description": "The primary analysis pipeline orchestrated by controller.py",
+      "steps": [
+        {
+          "step": 1,
+          "operation": "Configuration and Directory Setup",
+          "code": "# Normalize test ID and set up output directories\ntest_id = normalize_test_id(test_id)\noutput_dir = os.path.join(Config.OUTPUT_BASE_DIR, test_id)\noutput_paths = setup_output_directories(output_dir, test_id)"
+        },
+        {
+          "step": 2,
+          "operation": "Log and Image Collection",
+          "code": "# Collect log files and images\nlogs, images = collect_all_supported_files(input_dir)"
+        },
+        {
+          "step": 3,
+          "operation": "Error Extraction",
+          "code": "# Extract errors from logs\nerrors = parse_logs(logs)"
+        },
+        {
+          "step": 4,
+          "operation": "OCR Processing (if enabled)",
+          "code": "# Extract OCR data from images\nif enable_ocr and images:\n    ocr_data = extract_ocr_data(images)"
+        },
+        {
+          "step": 5,
+          "operation": "Component Identification",
+          "code": "# Apply direct component mapping to errors\nerrors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)"
+        },
+        {
+          "step": 6,
+          "operation": "Error Clustering",
+          "code": "# Cluster errors\nerror_clusters = perform_error_clustering(errors, num_clusters=num_clusters)"
+        },
+        {
+          "step": 7,
+          "operation": "Component Relationship Analysis (if available)",
+          "code": "# Try to use the component integration module if available\nif COMPONENT_INTEGRATION_AVAILABLE:\n    integrator = ComponentIntegration(component_schema_path)\n    component_analysis_results = integrator.analyze_logs(log_entries, errors, output_paths[\"json\"], output_paths[\"test_id\"])"
+        },
+        {
+          "step": 8,
+          "operation": "Gherkin Correlation (if feature file available)",
+          "code": "# Run Gherkin log correlation if we have a feature file\nif feature_file and GHERKIN_AVAILABLE:\n    step_report, step_to_logs = run_gherkin_correlation(feature_file, logs, output_paths[\"base\"], output_paths[\"test_id\"], errors, error_clusters, component_analysis_results)"
+        },
+        {
+          "step": 9,
+          "operation": "Summary Generation",
+          "code": "# Generate summary with GPT\nsummary = generate_summary_from_clusters(error_clusters, ocr_data, output_paths[\"test_id\"], scenario_text=scenario_text, use_gpt=use_gpt, model=gpt_model, step_to_logs=step_to_logs, feature_file=feature_file, component_analysis=component_analysis_results)"
+        },
+        {
+          "step": 10,
+          "operation": "Report Generation",
+          "code": "# Write reports\nreport_results = write_reports(output_dir=output_paths[\"base\"], test_id=output_paths[\"test_id\"], summary=summary, errors=errors, ocr_data=ocr_data, clusters=error_clusters, ymir_flag=ymir_flag, background_text=background_text, scenario_text=scenario_text, component_analysis=component_analysis_results, primary_issue_component=primary_issue_component)"
+        }
+      ]
+    },
+    "component_identification_flow": {
+      "description": "The component identification process flow",
+      "steps": [
+        {
+          "step": 1,
+          "operation": "Initial Identification Based on Filename",
+          "code": "# During log parsing in log_analyzer.py\ncomponent, component_source = identify_component_from_filename(filename)"
+        },
+        {
+          "step": 2,
+          "operation": "Enhanced Identification with Direct Component Analyzer",
+          "code": "# Using direct_component_analyzer.py\nerrors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)"
+        },
+        {
+          "step": 3,
+          "operation": "Content-Based Identification for Ambiguous Cases",
+          "code": "# Within component_analyzer.py\ncomponent_id = self.identify_component_from_line(entry.text)"
+        },
+        {
+          "step": 4,
+          "operation": "Relationship Analysis to Identify Root Cause",
+          "code": "# Within component_integration.py\nroot_cause_component = self._identify_root_cause_component(errors)"
+        },
+        {
+          "step": 5,
+          "operation": "Explicit Component Propagation",
+          "code": "# Ensure primary_issue_component is preserved\ncomponent_analysis_results[\"primary_issue_component\"] = primary_issue_component\nif \"metrics\" in component_analysis_results:\n    component_analysis_results[\"metrics\"][\"root_cause_component\"] = primary_issue_component"
+        }
+      ]
+    },
+    "report_generation_flow": {
+      "description": "The report generation process flow",
+      "steps": [
+        {
+          "step": 1,
+          "operation": "Create Configuration with Enabled Report Types",
+          "code": "# Create configuration\nconfig = ReportConfig(\n    output_dir=output_dir,\n    test_id=test_id,\n    primary_issue_component=primary_issue_component,\n    enable_excel=True,\n    enable_markdown=True,\n    enable_json=True,\n    enable_docx=True,\n    enable_component_report=True\n)"
+        },
+        {
+          "step": 2,
+          "operation": "Create Report Data",
+          "code": "# Create report data\ndata = ReportData(\n    errors=errors,\n    summary=summary,\n    clusters=clusters,\n    ocr_data=ocr_data,\n    background_text=background_text,\n    scenario_text=scenario_text,\n    ymir_flag=ymir_flag,\n    component_analysis=component_analysis\n)"
+        },
+        {
+          "step": 3,
+          "operation": "Preprocess and Normalize Data",
+          "code": "# Preprocess errors with enhanced component handling\nprocessed_errors, primary_issue_component = preprocess_errors(data.errors, self.config.primary_issue_component)\n# Preprocess clusters with consistent component handling\nprocessed_clusters = preprocess_clusters(data.clusters, primary_issue_component)"
+        },
+        {
+          "step": 4,
+          "operation": "Generate Component Report",
+          "code": "# Generate component report\ncomponent_report_path = self._generate_component_report(component_analysis, primary_issue_component)"
+        },
+        {
+          "step": 5,
+          "operation": "Generate Visualizations",
+          "code": "# Generate visualizations\nvisualization_results = self._generate_visualizations(component_analysis, processed_clusters, primary_issue_component)"
+        },
+        {
+          "step": 6,
+          "operation": "Generate Report Formats",
+          "code": "# Generate Excel report\nif self.config.enable_excel:\n    excel_path = self.excel_generator.generate(report_data)\n# Generate JSON report\nif self.config.enable_json:\n    json_path = self.json_generator.generate(report_data)\n# Generate DOCX report\nif self.config.enable_docx:\n    docx_path = self.docx_generator.generate(report_data)\n# Generate Markdown report\nif self.config.enable_markdown:\n    markdown_path = self.markdown_generator.generate(report_data)"
+        },
+        {
+          "step": 7,
+          "operation": "Verify and Fix Directory Structure",
+          "code": "# Verify and fix directory structure\nfrom utils.path_validator import fix_directory_structure\nfix_directory_structure(self.base_dir, self.config.test_id)"
+        }
+      ]
+    },
+    "visualization_generation_flow": {
+      "description": "The visualization generation process flow",
+      "steps": [
+        {
+          "step": 1,
+          "operation": "Check Feature Flags for Enabled Visualizations",
+          "code": "# Check if visualization is enabled\nis_test_environment = 'unittest' in sys.modules or 'pytest' in sys.modules\nfeature_enabled = is_test_environment or (\n    hasattr(Config, 'ENABLE_COMPONENT_DISTRIBUTION') and \n    Config.ENABLE_COMPONENT_DISTRIBUTION\n)"
+        },
+        {
+          "step": 2,
+          "operation": "Initialize Visualization Generator with Config",
+          "code": "# Initialize visualization generator\nvisualizer = ComponentVisualizer(component_schema_path)\n# Or use thread-safe visualization function\nfrom reports.visualizations import generate_component_visualization"
+        },
+        {
+          "step": 3,
+          "operation": "Generate Visualizations with Timeout Protection",
+          "code": "# Generate visualization with timeout protection\ndef generate_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n    try:\n        return generation_func(output_dir, test_id, *args, **kwargs)\n    except Exception as e:\n        logging.error(f\"Visualization generation error: {str(e)}\")\n        return generate_visualization_placeholder(output_dir, test_id)"
+        },
+        {
+          "step": 4,
+          "operation": "Create Fallback Placeholders for Failed Visualizations",
+          "code": "# Create placeholder image\ndef generate_visualization_placeholder(output_dir, test_id, message):\n    try:\n        import matplotlib.pyplot as plt\n        placeholder_path = get_output_path(\n            output_dir,\n            test_id,\n            get_standardized_filename(test_id, \"visualization_placeholder\", \"png\"),\n            OutputType.VISUALIZATION\n        )\n        plt.figure(figsize=(8, 6))\n        plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)\n        plt.axis('off')\n        plt.savefig(placeholder_path, dpi=100)\n        plt.close()\n        return placeholder_path\n    except Exception as e:\n        logging.error(f\"Error creating visualization placeholder: {str(e)}\")\n        return None"
+        },
+        {
+          "step": 5,
+          "operation": "Return Paths to Generated Visualization Files",
+          "code": "# Return paths to generated visualizations\nreturn {\n    \"component_relationship\": component_relationship_path,\n    \"error_distribution\": error_distribution_path,\n    \"error_propagation\": error_propagation_path\n}"
+        }
+      ]
+    }
+  },
+  "integration_points": {
+    "controller_entry_point": {
+      "description": "Main entry point for programmatic or interactive use",
+      "functions": [
+        {
+          "name": "run_pipeline",
+          "purpose": "Analyze a single test programmatically",
+          "example": "result_message, step_report = run_pipeline('SXM-123456', gpt_model='gpt-3.5-turbo')"
+        },
+        {
+          "name": "run_pipeline_interactive",
+          "purpose": "Interactive command-line interface",
+          "example": "run_pipeline_interactive()"
+        }
+      ]
+    },
+    "batch_processing": {
+      "description": "Entry point for batch processing multiple tests",
+      "functions": [
+        {
+          "name": "process_batch",
+          "purpose": "Process multiple tests in batch mode",
+          "example": "results = process_batch(['SXM-123456', 'SXM-789012'], parallel=True)"
+        }
+      ]
+    },
+    "component_identification": {
+      "description": "Component identification interface for external modules",
+      "functions": [
+        {
+          "name": "assign_components_and_relationships",
+          "purpose": "Identify components for errors",
+          "example": "errors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)"
+        }
+      ]
+    },
+    "report_generation": {
+      "description": "Report generation interface for external modules",
+      "functions": [
+        {
+          "name": "write_reports",
+          "purpose": "Generate reports for a test",
+          "example": "report_results = write_reports(output_dir='./output/SXM-123456', test_id='SXM-123456', summary=summary, errors=errors, clusters=error_clusters, component_analysis=component_analysis)"
+        }
+      ]
+    },
+    "gherkin_integration": {
+      "description": "Integration with Gherkin BDD feature files",
+      "functions": [
+        {
+          "name": "run_gherkin_correlation",
+          "purpose": "Correlate logs with Gherkin steps",
+          "example": "report_path, step_data = run_gherkin_correlation('feature.file', ['log1.log', 'log2.log'], './output', 'SXM-123456')"
+        },
+        {
+          "name": "run_step_aware_analysis",
+          "purpose": "Run full step-aware analysis",
+          "example": "step_report = run_step_aware_analysis('SXM-123456', 'feature.file', './logs', './output')"
+        }
+      ]
+    }
+  },
+  "critical_mechanisms": {
+    "component_preservation": {
+      "description": "System for ensuring component information is maintained throughout processing",
+      "critical_fields": [
+        {"field": "component", "description": "The identified component"},
+        {"field": "component_source", "description": "How the component was identified"},
+        {"field": "source_component", "description": "Original component before processing"},
+        {"field": "root_cause_component", "description": "Component identified as root cause"},
+        {"field": "primary_issue_component", "description": "Primary component for reporting"},
+        {"field": "affected_components", "description": "Related components affected"}
+      ],
+      "preservation_mechanisms": [
+        {
+          "name": "Component Fields Definition",
+          "description": "Centralized definition of component-related fields",
+          "implementation": "COMPONENT_FIELDS set in reports/base.py",
+          "code_example": "COMPONENT_FIELDS = {\n    'component', 'component_source', 'source_component', 'root_cause_component',\n    'primary_issue_component', 'affected_components', 'expected_component',\n    'component_scores', 'component_distribution', 'parent_component', 'child_components'\n}"
+        },
+        {
+          "name": "ComponentAwareEncoder",
+          "description": "Custom JSON encoder that preserves component information during serialization",
+          "implementation": "ComponentAwareEncoder class in reports/base.py",
+          "code_example": "class ComponentAwareEncoder(DateTimeEncoder):\n    def __init__(self, *args, primary_issue_component=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        self.primary_issue_component = primary_issue_component\n        self.component_fields = COMPONENT_FIELDS\n    \n    def default(self, obj):\n        if isinstance(obj, dict):\n            # Create a deep copy to avoid modifying the original\n            result = copy.deepcopy(obj)\n            \n            # Process the dictionary with component preservation\n            self._preserve_component_fields(result)\n            \n            return result\n        \n        # For other types, use default behavior\n        return super().default(obj)"
+        },
+        {
+          "name": "Explicit Primary Component Propagation",
+          "description": "Explicit propagation of primary_issue_component throughout the pipeline",
+          "implementation": "Various locations in controller.py and report_manager.py",
+          "code_example": "# CRITICAL: Explicitly inject primary_issue_component into component_analysis_results\ncomponent_analysis_results[\"primary_issue_component\"] = primary_issue_component\n            \n# Also inject into metrics if they exist\nif \"metrics\" in component_analysis_results:\n    component_analysis_results[\"metrics\"][\"root_cause_component\"] = primary_issue_component"
+        }
+      ],
+      "verification_mechanisms": [
+        {
+          "name": "Component Consistency Verification",
+          "description": "Verification of component field consistency throughout processing",
+          "implementation": "reports/report_manager.py",
+          "code_example": "def _verify_component_consistency(self, errors):\n    \"\"\"Verify component information integrity after processing.\"\"\"\n    component_distribution = {\n        \"test_id\": self.config.test_id,\n        \"primary_issue_component\": self.config.primary_issue_component,\n        \"component_counts\": count_components(errors),\n        \"component_sources\": count_component_sources(errors)\n    }\n    return component_distribution"
+        }
+      ]
+    },
+    "path_handling_standardization": {
+      "description": "Standardized path handling to ensure consistent file placement",
+      "key_mechanisms": [
+        {
+          "name": "OutputType Enumeration",
+          "description": "Enumeration defining output file destinations",
+          "implementation": "OutputType enum in utils/path_utils.py",
+          "code_example": "class OutputType(Enum):\n    \"\"\"Enumeration of output file types with their destinations\"\"\"\n    PRIMARY_REPORT = \"primary\"  # Goes in root directory (Excel, DOCX, HTML)\n    JSON_DATA = \"json\"          # Goes in json/ subdirectory\n    VISUALIZATION = \"image\"     # Goes in supporting_images/ subdirectory\n    DEBUGGING = \"debug\"         # Goes in debug/ subdirectory (optional)"
+        },
+        {
+          "name": "Standard Path Getter",
+          "description": "Standardized path generation based on file type",
+          "implementation": "get_output_path function in utils/path_utils.py",
+          "code_example": "def get_output_path(base_dir: str, test_id: str, filename: str, output_type: OutputType = OutputType.PRIMARY_REPORT, create_dirs: bool = True) -> str:\n    # Normalize test ID\n    normalized_id = normalize_test_id(test_id)\n    \n    # Determine output directory based on type\n    if output_type == OutputType.JSON_DATA:\n        output_dir = os.path.join(base_dir, \"json\")\n    elif output_type == OutputType.VISUALIZATION:\n        output_dir = os.path.join(base_dir, \"supporting_images\")\n    elif output_type == OutputType.DEBUGGING:\n        output_dir = os.path.join(base_dir, \"debug\")\n    else:  # PRIMARY_REPORT and default\n        output_dir = base_dir\n    \n    # Create directories if needed\n    if create_dirs:\n        os.makedirs(output_dir, exist_ok=True)\n    \n    # Return full path\n    return os.path.join(output_dir, filename)"
+        },
+        {
+          "name": "Directory Structure Validation",
+          "description": "Validation and correction of directory structure",
+          "implementation": "validate_file_structure and fix_directory_structure in utils/path_validator.py",
+          "code_example": "def validate_file_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]:\n    \"\"\"Validate that files are in their proper locations.\"\"\"\n    issues = {\n        \"json_dir_images\": [],  # Image files in json directory\n        \"images_dir_json\": [],  # JSON files in images directory\n        \"nested_directories\": [],  # Nested json/supporting_images directories\n        \"expected_but_missing\": []  # Expected files that should exist\n    }\n    \n    # Check for various issues...\n    \n    return issues"
+        }
+      ]
+    },
+    "visualization_thread_safety": {
+      "description": "Thread-safe visualization generation with fallback mechanisms",
+      "key_mechanisms": [
+        {
+          "name": "Thread-Local Storage",
+          "description": "Thread-local storage for visualization state",
+          "implementation": "Thread-local variables in reports/visualizations.py",
+          "code_example": "# Thread-local storage for visualization state\nimport threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config and cache result\n    try:\n        from config import Config\n        result = getattr(Config, feature_name, default)\n    except Exception:\n        result = default\n    \n    _visualization_local.feature_cache[feature_name] = result\n    return result"
+        },
+        {
+          "name": "Non-Interactive Matplotlib Backend",
+          "description": "Configure matplotlib to use non-interactive backend",
+          "implementation": "configure_matplotlib method in config.py",
+          "code_example": "def configure_matplotlib():\n    \"\"\"Configure matplotlib for thread safety.\"\"\"\n    import matplotlib\n    # Force Agg backend for headless environments and thread safety\n    matplotlib.use('Agg', force=True)\n    \n    import matplotlib.pyplot as plt\n    # Configure global settings\n    plt.rcParams['figure.max_open_warning'] = 50\n    plt.rcParams['font.size'] = 10\n    plt.rcParams['figure.dpi'] = 100\n    \n    return plt"
+        },
+        {
+          "name": "Fallback Visualization Generation",
+          "description": "Fallback mechanism for visualization generation",
+          "implementation": "generate_with_fallback function in reports/visualizations.py",
+          "code_example": "def generate_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n    \"\"\"Generate visualization with automatic fallback to placeholder.\"\"\"\n    try:\n        # Attempt to generate the requested visualization\n        viz_path = generation_func(output_dir, test_id, *args, **kwargs)\n        \n        # Check if generation returned None or if file doesn't exist\n        if viz_path is None or not os.path.exists(viz_path):\n            # Get function name for the message\n            func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n            return generate_visualization_placeholder(\n                output_dir, \n                test_id,\n                f\"{func_name} generation failed\"\n            )\n        \n        return viz_path\n    except Exception as e:\n        # Get function name for error message\n        func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n        logging.error(f\"Error in {func_name} generation: {str(e)}\")\n        \n        # Generate informative placeholder\n        return generate_visualization_placeholder(\n            output_dir, \n            test_id, \n            f\"Error generating {func_name}: {str(e)}\"\n        )"
+        },
+        {
+          "name": "Memory Management",
+          "description": "Proper memory management for matplotlib figures",
+          "implementation": "_save_figure_with_cleanup method in component_visualizer.py",
+          "code_example": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)"
+        }
+      ]
+    },
+    "error_clustering": {
+      "description": "Clustering of similar errors for easier analysis",
+      "algorithm": {
+        "name": "TF-IDF and K-means Clustering",
+        "description": "Uses TF-IDF vectorization and K-means clustering for error grouping",
+        "implementation": "perform_error_clustering function in error_clusterer.py",
+        "steps": [
+          "Normalize error text by removing variable parts",
+          "Create TF-IDF vectors from normalized texts",
+          "Determine optimal number of clusters based on error count",
+          "Perform K-means clustering",
+          "Group errors by cluster label",
+          "Balance extremely unbalanced clusters"
+        ],
+        "code_example": "def perform_error_clustering(errors: List[Dict], num_clusters: int = None) -> Dict[int, List[Dict]]:\n    # Early return for empty input\n    if not errors:\n        logging.warning(\"No errors to cluster\")\n        return {}\n\n    # Store original component information\n    original_component_fields = {}\n    for i, error in enumerate(errors):\n        original_component_fields[i] = extract_component_fields(error)\n\n    # Extract error texts for TF-IDF\n    texts = [_normalize_error_text(error.get(\"text\", \"\")) for error in errors]\n\n    # Configure vectorizer\n    vectorizer = TfidfVectorizer(\n        stop_words='english',\n        min_df=1,\n        max_df=0.9,\n        ngram_range=(1, 2)\n    )\n\n    # Perform clustering\n    feature_matrix = vectorizer.fit_transform(texts)\n    \n    # Determine cluster count if not specified\n    if num_clusters is None or num_clusters > len(errors):\n        num_clusters = _determine_optimal_clusters(feature_matrix, len(errors), num_clusters)\n    \n    # Perform K-means clustering\n    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)\n    labels = kmeans.fit_predict(feature_matrix)\n    \n    # Group errors by cluster label with component preservation\n    clusters = {}\n    for idx, label in enumerate(labels):\n        cluster_id = int(label)\n        if cluster_id not in clusters:\n            clusters[cluster_id] = []\n        \n        # Create a copy with preserved component fields\n        error_copy = copy.deepcopy(errors[idx])\n        apply_component_fields(error_copy, original_component_fields[idx])\n        clusters[cluster_id].append(error_copy)\n    \n    return clusters"
+      },
+      "component_preservation": {
+        "description": "Ensures component information is preserved during clustering",
+        "implementation": "Component field extraction and application in error_clusterer.py",
+        "code_example": "# Store original component information\noriginal_component_fields = {}\nfor i, error in enumerate(errors):\n    original_component_fields[i] = extract_component_fields(error)\n\n# Later, when building clusters\nfor idx, label in enumerate(labels):\n    # Create a copy to avoid modifying the original\n    error_copy = copy.deepcopy(errors[idx])\n    \n    # Ensure all component fields are preserved\n    if idx in original_component_fields:\n        apply_component_fields(error_copy, original_component_fields[idx])\n        \n    # Add to cluster\n    clusters[cluster_id].append(error_copy)"
+      }
+    },
+    "json_serialization": {
+      "description": "Custom JSON serialization for component preservation",
+      "mechanisms": [
+        {
+          "name": "ComponentAwareEncoder",
+          "description": "Custom JSON encoder that preserves component fields",
+          "implementation": "ComponentAwareEncoder class in reports/base.py",
+          "code_example": "class ComponentAwareEncoder(DateTimeEncoder):\n    def __init__(self, *args, primary_issue_component=None, **kwargs):\n        super().__init__(*args, **kwargs)\n        self.primary_issue_component = primary_issue_component\n        self.component_fields = COMPONENT_FIELDS\n    \n    def default(self, obj):\n        if isinstance(obj, dict):\n            # Create a deep copy to avoid modifying the original\n            result = copy.deepcopy(obj)\n            \n            # Process the dictionary with component preservation\n            self._preserve_component_fields(result)\n            \n            return result\n        \n        # For other types, use default behavior\n        return super().default(obj)"
+        },
+        {
+          "name": "JSON Serialization Functions",
+          "description": "Helper functions for JSON serialization",
+          "implementation": "serialize_with_component_awareness function in json_utils.py",
+          "code_example": "def serialize_with_component_awareness(data: Any, file_obj: TextIO, primary_issue_component: Optional[str] = None, indent: int = 2) -> None:\n    \"\"\"Serialize data with component awareness.\"\"\"\n    from reports.base import ComponentAwareEncoder\n    \n    # Use a lambda to create a class factory that returns our encoder instance\n    encoder_factory = lambda *args, **kwargs: ComponentAwareEncoder(*args, primary_issue_component=primary_issue_component, **kwargs)\n    \n    # Dump JSON with our encoder factory\n    return json.dump(data, file_obj, cls=encoder_factory, indent=indent)"
+        }
+      ]
+    },
+    "utf8_logging": {
+      "description": "UTF-8 compliant logging across platforms",
+      "implementation": "UTF8LoggingHandler class in config.py",
+      "code_example": "class UTF8LoggingHandler(logging.StreamHandler):\n    def __init__(self, stream=None):\n        # If no stream is provided, use stdout with UTF-8 encoding\n        if stream is None:\n            # Create a new stream with UTF-8 encoding instead of modifying an existing one\n            stream = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)\n        super().__init__(stream)\n    \n    def emit(self, record):\n        \"\"\"Emit a log record with UTF-8 encoding.\"\"\"\n        try:\n            msg = self.format(record)\n            # Ensure message is properly encoded as UTF-8\n            if isinstance(msg, bytes):\n                msg = msg.decode('utf-8', errors='replace')\n            self.stream.write(msg + self.terminator)\n            self.flush()\n        except Exception:\n            self.handleError(record)"
+    }
+  },
+  "visualization_system": {
+    "description": "Thread-safe visualization generation system with fallback mechanisms",
+    "visualization_types": [
+      {
+        "name": "Component Relationship Diagram",
+        "description": "Shows relationships between components",
+        "generator": "generate_component_relationship_diagram",
+        "output_format": "PNG/SVG",
+        "feature_flag": "ENABLE_COMPONENT_RELATIONSHIPS",
+        "example_image": "SXM-123456_component_relationships.png"
+      },
+      {
+        "name": "Component Error Distribution",
+        "description": "Shows error count by component",
+        "generator": "generate_component_error_distribution",
+        "output_format": "PNG",
+        "feature_flag": "ENABLE_COMPONENT_DISTRIBUTION",
+        "example_image": "SXM-123456_component_distribution.png"
+      },
+      {
+        "name": "Error Propagation Diagram",
+        "description": "Shows how errors propagate between components",
+        "generator": "generate_error_propagation_diagram",
+        "output_format": "PNG/SVG",
+        "feature_flag": "ENABLE_ERROR_PROPAGATION",
+        "example_image": "SXM-123456_error_propagation.png"
+      },
+      {
+        "name": "Timeline Visualization",
+        "description": "Shows errors over time",
+        "generator": "generate_timeline_image",
+        "output_format": "PNG",
+        "feature_flag": "ENABLE_STEP_REPORT_IMAGES",
+        "example_image": "SXM-123456_timeline.png"
+      },
+      {
+        "name": "Cluster Timeline",
+        "description": "Shows error clusters over time",
+        "generator": "generate_cluster_timeline_image",
+        "output_format": "PNG",
+        "feature_flag": "ENABLE_CLUSTER_TIMELINE",
+        "example_image": "SXM-123456_cluster_timeline.png"
+      }
+    ],
+    "generation_mechanisms": [
+      {
+        "name": "Thread-Safe Visualization Functions",
+        "description": "Functions for thread-safe visualization generation",
+        "implementation": "reports/visualizations.py",
+        "example": "def generate_component_visualization(output_dir, test_id, components=None, relationships=None, primary_component=None) -> str:\n    # Check if feature is enabled\n    if not _is_feature_enabled('ENABLE_COMPONENT_RELATIONSHIPS', True):\n        return generate_visualization_placeholder(output_dir, test_id, \"Component relationship visualization is disabled\")\n    \n    # Generate visualization with thread safety\n    try:\n        # Use thread-local matplotlib configuration\n        _configure_matplotlib_thread_local()\n        \n        # Generate visualization\n        # ...\n        \n        # Clean up\n        plt.close('all')\n        return image_path\n    except Exception as e:\n        logging.error(f\"Error generating component visualization: {str(e)}\")\n        return generate_visualization_placeholder(output_dir, test_id, f\"Error: {str(e)}\")"
+      },
+      {
+        "name": "Multi-Layered Layout System",
+        "description": "Layout system with multiple fallback strategies",
+        "implementation": "ComponentVisualizer._get_graph_layout method",
+        "example": "def _get_graph_layout(self, G):\n    # Check graph size to optimize layout approach\n    node_count = G.number_of_nodes()\n    if node_count == 0:\n        return {}\n    \n    # For very small graphs, spring layout is sufficient and fast\n    if node_count <= 3:\n        return nx.spring_layout(G, seed=42)\n    \n    # First attempt: Try pydot (part of NetworkX)\n    try:\n        import pydot\n        from networkx.drawing.nx_pydot import graphviz_layout\n        # Silence warning messages from Pydot\n        with warnings.catch_warnings():\n            warnings.simplefilter(\"ignore\")\n            return graphviz_layout(G, prog='dot')\n    except (ImportError, Exception) as e:\n        logging.debug(f\"Pydot layout unavailable ({str(e)}), trying next option\")\n    \n    # Second attempt: Try spectral layout (good for component relationships)\n    try:\n        return nx.spectral_layout(G)\n    except Exception as e:\n        logging.debug(f\"Spectral layout failed ({str(e)}), trying next option\")\n    \n    # Third attempt: Try shell layout (good for visualizing hierarchies)\n    try:\n        # Group nodes by type or relationships\n        groups = []\n        seen = set()\n        \n        # Create groups based on node types or importance\n        type_groups = defaultdict(list)\n        for node in G.nodes():\n            node_type = G.nodes[node].get(\"type\", \"unknown\")\n            type_groups[node_type].append(node)\n            \n        # Add groups in order of importance\n        for group_type in [\"application\", \"proxy\", \"platform\", \"unknown\"]:\n            if group_type in type_groups and type_groups[group_type]:\n                groups.append(type_groups[group_type])\n                seen.update(type_groups[group_type])\n        \n        # Add any remaining nodes\n        remaining = [node for node in G.nodes() if node not in seen]\n        if remaining:\n            groups.append(remaining)\n            \n        # Only use shell layout if we have valid groups\n        if groups:\n            return nx.shell_layout(G, groups)\n    except Exception as e:\n        logging.debug(f\"Shell layout failed ({str(e)}), falling back to spring layout\")\n    \n    # Final fallback: Enhanced spring layout with optimized parameters\n    return nx.spring_layout(\n        G, \n        k=0.3 + (0.1 / max(node_count, 1)),  # Dynamic spacing based on node count\n        iterations=100,                      # More iterations for better layout\n        seed=42                              # Consistent layout between runs\n    )"
+      },
+      {
+        "name": "Fallback Placeholder Generation",
+        "description": "Generates placeholder images when visualization fails",
+        "implementation": "generate_visualization_placeholder function",
+        "example": "def generate_visualization_placeholder(output_dir: str, test_id: str, message: str) -> str:\n    \"\"\"Generate a placeholder image with informative text.\"\"\"\n    try:\n        import matplotlib.pyplot as plt\n        # Sanitize output directory to prevent nested directories\n        output_dir = sanitize_base_directory(output_dir, \"supporting_images\")\n        \n        # Get standardized path for visualization placeholder\n        placeholder_path = get_output_path(\n            output_dir,\n            test_id,\n            get_standardized_filename(test_id, \"visualization_placeholder\", \"png\"),\n            OutputType.VISUALIZATION\n        )\n        \n        plt.figure(figsize=(8, 6))\n        plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)\n        plt.axis('off')\n        plt.savefig(placeholder_path, dpi=100)\n        plt.close()\n        \n        return placeholder_path\n    except Exception as e:\n        logging.error(f\"Error creating visualization placeholder: {str(e)}\")\n        return None"
+      },
+      {
+        "name": "Memory Management",
+        "description": "Proper memory management for visualizations",
+        "implementation": "_save_figure_with_cleanup method",
+        "example": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)"
+      }
+    ],
+    "fallback_strategies": [
+      {
+        "name": "Feature Flag Checking",
+        "description": "Checks if visualization is enabled before generation",
+        "example": "if not _is_feature_enabled('ENABLE_COMPONENT_DISTRIBUTION', True):\n    return generate_visualization_placeholder(output_dir, test_id, \"Component distribution visualization is disabled\")"
+      },
+      {
+        "name": "Layout Algorithm Fallbacks",
+        "description": "Multiple layout algorithms with fallbacks",
+        "example": "# First attempt: Try pydot\ntry:\n    return graphviz_layout(G, prog='dot')\nexcept (ImportError, Exception):\n    # Second attempt: Try spectral layout\n    try:\n        return nx.spectral_layout(G)\n    except Exception:\n        # Final fallback: Enhanced spring layout\n        return nx.spring_layout(G, k=0.3, iterations=100, seed=42)"
+      },
+      {
+        "name": "Generation with Fallback",
+        "description": "Wrapper function to handle visualization failures",
+        "example": "def generate_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n    try:\n        return generation_func(output_dir, test_id, *args, **kwargs)\n    except Exception as e:\n        logging.error(f\"Visualization generation error: {str(e)}\")\n        return generate_visualization_placeholder(output_dir, test_id, f\"Error: {str(e)}\")"
+      },
+      {
+        "name": "Placeholder Images",
+        "description": "Informative placeholder images when visualization fails",
+        "example": "plt.figure(figsize=(8, 6))\nplt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)\nplt.axis('off')\nplt.savefig(placeholder_path, dpi=100)"
+      }
+    ]
+  },
+  "directory_structure": {
+    "output_structure": {
+      "description": "Standard output directory structure",
+      "base_directory": "output/{test_id}/",
+      "subdirectories": [
+        {
+          "path": "output/{test_id}/json/",
+          "purpose": "JSON data exports",
+          "contents": [
+            "{test_id}_errors.json",
+            "{test_id}_clusters.json",
+            "{test_id}_component_analysis.json",
+            "{test_id}_enhanced_clusters.json"
+          ]
+        },
+        {
+          "path": "output/{test_id}/supporting_images/",
+          "purpose": "Visualizations",
+          "contents": [
+            "{test_id}_component_distribution.png",
+            "{test_id}_component_relationships.png",
+            "{test_id}_cluster_timeline.png",
+            "{test_id}_timeline.png",
+            "{test_id}_error_propagation.png"
+          ]
+        },
+        {
+          "path": "output/{test_id}/debug/",
+          "purpose": "Debug information",
+          "contents": [
+            "{test_id}_component_verification.json",
+            "{test_id}_diagnostic.json"
+          ]
+        }
+      ],
+      "root_files": [
+        {
+          "file": "{test_id}_log_analysis.xlsx",
+          "purpose": "Excel report with multiple sheets"
+        },
+        {
+          "file": "{test_id}_bug_report.docx",
+          "purpose": "DOCX bug report for submission"
+        },
+        {
+          "file": "{test_id}_log_analysis.md",
+          "purpose": "Markdown summary report"
+        },
+        {
+          "file": "{test_id}_component_report.html",
+          "purpose": "HTML component relationship report"
+        },
+        {
+{
+          "file": "{test_id}_step_report.html",
+          "purpose": "HTML step-aware report (if Gherkin correlation was performed)"
+        }
+      ]
+    },
+    "source_code_structure": {
+      "description": "Source code organization structure",
+      "root_files": [
+        {
+          "file": "controller.py",
+          "purpose": "Main orchestrator and entry point"
+        },
+        {
+          "file": "config.py",
+          "purpose": "Configuration settings and environment handling"
+        },
+        {
+          "file": "log_analyzer.py",
+          "purpose": "Log parsing and error extraction"
+        },
+        {
+          "file": "error_clusterer.py",
+          "purpose": "Error clustering algorithms"
+        },
+        {
+          "file": "log_segmenter.py",
+          "purpose": "Collection of log files and images"
+        },
+        {
+          "file": "ocr_processor.py",
+          "purpose": "OCR processing for images"
+        },
+        {
+          "file": "gpt_summarizer.py",
+          "purpose": "AI-powered summary generation"
+        },
+        {
+          "file": "secure_api_key.py",
+          "purpose": "Secure handling of API keys"
+        },
+        {
+          "file": "gherkin_log_correlator.py",
+          "purpose": "Gherkin feature file correlation"
+        },
+        {
+          "file": "step_aware_analyzer.py",
+          "purpose": "Step-aware analysis and reporting"
+        },
+        {
+          "file": "batch_processor.py",
+          "purpose": "Batch processing of multiple tests"
+        }
+      ],
+      "directories": [
+        {
+          "path": "components/",
+          "purpose": "Component analysis and visualization",
+          "files": [
+            {
+              "file": "direct_component_analyzer.py",
+              "purpose": "Direct component identification based on filename patterns"
+            },
+            {
+              "file": "component_analyzer.py",
+              "purpose": "Schema-based component identification and analysis"
+            },
+            {
+              "file": "component_integration.py",
+              "purpose": "Integration of component analysis approaches"
+            },
+            {
+              "file": "component_visualizer.py",
+              "purpose": "Visualization of component relationships"
+            },
+            {
+              "file": "component_utils.py",
+              "purpose": "Utility functions for component handling"
+            },
+            {
+              "file": "context_aware_clusterer.py",
+              "purpose": "Context-aware error clustering"
+            }
+          ],
+          "subdirectories": [
+            {
+              "path": "components/schemas/",
+              "purpose": "Component relationship schemas",
+              "files": [
+                {
+                  "file": "component_schema.json",
+                  "purpose": "Schema defining component relationships"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "path": "reports/",
+          "purpose": "Report generation and management",
+          "files": [
+            {
+              "file": "base.py",
+              "purpose": "Base classes and utilities for report generation"
+            },
+            {
+              "file": "report_manager.py",
+              "purpose": "Orchestration of report generation"
+            },
+            {
+              "file": "json_generator.py",
+              "purpose": "JSON report generation"
+            },
+            {
+              "file": "excel_generator.py",
+              "purpose": "Excel report generation"
+            },
+            {
+              "file": "docx_generator.py",
+              "purpose": "DOCX report generation"
+            },
+            {
+              "file": "markdown_generator.py",
+              "purpose": "Markdown report generation"
+            },
+            {
+              "file": "component_report.py",
+              "purpose": "Component report generation"
+            },
+            {
+              "file": "visualizations.py",
+              "purpose": "Visualization generation utilities"
+            },
+            {
+              "file": "data_preprocessor.py",
+              "purpose": "Data preprocessing for reports"
+            }
+          ]
+        },
+        {
+          "path": "utils/",
+          "purpose": "Utility functions including path handling",
+          "files": [
+            {
+              "file": "path_utils.py",
+              "purpose": "Standardized path handling utilities"
+            },
+            {
+              "file": "path_validator.py",
+              "purpose": "Directory structure validation"
+            },
+            {
+              "file": "component_verification.py",
+              "purpose": "Component information verification"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "component_relationships": {
+    "description": "Relationships between system components",
+    "core_components": [
+      {
+        "component": "Controller",
+        "file": "controller.py",
+        "dependents": [],
+        "dependencies": [
+          "log_segmenter", "log_analyzer", "error_clusterer", "ocr_processor",
+          "gpt_summarizer", "components/direct_component_analyzer",
+          "components/component_integration", "step_aware_analyzer",
+          "reports/report_manager", "utils/path_utils"
+        ],
+        "relationship": "Orchestrates the overall analysis process, calling into sub-components"
+      },
+      {
+        "component": "Config",
+        "file": "config.py",
+        "dependents": [
+          "controller", "log_analyzer", "error_clusterer", "reports/report_manager",
+          "reports/visualizations", "step_aware_analyzer"
+        ],
+        "dependencies": [],
+        "relationship": "Provides configuration settings to all other components"
+      },
+      {
+        "component": "Log Analyzer",
+        "file": "log_analyzer.py",
+        "dependents": ["controller"],
+        "dependencies": ["components/component_analyzer", "error_clusterer"],
+        "relationship": "Extracts errors from logs which are then used for clustering and component analysis"
+      },
+      {
+        "component": "Error Clusterer",
+        "file": "error_clusterer.py",
+        "dependents": ["controller", "log_analyzer"],
+        "dependencies": ["components/component_utils"],
+        "relationship": "Clusters errors from log analyzer for better organization and analysis"
+      },
+      {
+        "component": "Direct Component Analyzer",
+        "file": "components/direct_component_analyzer.py",
+        "dependents": ["controller"],
+        "dependencies": [],
+        "relationship": "Provides initial component identification based on filename patterns"
+      },
+      {
+        "component": "Component Integration",
+        "file": "components/component_integration.py",
+        "dependents": ["controller"],
+        "dependencies": [
+          "components/component_analyzer", 
+          "components/component_visualizer", 
+          "components/context_aware_clusterer"
+        ],
+        "relationship": "Integrates different component analysis approaches for comprehensive analysis"
+      },
+      {
+        "component": "Report Manager",
+        "file": "reports/report_manager.py",
+        "dependents": ["controller"],
+        "dependencies": [
+          "reports/excel_generator", 
+          "reports/json_generator", 
+          "reports/docx_generator", 
+          "reports/markdown_generator",
+          "reports/component_report",
+          "reports/data_preprocessor",
+          "reports/visualizations",
+          "utils/path_utils",
+          "utils/path_validator"
+        ],
+        "relationship": "Orchestrates report generation using appropriate generators"
+      },
+      {
+        "component": "GPT Summarizer",
+        "file": "gpt_summarizer.py",
+        "dependents": ["controller"],
+        "dependencies": ["secure_api_key", "components/direct_component_analyzer"],
+        "relationship": "Generates AI-powered summaries using GPT models"
+      },
+      {
+        "component": "Step Aware Analyzer",
+        "file": "step_aware_analyzer.py",
+        "dependents": ["controller"],
+        "dependencies": ["gherkin_log_correlator", "reports/visualizations"],
+        "relationship": "Generates step-aware reports with timeline visualizations"
+      },
+      {
+        "component": "Path Utils",
+        "file": "utils/path_utils.py",
+        "dependents": [
+          "controller", "reports/report_manager", "reports/visualizations",
+          "components/component_integration", "step_aware_analyzer"
+        ],
+        "dependencies": [],
+        "relationship": "Provides standardized path handling utilities for consistent file placement"
+      }
+    ],
+    "data_flows": [
+      {
+        "source": "controller",
+        "target": "log_segmenter",
+        "data_type": "test_id",
+        "description": "Controller passes test ID to log segmenter to collect log files"
+      },
+      {
+        "source": "log_segmenter",
+        "target": "controller",
+        "data_type": "file_paths",
+        "description": "Log segmenter returns paths to log files and images"
+      },
+      {
+        "source": "controller",
+        "target": "log_analyzer",
+        "data_type": "log_files",
+        "description": "Controller passes log files to log analyzer for error extraction"
+      },
+      {
+        "source": "log_analyzer",
+        "target": "controller",
+        "data_type": "errors",
+        "description": "Log analyzer returns extracted errors"
+      },
+      {
+        "source": "controller",
+        "target": "error_clusterer",
+        "data_type": "errors",
+        "description": "Controller passes errors to error clusterer for grouping"
+      },
+      {
+        "source": "error_clusterer",
+        "target": "controller",
+        "data_type": "clusters",
+        "description": "Error clusterer returns grouped errors"
+      },
+      {
+        "source": "controller",
+        "target": "direct_component_analyzer",
+        "data_type": "errors",
+        "description": "Controller passes errors for component identification"
+      },
+      {
+        "source": "direct_component_analyzer",
+        "target": "controller",
+        "data_type": "component_info",
+        "description": "Direct component analyzer returns component assignments and relationships"
+      },
+      {
+        "source": "controller",
+        "target": "component_integration",
+        "data_type": "log_entries_and_errors",
+        "description": "Controller passes log entries and errors for comprehensive component analysis"
+      },
+      {
+        "source": "component_integration",
+        "target": "controller",
+        "data_type": "component_analysis",
+        "description": "Component integration returns comprehensive component analysis results"
+      },
+      {
+        "source": "controller",
+        "target": "gpt_summarizer",
+        "data_type": "clusters_and_components",
+        "description": "Controller passes clusters and component information for summary generation"
+      },
+      {
+        "source": "gpt_summarizer",
+        "target": "controller",
+        "data_type": "summary",
+        "description": "GPT summarizer returns AI-generated summary"
+      },
+      {
+        "source": "controller",
+        "target": "report_manager",
+        "data_type": "analysis_results",
+        "description": "Controller passes all analysis results to report manager"
+      },
+      {
+        "source": "report_manager",
+        "target": "controller",
+        "data_type": "report_paths",
+        "description": "Report manager returns paths to generated reports"
+      }
+    ]
+  },
+  "dependencies": {
+    "external_libraries": [
+      {
+        "name": "networkx",
+        "version": ">=2.6.0",
+        "purpose": "Graph representation and analysis for component relationships",
+        "modules": ["components/component_analyzer", "components/component_visualizer"],
+        "required": true
+      },
+      {
+        "name": "numpy",
+        "version": ">=1.19.0",
+        "purpose": "Numerical operations for clustering",
+        "modules": ["error_clusterer"],
+        "required": true
+      },
+      {
+        "name": "matplotlib",
+        "version": ">=3.4.0",
+        "purpose": "Visualization generation",
+        "modules": ["components/component_visualizer", "reports/visualizations"],
+        "required": true
+      },
+      {
+        "name": "pandas",
+        "version": ">=1.3.0",
+        "purpose": "Data manipulation for excel reports",
+        "modules": ["reports/excel_generator"],
+        "required": true
+      },
+      {
+        "name": "scikit-learn",
+        "version": ">=0.24.0",
+        "purpose": "Machine learning for clustering",
+        "modules": ["error_clusterer"],
+        "required": true
+      },
+      {
+        "name": "openpyxl",
+        "version": ">=3.0.0",
+        "purpose": "Excel file generation",
+        "modules": ["reports/excel_generator"],
+        "required": true
+      },
+      {
+        "name": "python-docx",
+        "version": ">=0.8.10",
+        "purpose": "DOCX file generation",
+        "modules": ["reports/docx_generator"],
+        "required": false,
+        "notes": "Falls back to text file if not available"
+      },
+      {
+        "name": "pydot",
+        "version": ">=1.4.1",
+        "purpose": "Enhanced graph layouts",
+        "modules": ["components/component_visualizer"],
+        "required": false,
+        "notes": "Falls back to NetworkX layouts if not available"
+      },
+      {
+        "name": "openai",
+        "version": ">=0.27.0",
+        "purpose": "API access for GPT models",
+        "modules": ["gpt_summarizer"],
+        "required": false,
+        "notes": "Only required if GPT features are enabled"
+      },
+      {
+        "name": "pytesseract",
+        "version": ">=0.3.8",
+        "purpose": "OCR processing for images",
+        "modules": ["ocr_processor"],
+        "required": false,
+        "notes": "Only required if OCR features are enabled"
+      },
+      {
+        "name": "tiktoken",
+        "version": ">=0.3.0",
+        "purpose": "Token counting for GPT prompts",
+        "modules": ["gpt_summarizer"],
+        "required": false,
+        "notes": "Only required if GPT features are enabled"
+      }
+    ],
+    "installation_instructions": {
+      "required_dependencies": "pip install networkx numpy matplotlib pandas scikit-learn openpyxl",
+      "optional_dependencies": {
+        "gpt_features": "pip install openai tiktoken",
+        "ocr_features": "pip install pytesseract pillow",
+        "docx_reports": "pip install python-docx",
+        "enhanced_visualization": "pip install pydot",
+        "windows_visualization": "pip install pydot-ng"
+      },
+      "environment_variables": [
+        {
+          "name": "OPENAI_API_KEY",
+          "purpose": "API key for OpenAI/GPT features",
+          "required": "Only if use_gpt=True"
+        },
+        {
+          "name": "LOG_BASE_DIR",
+          "purpose": "Base directory for log files",
+          "default": "./logs"
+        },
+        {
+          "name": "OUTPUT_BASE_DIR",
+          "purpose": "Base directory for output files",
+          "default": "./output"
+        }
+      ]
+    }
+  },
+  "usage_examples": {
+    "basic_analysis": {
+      "description": "Basic analysis of a test",
+      "code": "from controller import run_pipeline\n\n# Run analysis for a test ID\nresult_message, step_report = run_pipeline('SXM-123456')\nprint(result_message)"
+    },
+    "custom_configuration": {
+      "description": "Analysis with custom configuration",
+      "code": "from controller import run_pipeline\n\n# Run analysis with custom configuration\nresult_message, step_report = run_pipeline(\n    test_id='SXM-123456',\n    gpt_model='gpt-4',  # Use GPT-4 for summary generation\n    enable_ocr=True,    # Enable OCR processing\n    test_type='installer'  # Use installer test type\n)\nprint(result_message)"
+    },
+    "interactive_mode": {
+      "description": "Running in interactive mode",
+      "code": "from controller import run_pipeline_interactive\n\n# Run in interactive mode (will prompt for input)\nrun_pipeline_interactive()"
+    },
+    "batch_processing": {
+      "description": "Batch processing multiple tests",
+      "code": "from batch_processor import process_batch, generate_batch_report\n\n# Process multiple tests in parallel\nresults = process_batch(['SXM-123456', 'SXM-789012'], parallel=True)\n\n# Generate batch report\nreport = generate_batch_report(results, output_file='batch_report.txt')\nprint(f\"Batch report generated: {report}\")"
+    },
+    "component_analysis": {
+      "description": "Direct component analysis",
+      "code": "from components.direct_component_analyzer import assign_components_and_relationships\n\n# Identify components for errors\nerrors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)\nprint(f\"Primary issue component: {primary_issue_component}\")"
+    },
+    "directory_structure_validation": {
+      "description": "Validating and fixing directory structure",
+      "code": "from utils.path_validator import validate_file_structure, fix_directory_structure\n\n# Validate directory structure\nissues = validate_file_structure('./output', 'SXM-123456')\n\n# Fix any issues\nif issues:\n    fixes = fix_directory_structure('./output', 'SXM-123456')\n    print(f\"Fixed {len(fixes)} issues\")"
+    }
+  }
+}
+{
+  "environment_configuration": {
+    "description": "Detailed information about environment variables, configuration settings, and deployment requirements to supplement the core system documentation",
+    "best_practices": {
+      "environment_variables": [
+        "Use consistent variable names with descriptive prefixes",
+        "Always provide sensible defaults for non-required variables",
+        "Use proper type conversion for boolean variables",
+        "Validate critical settings and issue warnings for problems",
+        "Document all variables with purpose, default, and requirements"
+      ],
+      "configuration": [
+        "Initialize configuration early in the application lifecycle",
+        "Validate all settings before application operation",
+        "Use class-based configuration for better organization",
+        "Ensure thread safety for configuration access",
+        "Log configuration issues at appropriate levels"
+      ],
+      "logging": [
+        "Always use UTF-8 encoding for logs",
+        "Set up logging only once to prevent duplicate handlers",
+        "Use appropriate log levels for different message types",
+        "Include timestamp and source information in log formats",
+        "Handle logging initialization errors gracefully"
+      ],
+      "visualization": [
+        "Always use 'Agg' backend for non-GUI environments",
+        "Configure visualization settings explicitly",
+        "Use thread-local storage for thread safety",
+        "Clean up resources properly to prevent memory leaks",
+        "Handle visualization failures gracefully with fallbacks"
+      ]
+    },
+    "advanced_examples": {
+      "thread_safe_feature_checking": {
+        "description": "Thread-safe implementation for feature flag checking",
+        "code": "# Thread-local storage for thread safety\nimport threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    from config import Config\n    result = getattr(Config, feature_name, default)\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+      },
+      "utf8_logging_implementation": {
+        "description": "Complete implementation of UTF-8 logging setup",
+        "code": "# Set PYTHONIOENCODING environment variable to utf-8\nos.environ[\"PYTHONIOENCODING\"] = \"utf-8\"\n\nlog_format = \"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"\nlog_level = getattr(logging, cls.LOG_LEVEL.upper(), logging.INFO)\n\n# Get root logger\nroot_logger = logging.getLogger()\nroot_logger.setLevel(log_level)\n\n# Clear existing handlers to avoid duplicates\nfor handler in root_logger.handlers[:]:\n    root_logger.removeHandler(handler)\n\n# Create a UTF-8 enabled file handler\nfile_handler = logging.FileHandler(cls.LOG_FILE, encoding='utf-8')\nfile_handler.setFormatter(logging.Formatter(log_format))\n\n# Create a UTF-8 enabled console handler\nconsole_handler = UTF8LoggingHandler()\nconsole_handler.setFormatter(logging.Formatter(log_format))\n\n# Add handlers to the root logger\nroot_logger.addHandler(file_handler)\nroot_logger.addHandler(console_handler)\n\n# Mark logging as initialized\ncls._logging_initialized = True"
+      },
+      "advanced_layout_system": {
+        "description": "Multi-layered graph layout system with fallbacks",
+        "code": "def _get_graph_layout(self, G):\n    # Check graph size to optimize layout approach\n    node_count = G.number_of_nodes()\n    if node_count == 0:\n        return {}\n    \n    # For very small graphs, spring layout is sufficient and fast\n    if node_count <= 3:\n        return nx.spring_layout(G, seed=42)\n    \n    # First attempt: Try pydot (part of NetworkX)\n    try:\n        import pydot\n        from networkx.drawing.nx_pydot import graphviz_layout\n        # Silence warning messages from Pydot\n        with warnings.catch_warnings():\n            warnings.simplefilter(\"ignore\")\n            return graphviz_layout(G, prog='dot')\n    except (ImportError, Exception) as e:\n        logging.debug(f\"Pydot layout unavailable ({str(e)}), trying next option\")\n    \n    # Second attempt: Try spectral layout (good for component relationships)\n    try:\n        return nx.spectral_layout(G)\n    except Exception as e:\n        logging.debug(f\"Spectral layout failed ({str(e)}), trying next option\")\n    \n    # Third attempt: Try shell layout (good for visualizing hierarchies)\n    try:\n        # Group nodes by type or relationships\n        groups = []\n        seen = set()\n        \n        # Create groups based on node types or importance\n        type_groups = defaultdict(list)\n        for node in G.nodes():\n            node_type = G.nodes[node].get(\"type\", \"unknown\")\n            type_groups[node_type].append(node)\n            \n        # Add groups in order of importance\n        for group_type in [\"application\", \"proxy\", \"platform\", \"unknown\"]:\n            if group_type in type_groups and type_groups[group_type]:\n                groups.append(type_groups[group_type])\n                seen.update(type_groups[group_type])\n        \n        # Add any remaining nodes\n        remaining = [node for node in G.nodes() if node not in seen]\n        if remaining:\n            groups.append(remaining)\n            \n        # Only use shell layout if we have valid groups\n        if groups:\n            return nx.shell_layout(G, groups)\n    except Exception as e:\n        logging.debug(f\"Shell layout failed ({str(e)}), falling back to spring layout\")\n    \n    # Final fallback: Enhanced spring layout with optimized parameters\n    return nx.spring_layout(\n        G, \n        k=0.3 + (0.1 / max(node_count, 1)),  # Dynamic spacing based on node count\n        iterations=100,                      # More iterations for better layout\n        seed=42                              # Consistent layout between runs\n    )"
+      },
+      "memory_management": {
+        "description": "Proper memory management for visualizations",
+        "code": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)"
+      },
+      "secure_api_key_management": {
+        "description": "Secure API key management with multiple fallback mechanisms",
+        "code": "def get_openai_api_key():\n    # First try to get from environment variable\n    api_key = os.environ.get(\"OPENAI_API_KEY\", \"\")\n    \n    # If not found in environment, try loading from .env file\n    if not api_key:\n        try:\n            dotenv.load_dotenv()\n            api_key = os.environ.get(\"OPENAI_API_KEY\", \"\")\n        except Exception:\n            pass\n    \n    # If still not found, try keyring\n    if not api_key:\n        try:\n            keyring_key = keyring.get_password(\"orbit_analyzer\", \"openai_api_key\")\n            if keyring_key:\n                api_key = keyring_key\n        except Exception as e:\n            logging.warning(f\"Could not access system keyring: {str(e)}\")\n    \n    # If no key found, log a warning\n    if not api_key:\n        logging.warning(\"OpenAI API key not found. GPT-based analysis will not be available.\")\n        return \"\"  # Return empty string instead of None\n    \n    return api_key"
+      }
+    },
+    "common_issues": [
+      {
+        "issue": "UTF-8 Encoding Problems",
+        "symptoms": ["Garbled log output with special characters", "UnicodeEncodeError exceptions", "Inconsistent character display across platforms"],
+        "solutions": [
+          "Use UTF8LoggingHandler for console output",
+          "Set PYTHONIOENCODING=utf-8 in environment",
+          "Use encoding='utf-8' for all file handlers",
+          "Handle encoding errors with errors='replace' for graceful degradation"
+        ]
+      },
+      {
+        "issue": "Configuration Initialization Order",
+        "symptoms": ["Missing or duplicate log entries", "Uninitialized configuration settings", "Multiple log handlers"],
+        "solutions": [
+          "Use _logging_initialized flag to prevent duplicate initialization",
+          "Initialize Config early in application lifecycle",
+          "Use Config.setup_logging() before any logging operations",
+          "Clear existing handlers before adding new ones"
+        ]
+      },
+      {
+        "issue": "Matplotlib Thread Safety",
+        "symptoms": ["'Agg' backend cannot be loaded multiple times", "MainThread is not in main loop", "Visualization hangs"],
+        "solutions": [
+          "Use 'Agg' backend with force=True option",
+          "Configure matplotlib once at application startup",
+          "Use thread-local storage for visualization state",
+          "Implement timeout protection for visualization generation"
+        ]
+      },
+      {
+        "issue": "Feature Flag Consistency",
+        "symptoms": ["Inconsistent feature enabling", "Features enabled in some threads but not others", "Race conditions"],
+        "solutions": [
+          "Use thread-local cache for feature flags",
+          "Check feature flags with consistent helper methods",
+          "Initialize feature flags at application startup",
+          "Use clear naming conventions for related flags"
+        ]
+      },
+      {
+        "issue": "API Key Issues",
+        "symptoms": ["Error: OpenAI API key not found. GPT-based analysis will not be available."],
+        "solutions": [
+          "Set the OPENAI_API_KEY environment variable",
+          "Add key to .env file",
+          "Store key in system keyring",
+          "Run with gpt_model='none' for offline mode"
+        ]
+      },
+      {
+        "issue": "Directory Permission Issues",
+        "symptoms": ["PermissionError: [Errno 13] Permission denied: 'logs/...'"],
+        "solutions": [
+          "Ensure directories exist and you have write permissions",
+          "Set proper file permissions",
+          "Update LOG_BASE_DIR and OUTPUT_BASE_DIR to writable locations",
+          "Run the application with appropriate user permissions"
+        ]
+      },
+      {
+        "issue": "Excel File Access Issues",
+        "symptoms": ["PermissionError: [Errno 13] Permission denied: '...xlsx'"],
+        "solutions": [
+          "Close any open Excel files before running analysis",
+          "Use different output filename",
+          "Disable Excel report generation if file is in use"
+        ]
+      },
+      {
+        "issue": "Memory Leaks",
+        "symptoms": ["MemoryError or application slowdown after many visualizations"],
+        "solutions": [
+          "Always use the _save_figure_with_cleanup() function to ensure figures are properly closed",
+          "Add plt.close('all') in finally blocks",
+          "Limit number of visualizations in a single run",
+          "Use lower DPI settings for large visualizations"
+        ]
+      }
+    ],
+    "installation": {
+      "development_environment": {
+        "prerequisites": [
+          {
+            "name": "Python Environment",
+            "requirements": ["Python 3.8 or higher", "Virtual environment recommended"]
+          },
+          {
+            "name": "System Components",
+            "requirements": ["Tesseract OCR (for image processing)", "Microsoft Office (optional, for DOCX validation)"]
+          }
+        ],
+        "step_by_step": [
+          {
+            "step": "Clone the repository",
+            "command": "git clone https://github.com/yourusername/orbit-analyzer.git\ncd orbit-analyzer"
+          },
+          {
+            "step": "Create and activate virtual environment",
+            "command": "# Windows\npython -m venv venv\nvenv\\Scripts\\activate\n\n# macOS/Linux\npython3 -m venv venv\nsource venv/bin/activate"
+          },
+          {
+            "step": "Install dependencies",
+            "command": "pip install -r requirements.txt"
+          },
+          {
+            "step": "Configure environment variables",
+            "description": "Create .env file with the following variables",
+            "content": "OPENAI_API_KEY=your_key_here\nLOG_BASE_DIR=./logs\nOUTPUT_BASE_DIR=./output\nLOG_LEVEL=INFO\nDEFAULT_MODEL=gpt-3.5-turbo\nENABLE_OCR=true"
+          },
+          {
+            "step": "Create directory structure",
+            "command": "mkdir -p logs output"
+          }
+        ]
+      },
+      "required_dependencies": {
+        "packages": [
+          "# Core functionality",
+          "openai>=1.0.0",
+          "pandas>=1.3.0",
+          "numpy>=1.20.0",
+          "scikit-learn>=1.0.0",
+          "matplotlib>=3.4.0",
+          "pillow>=8.0.0",
+          "requests>=2.25.0",
+          "",
+          "# OCR",
+          "pytesseract>=0.3.8",
+          "",
+          "# Reporting and Document Generation",
+          "openpyxl>=3.0.0",
+          "python-docx>=0.8.11",
+          "",
+          "# Environment and Configuration",
+          "python-dotenv>=1.0.0",
+          "keyring>=24.0.0",
+          "",
+          "# Testing and Coverage",
+          "coverage>=6.0.0",
+          "networkx>=1.0.0",
+          "",
+          "# Optional layout enhancement",
+          "pydot>=1.4.2; sys_platform != \"win32\"  # Optional for better layouts, exclude on Windows",
+          "pydot-ng>=2.0.0; sys_platform == \"win32\"  # Windows-compatible alternative"
+        ]
+      },
+      "running_application": {
+        "interactive_mode": {
+          "description": "Run with interactive prompts",
+          "command": "python controller.py"
+        },
+        "command_line_mode": {
+          "description": "Run with command line arguments",
+          "examples": [
+            {
+              "purpose": "Run analysis for a specific test",
+              "command": "python controller.py SXM-1234567 --model gpt-3.5-turbo --ocr true"
+            },
+            {
+              "purpose": "Run batch processing for specific tests",
+              "command": "python batch_processor.py --tests SXM-1234567 SXM-2345678"
+            },
+            {
+              "purpose": "Run batch processing for all tests in parallel",
+              "command": "python batch_processor.py --all --parallel"
+            }
+          ]
+        }
+      }
+    },
+    "testing_and_validation": {
+      "unit_testing": {
+        "description": "Guidelines for unit testing environment-specific functionality",
+        "test_environments": [
+          "Create a mock Config class for testing",
+          "Use temporary directories for file operations",
+          "Mock API responses for external services",
+          "Set up automated environment variable overrides for testing"
+        ],
+        "example": "def test_config_setup_logging():\n    # Create a test Config class that inherits from the real one\n    class TestConfig(Config):\n        LOG_FILE = 'test_log.log'\n        LOG_LEVEL = 'DEBUG'\n        _logging_initialized = False\n    \n    # Run the setup_logging method\n    TestConfig.setup_logging()\n    \n    # Verify logging was initialized\n    assert TestConfig._logging_initialized\n    \n    # Verify log file was created\n    assert os.path.exists('test_log.log')\n    \n    # Clean up\n    os.remove('test_log.log')"
+      },
+      "integration_testing": {
+        "description": "Guidelines for testing environment configuration with other components",
+        "approaches": [
+          "Test visualization generation in thread-safe context",
+          "Validate component preservation across serialization",
+          "Test handling of various encoding scenarios",
+          "Verify fallback mechanisms work correctly"
+        ],
+        "example": "def test_visualization_thread_safety():\n    # Configure thread-local matplotlib\n    _configure_matplotlib_thread_local()\n    \n    # Create a simple graph\n    G = nx.DiGraph()\n    G.add_node('A')\n    G.add_node('B')\n    G.add_edge('A', 'B')\n    \n    # Generate visualization in current thread\n    result1 = generate_with_fallback(\n        lambda d, i: nx.draw(G, pos=nx.spring_layout(G, seed=42)),\n        './output',\n        'TEST-1234'\n    )\n    \n    # Verify result\n    assert os.path.exists(result1)"
+      }
+    }
+  }
+}
+,
+"enhanced_environment_configuration": {
+  "description": "Comprehensive environment configuration details to ensure full coverage of configuration requirements, encoding mechanisms, and best practices for the Orbit system",
+  "environment_variables": {
+    "variables": [
+      {
+        "name": "OPENAI_API_KEY",
+        "purpose": "Authentication key for OpenAI API",
+        "default": "None",
+        "required": true,
+        "for_features": ["GPT features"],
+        "storage_locations": ["environment", ".env file", "system keyring"]
+      },
+      {
+        "name": "LOG_BASE_DIR",
+        "purpose": "Directory containing log files",
+        "default": "./logs",
+        "required": false,
+        "notes": "Directory will be created if it doesn't exist"
+      },
+      {
+        "name": "OUTPUT_BASE_DIR",
+        "purpose": "Directory for output reports",
+        "default": "./output",
+        "required": false,
+        "notes": "Directory will be created if it doesn't exist"
+      },
+      {
+        "name": "LOG_LEVEL",
+        "purpose": "Logging verbosity",
+        "default": "INFO",
+        "required": false,
+        "valid_values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+      },
+      {
+        "name": "LOG_FILE",
+        "purpose": "File to write logs",
+        "default": "orbit_analyzer.log",
+        "required": false
+      },
+      {
+        "name": "DEFAULT_MODEL",
+        "purpose": "Default GPT model to use",
+        "default": "gpt-3.5-turbo",
+        "required": false,
+        "valid_values": ["gpt-4", "gpt-3.5-turbo", "none"]
+      },
+      {
+        "name": "ENABLE_OCR",
+        "purpose": "Whether to enable OCR",
+        "default": "True",
+        "required": false,
+        "type": "boolean",
+        "conversion": "ENABLE_OCR = os.getenv(\"ENABLE_OCR\", \"True\").lower() in (\"true\", \"1\", \"yes\")"
+      },
+      {
+        "name": "INSTALLER_FOLDER",
+        "purpose": "Selected folder for installer tests",
+        "default": "None",
+        "required": false,
+        "for_features": ["installer tests"]
+      },
+      {
+        "name": "PYTHONIOENCODING",
+        "purpose": "Ensures proper encoding for logs and output",
+        "default": "utf-8",
+        "required": false,
+        "note": "Set automatically by Config.setup_logging()"
+      },
+      {
+        "name": "MPLBACKEND",
+        "purpose": "Matplotlib backend override",
+        "default": "Agg",
+        "required": false,
+        "note": "For non-GUI visualization environments"
+      }
+    ]
+  },
+  "configuration_system": {
+    "initialization_sequence": [
+      {
+        "step": 1,
+        "operation": "Import and Setup",
+        "code": "from config import Config\n# This must happen at application start before any logging or file operations",
+        "importance": "Critical - must occur before any other operations"
+      },
+      {
+        "step": 2,
+        "operation": "Logging Setup",
+        "code": "Config.setup_logging()",
+        "importance": "Critical - sets up UTF-8 encoding and logging handlers"
+      },
+      {
+        "step": 3,
+        "operation": "Configuration Validation",
+        "code": "Config.validate()",
+        "importance": "Required - ensures directories exist and settings are valid"
+      },
+      {
+        "step": 4,
+        "operation": "Matplotlib Configuration",
+        "code": "Config.configure_matplotlib()",
+        "importance": "Required for visualization - ensures thread-safe 'Agg' backend"
+      }
+    ],
+    "utf8_logging_mechanism": {
+      "description": "Comprehensive UTF-8 compliant logging system",
+      "implementation_details": [
+        {
+          "component": "UTF8LoggingHandler",
+          "purpose": "Ensures all logging output is UTF-8 encoded",
+          "implementation": "class UTF8LoggingHandler(logging.StreamHandler):\n    def __init__(self, stream=None):\n        # If no stream is provided, use stdout with UTF-8 encoding\n        if stream is None:\n            # Create a new stream with UTF-8 encoding instead of modifying an existing one\n            stream = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)\n        super().__init__(stream)\n    \n    def emit(self, record):\n        \"\"\"Emit a log record with UTF-8 encoding.\"\"\"\n        try:\n            msg = self.format(record)\n            # Ensure message is properly encoded as UTF-8\n            if isinstance(msg, bytes):\n                msg = msg.decode('utf-8', errors='replace')\n            self.stream.write(msg + self.terminator)\n            self.flush()\n        except Exception:\n            self.handleError(record)"
+        },
+        {
+          "component": "Environment Variable",
+          "purpose": "Ensures Python I/O operations use UTF-8 encoding",
+          "implementation": "# Set PYTHONIOENCODING environment variable to utf-8\nos.environ[\"PYTHONIOENCODING\"] = \"utf-8\""
+        },
+        {
+          "component": "File Handler",
+          "purpose": "Ensures log files are written with UTF-8 encoding",
+          "implementation": "# Create a UTF-8 enabled file handler\nfile_handler = logging.FileHandler(cls.LOG_FILE, encoding='utf-8')\nfile_handler.setFormatter(logging.Formatter(log_format))"
+        },
+        {
+          "component": "Handler Cleanup",
+          "purpose": "Prevents duplicate logging handlers",
+          "implementation": "# Clear existing handlers to avoid duplicates\nfor handler in root_logger.handlers[:]:\n    root_logger.removeHandler(handler)"
+        },
+        {
+          "component": "Initialization Flag",
+          "purpose": "Prevents multiple logging initialization",
+          "implementation": "# Check if logging is already configured to prevent duplicates\nif cls._logging_initialized:\n    return\n\n# Later, mark logging as initialized\ncls._logging_initialized = True"
+        }
+      ]
+    },
+    "feature_flag_system": {
+      "description": "Comprehensive system for feature enablement and detection",
+      "static_flags": [
+        {
+          "name": "ENABLE_CLUSTER_TIMELINE",
+          "default": false,
+          "purpose": "Controls cluster timeline visualization",
+          "impacts": ["reports/visualizations.py", "step_aware_analyzer.py"]
+        },
+        {
+          "name": "ENABLE_COMPONENT_DISTRIBUTION",
+          "default": true,
+          "purpose": "Controls component distribution charts",
+          "impacts": ["reports/visualizations.py", "reports/component_report.py"]
+        },
+        {
+          "name": "ENABLE_COMPONENT_RELATIONSHIPS",
+          "default": true,
+          "purpose": "Controls component relationship diagrams",
+          "impacts": ["components/component_visualizer.py", "reports/component_report.py"]
+        },
+        {
+          "name": "ENABLE_ERROR_PROPAGATION",
+          "default": false,
+          "purpose": "Controls error propagation visualization",
+          "impacts": ["components/component_visualizer.py", "reports/component_report.py"]
+        },
+        {
+          "name": "ENABLE_STEP_REPORT_IMAGES",
+          "default": false,
+          "purpose": "Controls step report visualizations",
+          "impacts": ["step_aware_analyzer.py"]
+        },
+        {
+          "name": "ENABLE_COMPONENT_REPORT_IMAGES",
+          "default": true,
+          "purpose": "Controls all component report visualizations",
+          "impacts": ["reports/component_report.py"]
+        },
+        {
+          "name": "ENABLE_VISUALIZATION_PLACEHOLDERS",
+          "default": false,
+          "purpose": "Controls whether placeholder visualizations are generated for invalid/empty data",
+          "impacts": ["reports/visualizations.py", "components/component_visualizer.py"]
+        }
+      ],
+      "dynamic_detection": {
+        "description": "Runtime feature detection for optional components",
+        "implementation": [
+          {
+            "feature": "Component Integration",
+            "detection_code": "try:\n    from components.component_integration import ComponentIntegration\n    COMPONENT_INTEGRATION_AVAILABLE = True\nexcept ImportError as e:\n    COMPONENT_INTEGRATION_AVAILABLE = False\n    logging.warning(f\"Component integration module not available - will use direct component mapping: {str(e)}\")"
+          },
+          {
+            "feature": "Gherkin Correlation",
+            "detection_code": "try:\n    from gherkin_log_correlator import GherkinParser, correlate_logs_with_steps\n    from step_aware_analyzer import generate_step_report, run_step_aware_analysis\n    GHERKIN_AVAILABLE = True\nexcept ImportError as e:\n    GHERKIN_AVAILABLE = False\n    logging.warning(f\"Gherkin log correlation modules not available - step-aware analysis disabled: {str(e)}\")"
+          },
+          {
+            "feature": "Cluster Timeline",
+            "detection_code": "try:\n    from reports.visualizations import generate_cluster_timeline_image, generate_visualization_placeholder\n    CLUSTER_TIMELINE_AVAILABLE = True\nexcept ImportError as e:\n    CLUSTER_TIMELINE_AVAILABLE = False\n    \n    # Define fallback function for visualization generation\n    def generate_visualization_placeholder(output_dir, test_id, message):\n        # Fallback implementation...\n    \n    # Define fallback function for cluster timeline\n    def generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id):\n        return generate_visualization_placeholder(\n            output_dir, \n            test_id, \n            \"Cluster timeline visualization is not available\"\n        )"
+          }
+        ]
+      },
+      "thread_safety_mechanism": {
+        "description": "Thread-safe implementation for feature flag checking",
+        "implementation": "# Thread-local storage for thread safety\nimport threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    from config import Config\n    result = getattr(Config, feature_name, default)\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+      }
+    },
+    "visualization_configuration": {
+      "description": "Thread-safe visualization system configuration",
+      "critical_components": [
+        {
+          "name": "Backend Selection",
+          "purpose": "Ensures visualizations work in all environments",
+          "implementation": "def configure_matplotlib():\n    try:\n        import matplotlib\n        # Force Agg backend for headless environments and thread safety\n        matplotlib.use('Agg', force=True)\n        \n        import matplotlib.pyplot as plt\n        # Configure global settings\n        plt.rcParams['figure.max_open_warning'] = 50  # Prevent warnings for many figures\n        plt.rcParams['font.size'] = 10  # Readable default font size\n        plt.rcParams['figure.dpi'] = 100  # Default DPI\n        \n        logging.info(\"Matplotlib configured with Agg backend for thread safety\")\n        return True\n    except Exception as e:\n        logging.error(f\"Error configuring matplotlib: {str(e)}\")\n        return False",
+          "importance": "Critical - prevents GUI-related thread issues"
+        },
+        {
+          "name": "Thread-Local Configuration",
+          "purpose": "Ensures thread-safe visualization in multi-threaded contexts",
+          "implementation": "def _configure_matplotlib_thread_local():\n    \"\"\"Configure matplotlib for current thread.\"\"\"\n    # Use thread-local storage\n    if not hasattr(_visualization_local, 'matplotlib_configured'):\n        import matplotlib\n        matplotlib.use('Agg', force=True)\n        _visualization_local.matplotlib_configured = True\n    return True",
+          "importance": "Critical for batch processing and parallel execution"
+        },
+        {
+          "name": "Memory Management",
+          "purpose": "Prevents memory leaks from unclosed figures",
+          "implementation": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)",
+          "importance": "Critical - prevents memory leaks during batch processing"
+        },
+        {
+          "name": "Fallback Generation",
+          "purpose": "Ensures visualizations fail gracefully",
+          "implementation": "def generate_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n    try:\n        # Attempt to generate the requested visualization\n        viz_path = generation_func(output_dir, test_id, *args, **kwargs)\n        \n        # Check if generation returned None or if file doesn't exist\n        if viz_path is None or not os.path.exists(viz_path):\n            # Get function name for the message\n            func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n            return generate_visualization_placeholder(\n                output_dir, \n                test_id,\n                f\"{func_name} generation failed\"\n            )\n        \n        return viz_path\n    except Exception as e:\n        # Get function name for error message\n        func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n        logging.error(f\"Error in {func_name} generation: {str(e)}\")\n        \n        # Generate informative placeholder\n        return generate_visualization_placeholder(\n            output_dir, \n            test_id, \n            f\"Error generating {func_name}: {str(e)}\"\n        )",
+          "importance": "High - prevents cascading failures in report generation"
+        }
+      ]
+    }
+  },
+  "troubleshooting_guide": {
+    "critical_issues": [
+      {
+        "issue": "UTF-8 Encoding Problems",
+        "symptoms": ["Garbled log output with special characters", "UnicodeEncodeError exceptions", "Inconsistent character display across platforms"],
+        "solutions": [
+          "Use UTF8LoggingHandler for console output",
+          "Set PYTHONIOENCODING=utf-8 in environment",
+          "Use encoding='utf-8' for all file handlers",
+          "Handle encoding errors with errors='replace' for graceful degradation"
+        ],
+        "preventative_measures": [
+          "Always use Config.setup_logging() before any logging operations",
+          "Use UTF8LoggingHandler for custom log handlers",
+          "Set file encoding explicitly for all file operations"
+        ]
+      },
+      {
+        "issue": "Configuration Initialization Order",
+        "symptoms": ["Missing or duplicate log entries", "Uninitialized configuration settings", "Multiple log handlers"],
+        "solutions": [
+          "Use _logging_initialized flag to prevent duplicate initialization",
+          "Initialize Config early in application lifecycle",
+          "Use Config.setup_logging() before any logging operations",
+          "Clear existing handlers before adding new ones"
+        ],
+        "preventative_measures": [
+          "Follow the standard initialization sequence",
+          "Avoid direct logging operations before Config.setup_logging()",
+          "Use the _logging_initialized flag to prevent duplicate initialization"
+        ]
+      },
+      {
+        "issue": "Matplotlib Thread Safety",
+        "symptoms": ["'Agg' backend cannot be loaded multiple times", "MainThread is not in main loop", "Visualization hangs"],
+        "solutions": [
+          "Use 'Agg' backend with force=True option",
+          "Configure matplotlib once at application startup",
+          "Use thread-local storage for visualization state",
+          "Implement timeout protection for visualization generation"
+        ],
+        "preventative_measures": [
+          "Always use Config.configure_matplotlib() before any visualization operations",
+          "Use _configure_matplotlib_thread_local() in multi-threaded contexts",
+          "Always use _save_figure_with_cleanup() to ensure figures are properly closed"
+        ]
+      },
+      {
+        "issue": "Feature Flag Consistency",
+        "symptoms": ["Inconsistent feature enabling", "Features enabled in some threads but not others", "Race conditions"],
+        "solutions": [
+          "Use thread-local cache for feature flags",
+          "Check feature flags with consistent helper methods",
+          "Initialize feature flags at application startup",
+          "Use clear naming conventions for related flags"
+        ],
+        "preventative_measures": [
+          "Always use _is_feature_enabled() helper function to check features",
+          "Avoid direct access to Config class from multiple threads",
+          "Initialize feature flags at application startup"
+        ]
+      },
+      {
+        "issue": "Memory Leaks",
+        "symptoms": ["MemoryError or application slowdown after many visualizations", "Growing memory usage during batch processing"],
+        "solutions": [
+          "Always use the _save_figure_with_cleanup() function to ensure figures are properly closed",
+          "Add plt.close('all') in finally blocks",
+          "Limit number of visualizations in a single run",
+          "Use lower DPI settings for large visualizations"
+        ],
+        "preventative_measures": [
+          "Always use _save_figure_with_cleanup() for all visualizations",
+          "Use finally blocks to ensure cleanup even in exception cases",
+          "Monitor memory usage during batch processing",
+          "Implement explicit garbage collection after large visualizations"
+        ]
+      },
+      {
+        "issue": "Path Handling Inconsistencies",
+        "symptoms": ["Files saved in wrong directories", "Broken image links in HTML reports", "Missing files", "Nested directories"],
+        "solutions": [
+          "Use standardized path utilities for all file operations",
+          "Validate directory structure after report generation",
+          "Fix directory structure issues automatically",
+          "Use consistent path naming conventions"
+        ],
+        "preventative_measures": [
+          "Always use get_output_path() for file paths",
+          "Use setup_output_directories() at the start of processing",
+          "Use get_standardized_filename() for consistent naming",
+          "Use OutputType enum for correct file placement"
+        ]
+      }
+    ],
+    "common_issues": [
+      {
+        "issue": "API Key Issues",
+        "symptoms": ["Error: OpenAI API key not found. GPT-based analysis will not be available."],
+        "solutions": [
+          "Set the OPENAI_API_KEY environment variable",
+          "Add key to .env file",
+          "Store key in system keyring",
+          "Run with gpt_model='none' for offline mode"
+        ]
+      },
+      {
+        "issue": "Directory Permission Issues",
+        "symptoms": ["PermissionError: [Errno 13] Permission denied: 'logs/...'"],
+        "solutions": [
+          "Ensure directories exist and you have write permissions",
+          "Set proper file permissions",
+          "Update LOG_BASE_DIR and OUTPUT_BASE_DIR to writable locations",
+          "Run the application with appropriate user permissions"
+        ]
+      },
+      {
+        "issue": "Excel File Access Issues",
+        "symptoms": ["PermissionError: [Errno 13] Permission denied: '...xlsx'"],
+        "solutions": [
+          "Close any open Excel files before running analysis",
+          "Use different output filename",
+          "Disable Excel report generation if file is in use"
+        ]
+      }
+    ]
+  },
+  "configuration_best_practices": {
+    "environment_variables": [
+      "Use consistent variable names with descriptive prefixes",
+      "Always provide sensible defaults for non-required variables",
+      "Use proper type conversion for boolean variables",
+      "Validate critical settings and issue warnings for problems",
+      "Document all variables with purpose, default, and requirements"
+    ],
+    "configuration": [
+      "Initialize configuration early in the application lifecycle",
+      "Validate all settings before application operation",
+      "Use class-based configuration for better organization",
+      "Ensure thread safety for configuration access",
+      "Log configuration issues at appropriate levels"
+    ],
+    "logging": [
+      "Always use UTF-8 encoding for logs",
+      "Set up logging only once to prevent duplicate handlers",
+      "Use appropriate log levels for different message types",
+      "Include timestamp and source information in log formats",
+      "Handle logging initialization errors gracefully"
+    ],
+    "visualization": [
+      "Always use 'Agg' backend for non-GUI environments",
+      "Configure visualization settings explicitly",
+      "Use thread-local storage for thread safety",
+      "Clean up resources properly to prevent memory leaks",
+      "Handle visualization failures gracefully with fallbacks"
+    ],
+    "component_preservation": [
+      "Use ComponentAwareEncoder for all JSON serialization",
+      "Track component fields using COMPONENT_FIELDS constant",
+      "Preserve primary_issue_component throughout processing",
+      "Verify component preservation after serialization",
+      "Pass component information to all dependent modules"
+    ],
+    "path_handling": [
+      "Use standardized path utilities for all file operations",
+      "Use OutputType enum for proper file placement",
+      "Create consistent directory structure with setup_output_directories",
+      "Use get_standardized_filename for consistent naming",
+      "Validate file structure after processing"
+    ]
+  },
+  "deployment_considerations": {
+    "environment_setup": {
+      "basic_requirements": [
+        {
+          "requirement": "Python Environment",
+          "details": "Python 3.8 or higher with pip",
+          "validation": "python --version"
+        },
+        {
+          "requirement": "Virtual Environment",
+          "details": "Recommended for isolated dependencies",
+          "commands": [
+            "python -m venv venv",
+            "source venv/bin/activate  # Linux/macOS",
+            "venv\\Scripts\\activate  # Windows"
+          ]
+        },
+        {
+          "requirement": "Environment Variables",
+          "details": "Set key environment variables",
+          "examples": [
+            "# Linux/macOS",
+            "export OPENAI_API_KEY=your_key_here",
+            "export LOG_BASE_DIR=./logs",
+            "export OUTPUT_BASE_DIR=./output",
+            "",
+            "# Windows",
+            "set OPENAI_API_KEY=your_key_here",
+            "set LOG_BASE_DIR=.\\logs",
+            "set OUTPUT_BASE_DIR=.\\output"
+          ]
+        }
+      ],
+      "system_dependencies": [
+        {
+          "dependency": "Tesseract OCR",
+          "purpose": "Required for OCR functionality",
+          "installation": [
+            "# Linux",
+            "apt-get install tesseract-ocr",
+            "",
+            "# macOS",
+            "brew install tesseract",
+            "",
+            "# Windows",
+            "Download installer from https://github.com/UB-Mannheim/tesseract/wiki"
+          ],
+          "validation": "tesseract --version"
+        },
+        {
+          "dependency": "GraphViz",
+          "purpose": "Optional for enhanced visualizations",
+          "installation": [
+            "# Linux",
+            "apt-get install graphviz",
+            "",
+            "# macOS",
+            "brew install graphviz",
+            "",
+            "# Windows",
+            "Download installer from https://graphviz.org/download/"
+          ],
+          "validation": "dot -V"
+        }
+      ],
+      "directory_structure": [
+        {
+          "directory": "logs/",
+          "purpose": "Input logs directory",
+          "permissions": "Read/Write",
+          "structure": "logs/{test_id}/"
+        },
+        {
+          "directory": "output/",
+          "purpose": "Output reports directory",
+          "permissions": "Read/Write",
+          "structure": "output/{test_id}/[json, supporting_images]"
+        }
+      ]
+    },
+    "containerization": {
+      "docker_considerations": [
+        "Include all system dependencies in the container",
+        "Configure UTF-8 encoding in the container environment",
+        "Set appropriate environment variables",
+        "Mount volumes for persistent logs and output",
+        "Use non-root user for security"
+      ],
+      "example_dockerfile": "FROM python:3.9-slim\n\n# Set environment variables\nENV PYTHONIOENCODING=utf-8\nENV PYTHONUNBUFFERED=1\nENV DEBIAN_FRONTEND=noninteractive\n\n# Install system dependencies\nRUN apt-get update && apt-get install -y \\\n    tesseract-ocr \\\n    graphviz \\\n    && apt-get clean \\\n    && rm -rf /var/lib/apt/lists/*\n\n# Create application directories\nRUN mkdir -p /app/logs /app/output\n\n# Set working directory\nWORKDIR /app\n\n# Copy requirements and install dependencies\nCOPY requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\n\n# Copy application code\nCOPY . .\n\n# Create non-root user\nRUN useradd -m orbit\nRUN chown -R orbit:orbit /app\nUSER orbit\n\n# Run the application\nCMD [\"python\", \"controller.py\"]"
+    }
+  }
+}
+"cross_references": {
+  "description": "References to related documentation for complementary information",
+  "related_documents": [
+    {
+      "file": "environment-AI2AI.json",
+      "purpose": "Detailed documentation of environment configuration, variables, and runtime behavior customization",
+      "complementary_topics": [
+        {"topic": "Configuration System", "details": "Complete details of the Config class implementation"},
+        {"topic": "Environment Variables", "details": "Comprehensive list of all environment variables and their processing"},
+        {"topic": "UTF-8 Logging Implementation", "details": "In-depth coverage of the UTF-8 compliant logging system"},
+        {"topic": "Feature Flag System", "details": "Detailed documentation of the feature flag implementation and runtime detection"},
+        {"topic": "Visualization Configuration", "details": "Thread-safe visualization configuration implementation details"},
+        {"topic": "Token Budget Management", "details": "GPT API token budget allocation and management"}
+      ]
+    }
+  ]
+},
+"scope_boundary": {
+  "description": "Explicit scope definition for this architecture document",
+  "included": [
+    "System architecture and component structure",
+    "Module responsibilities and relationships",
+    "Pipeline and processing flows",
+    "Data flows between components",
+    "Critical functional mechanisms",
+    "Component preservation system",
+    "Directory structure and organization",
+    "Interface definitions and external dependencies"
+  ],
+  "excluded": [
+    "Detailed configuration implementation",
+    "Environment variable processing",
+    "Runtime behavior customization details",
+    "Thread-safe configuration mechanisms",
+    "Token budget management algorithms"
+  ],
+  "primary_audience": [
+    "System architects",
+    "Developers working on component implementations",
+    "Maintainers needing to understand system relationships",
+    "AI systems requiring structural understanding of the codebase"
+  ]
+}

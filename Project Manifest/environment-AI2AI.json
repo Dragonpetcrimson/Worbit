@@ -1,0 +1,760 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "source_model": "claude-3-7-sonnet",
+    "target_model": "target-ai-model",
+    "communication_id": "orbit-environment-configuration-documentation",
+    "timestamp": "2025-05-16T12:30:00Z",
+    "priority": "high",
+    "requires_response": false,
+    "document_type": "system_configuration_documentation",
+    "context_requirements": ["orbit-project-architecture-overview", "component-handling-system"]
+  },
+  "purpose": "This document provides comprehensive documentation of the Orbit Analyzer's environment variables, configuration settings, and behavior customization capabilities. It enables AI systems to understand how the application's runtime behavior can be configured, how UTF-8 encoding is maintained across platforms, how logging is implemented, and how visualization generation is managed in a thread-safe manner. This document serves as the definitive reference for environment-specific functionality to facilitate knowledge transfer between systems.",
+  "system_overview": {
+    "description": "The environment and configuration system provides a centralized approach to managing application settings, environment variables, and feature flags for the Orbit Analyzer. It ensures consistent behavior across different environments and provides mechanisms for UTF-8 compatible logging, visualization configuration, and feature toggling.",
+    "core_capabilities": [
+      "Environment variable management with fallbacks and type conversions",
+      "Centralized configuration through the Config class",
+      "UTF-8 compliant logging across platforms",
+      "Feature flag system for conditional functionality",
+      "Thread-safe visualization configuration",
+      "Directory validation and creation",
+      "Adaptive token budget management"
+    ],
+    "design_philosophy": "The environment system follows a defensive programming approach with graceful degradation. It provides sensible defaults for all settings, validates critical configuration on startup, ensures thread safety for multi-threaded operations, and maintains UTF-8 encoding consistency across all platforms. The system prioritizes robustness by handling configuration errors gracefully and providing clear error messages when critical settings are missing."
+  },
+  "environment_variables": {
+    "description": "Environment variables control the behavior of the Orbit Analyzer without requiring code changes. They can be set through the operating system, environment files (.env), or passed via command line.",
+    "variables": [
+      {
+        "name": "OPENAI_API_KEY",
+        "purpose": "Authentication key for OpenAI API",
+        "default": "None",
+        "required": true,
+        "for_features": ["GPT features"],
+        "storage_locations": ["environment variable", ".env file", "system keyring"],
+        "validation": "Checked during Config.validate() method execution",
+        "lookup_implementation": "First checks environment variable, then .env file, then system keyring using the secure_api_key.py module"
+      },
+      {
+        "name": "LOG_BASE_DIR",
+        "purpose": "Directory containing log files",
+        "default": "./logs",
+        "required": false,
+        "validation": "Directory is created if it doesn't exist during Config.validate()",
+        "implementation": "os.getenv(\"LOG_BASE_DIR\", \"./logs\")"
+      },
+      {
+        "name": "OUTPUT_BASE_DIR",
+        "purpose": "Directory for output reports",
+        "default": "./output",
+        "required": false,
+        "validation": "Directory is created if it doesn't exist during Config.validate()",
+        "implementation": "os.getenv(\"OUTPUT_BASE_DIR\", \"./output\")"
+      },
+      {
+        "name": "LOG_LEVEL",
+        "purpose": "Logging verbosity",
+        "default": "INFO",
+        "required": false,
+        "valid_values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        "implementation": "getattr(logging, cls.LOG_LEVEL.upper(), logging.INFO)"
+      },
+      {
+        "name": "LOG_FILE",
+        "purpose": "File to write logs",
+        "default": "orbit_analyzer.log",
+        "required": false,
+        "implementation": "os.getenv(\"LOG_FILE\", \"orbit_analyzer.log\")"
+      },
+      {
+        "name": "DEFAULT_MODEL",
+        "purpose": "Default GPT model to use",
+        "default": "gpt-3.5-turbo",
+        "required": false,
+        "valid_values": ["gpt-4", "gpt-3.5-turbo", "none"],
+        "validation": "Validated in Config.validate() with fallback to gpt-3.5-turbo if invalid",
+        "implementation": "os.getenv(\"DEFAULT_MODEL\", \"gpt-3.5-turbo\")"
+      },
+      {
+        "name": "ENABLE_OCR",
+        "purpose": "Whether to enable OCR",
+        "default": "True",
+        "required": false,
+        "type": "boolean",
+        "conversion": "ENABLE_OCR = os.getenv(\"ENABLE_OCR\", \"True\").lower() in (\"true\", \"1\", \"yes\")"
+      },
+      {
+        "name": "INSTALLER_FOLDER",
+        "purpose": "Selected folder for installer tests",
+        "default": "None",
+        "required": false,
+        "for_features": ["installer tests"],
+        "implementation": "os.getenv(\"INSTALLER_FOLDER\", None)"
+      },
+      {
+        "name": "PYTHONIOENCODING",
+        "purpose": "Ensures proper encoding for logs and output",
+        "default": "utf-8",
+        "required": false,
+        "note": "Set automatically by Config.setup_logging()",
+        "implementation": "os.environ[\"PYTHONIOENCODING\"] = \"utf-8\""
+      },
+      {
+        "name": "MPLBACKEND",
+        "purpose": "Matplotlib backend override",
+        "default": "Agg",
+        "required": false,
+        "note": "For non-GUI visualization environments",
+        "implementation": "matplotlib.use('Agg', force=True)"
+      }
+    ],
+    "config_files": [
+      {
+        "filename": "config.py",
+        "purpose": "Core configuration settings and environment variable handling",
+        "format": "Python",
+        "key_functions": ["setup_logging", "validate", "configure_matplotlib"]
+      },
+      {
+        "filename": ".env",
+        "purpose": "Environment variable definitions",
+        "format": "Key-value pairs",
+        "loading_mechanism": "python-dotenv library via secure_api_key.py"
+      },
+      {
+        "filename": "component_schema.json",
+        "purpose": "Component relationship definitions",
+        "format": "JSON",
+        "loading_mechanism": "Loaded via ComponentAnalyzer class constructor"
+      },
+      {
+        "filename": "Requirements.txt",
+        "purpose": "Python package dependencies",
+        "format": "Text",
+        "implementation_note": "Both main requirements and separate platform-specific dependencies"
+      }
+    ]
+  },
+  "configuration_class": {
+    "class_name": "Config",
+    "file_location": "config.py",
+    "description": "Centralized configuration management class that handles environment variables, default values, logging setup, and feature flags. It is designed as a static class with class methods for global access.",
+    "initialization": "The Config class is initialized when the module is imported, and Config.setup_logging() and Config.validate() should be called early in the application lifecycle.",
+    "attributes": [
+      {
+        "name": "LOG_BASE_DIR",
+        "type": "str",
+        "default": "os.getenv(\"LOG_BASE_DIR\", \"./logs\")",
+        "description": "Base directory for log files",
+        "usage": "Used for locating test logs and writing application logs"
+      },
+      {
+        "name": "OUTPUT_BASE_DIR",
+        "type": "str",
+        "default": "os.getenv(\"OUTPUT_BASE_DIR\", \"./output\")",
+        "description": "Base directory for output files",
+        "usage": "Used for writing reports, visualizations, and analysis results"
+      },
+      {
+        "name": "OPENAI_API_KEY",
+        "type": "str",
+        "default": "os.getenv(\"OPENAI_API_KEY\", \"\")",
+        "description": "API key for OpenAI integration",
+        "notes": "Actually retrieved through secure_api_key.py which tries multiple sources"
+      },
+      {
+        "name": "ENABLE_OCR",
+        "type": "bool",
+        "default": "os.getenv(\"ENABLE_OCR\", \"True\").lower() in (\"true\", \"1\", \"yes\")",
+        "description": "Flag to enable/disable OCR functionality",
+        "usage": "Controls whether image processing is performed during analysis"
+      },
+      {
+        "name": "DEFAULT_MODEL",
+        "type": "str",
+        "default": "os.getenv(\"DEFAULT_MODEL\", \"gpt-3.5-turbo\")",
+        "description": "Default GPT model to use",
+        "valid_values": ["gpt-4", "gpt-3.5-turbo", "none"],
+        "validation": "Validated with fallback to gpt-3.5-turbo if invalid"
+      },
+      {
+        "name": "LOG_LEVEL",
+        "type": "str",
+        "default": "os.getenv(\"LOG_LEVEL\", \"INFO\")",
+        "description": "Logging verbosity level",
+        "valid_values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+      },
+      {
+        "name": "LOG_FILE",
+        "type": "str",
+        "default": "os.getenv(\"LOG_FILE\", \"orbit_analyzer.log\")",
+        "description": "Log file path",
+        "usage": "Target file for application logging"
+      },
+      {
+        "name": "_logging_initialized",
+        "type": "bool",
+        "default": "False",
+        "description": "Flag to track if logging has been initialized to prevent duplicate initialization",
+        "access": "private",
+        "usage": "Prevents duplicate logging handlers when setup_logging is called multiple times"
+      },
+      {
+        "name": "ENABLE_CLUSTER_TIMELINE",
+        "type": "bool",
+        "default": "False",
+        "description": "Feature flag for cluster timeline visualization",
+        "usage": "Controls generation of cluster_timeline.png"
+      },
+      {
+        "name": "ENABLE_COMPONENT_DISTRIBUTION",
+        "type": "bool",
+        "default": "True",
+        "description": "Feature flag for component distribution charts",
+        "usage": "Controls generation of component_distribution.png and component_errors.png"
+      },
+      {
+        "name": "ENABLE_COMPONENT_RELATIONSHIPS",
+        "type": "bool",
+        "default": "True",
+        "description": "Feature flag for component relationship diagrams",
+        "usage": "Controls generation of component_relationships.png"
+      },
+      {
+        "name": "ENABLE_ERROR_PROPAGATION",
+        "type": "bool",
+        "default": "False",
+        "description": "Feature flag for error propagation visualization",
+        "usage": "Controls generation of error_propagation.png"
+      },
+      {
+        "name": "ENABLE_STEP_REPORT_IMAGES",
+        "type": "bool",
+        "default": "False",
+        "description": "Feature flag for step report visualizations",
+        "usage": "Controls generation of step report visualizations"
+      },
+      {
+        "name": "ENABLE_COMPONENT_REPORT_IMAGES",
+        "type": "bool",
+        "default": "True",
+        "description": "Feature flag for component report visualizations",
+        "usage": "Controls all component-related visualizations"
+      },
+      {
+        "name": "ENABLE_VISUALIZATION_PLACEHOLDERS",
+        "type": "bool",
+        "default": "False",
+        "description": "Feature flag for visualization placeholder generation",
+        "usage": "Controls whether placeholder images are generated when visualization fails",
+        "implementation_status": "Partially implemented across visualization functions"
+      }
+    ],
+    "methods": [
+      {
+        "name": "setup_logging",
+        "signature": "@classmethod\ndef setup_logging(cls)",
+        "description": "Set up logging configuration with proper UTF-8 handling",
+        "behavior": [
+          "Checks if logging is already configured to prevent duplicates",
+          "Sets PYTHONIOENCODING environment variable to utf-8",
+          "Configures logger with appropriate log level",
+          "Creates UTF-8 enabled file handler",
+          "Creates UTF-8 enabled console handler",
+          "Marks logging as initialized"
+        ],
+        "implementation": "# Check if logging is already configured\nif cls._logging_initialized:\n    return\n    \n# Set PYTHONIOENCODING environment variable to utf-8\nos.environ[\"PYTHONIOENCODING\"] = \"utf-8\"\n\nlog_format = \"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"\nlog_level = getattr(logging, cls.LOG_LEVEL.upper(), logging.INFO)\n\n# Get root logger\nroot_logger = logging.getLogger()\nroot_logger.setLevel(log_level)\n\n# Clear existing handlers\nfor handler in root_logger.handlers[:]:\n    root_logger.removeHandler(handler)\n\n# Create a UTF-8 enabled file handler\nfile_handler = logging.FileHandler(cls.LOG_FILE, encoding='utf-8')\nfile_handler.setFormatter(logging.Formatter(log_format))\n\n# Create a UTF-8 enabled console handler\nconsole_handler = UTF8LoggingHandler()\nconsole_handler.setFormatter(logging.Formatter(log_format))\n\n# Add handlers to the root logger\nroot_logger.addHandler(file_handler)\nroot_logger.addHandler(console_handler)\n\n# Mark logging as initialized\ncls._logging_initialized = True\n\nlogging.info(f\"Logging initialized at {datetime.now().isoformat()} with UTF-8 encoding\")",
+        "side_effects": [
+          "Sets _logging_initialized to True",
+          "Modifies system environment variables",
+          "Configures global root logger"
+        ],
+        "expected_usage": "Call early in application initialization before any logging",
+        "thread_safety": "Safe to call from multiple threads as it's idempotent"
+      },
+      {
+        "name": "validate",
+        "signature": "@classmethod\ndef validate(cls)",
+        "description": "Validate configuration settings",
+        "behavior": [
+          "Creates base directories if they don't exist",
+          "Checks for required API keys when necessary",
+          "Validates model settings against known values",
+          "Issues warnings for potential configuration issues"
+        ],
+        "implementation": "# Check if base directories exist\nos.makedirs(cls.LOG_BASE_DIR, exist_ok=True)\nos.makedirs(cls.OUTPUT_BASE_DIR, exist_ok=True)\n\n# Check OpenAI API key if using GPT models\nif not cls.OPENAI_API_KEY and cls.DEFAULT_MODEL.lower() != \"none\":\n    logging.warning(f\"OpenAI API key not set. GPT analysis will not be available.\")\n    \n# Validate model settings\nvalid_models = [\"gpt-4\", \"gpt-3.5-turbo\", \"none\"]\nif cls.DEFAULT_MODEL.lower() not in valid_models:\n    logging.warning(f\"Unknown model: {cls.DEFAULT_MODEL}. Using gpt-3.5-turbo as fallback.\")\n    cls.DEFAULT_MODEL = \"gpt-3.5-turbo\"",
+        "side_effects": [
+          "Creates directories in the filesystem",
+          "May modify DEFAULT_MODEL if validation fails",
+          "Logs warnings for configuration issues"
+        ],
+        "expected_usage": "Call after setup_logging() but before main application logic",
+        "thread_safety": "Safe to call from multiple threads"
+      },
+      {
+        "name": "configure_matplotlib",
+        "signature": "@classmethod\ndef configure_matplotlib(cls)",
+        "description": "Configure matplotlib settings for consistent visualization in headless environments",
+        "behavior": [
+          "Forces Agg backend for headless environments and thread safety",
+          "Configures global matplotlib settings for consistent appearance",
+          "Handles exceptions gracefully"
+        ],
+        "implementation": "try:\n    import matplotlib\n    # Force Agg backend for headless environments and thread safety\n    matplotlib.use('Agg', force=True)\n    \n    import matplotlib.pyplot as plt\n    # Configure global settings\n    plt.rcParams['figure.max_open_warning'] = 50  # Prevent warnings for many figures\n    plt.rcParams['font.size'] = 10  # Readable default font size\n    plt.rcParams['figure.dpi'] = 100  # Default DPI\n    \n    logging.info(\"Matplotlib configured with Agg backend for thread safety\")\n    return True\nexcept Exception as e:\n    logging.error(f\"Error configuring matplotlib: {str(e)}\")\n    return False",
+        "side_effects": [
+          "Modifies global matplotlib configuration",
+          "Forces non-interactive Agg backend"
+        ],
+        "expected_usage": "Call before any visualization generation",
+        "thread_safety": "Not thread-safe for initial call, but idempotent with force=True",
+        "return_value": "Boolean indicating success or failure",
+        "error_handling": "Catches and logs all exceptions, returns False on failure"
+      }
+    ],
+    "usage_example": "# Initialize configuration early in the application lifecycle\nfrom config import Config\n\n# Set up logging with UTF-8 support\nConfig.setup_logging()\n\n# Validate configuration and create required directories\nConfig.validate()\n\n# Configure matplotlib for visualizations\nConfig.configure_matplotlib()\n\n# Use configuration values throughout the application\nlog_dir = Config.LOG_BASE_DIR\noutput_dir = Config.OUTPUT_BASE_DIR\n\n# Check feature flags\nif Config.ENABLE_OCR:\n    # Process images with OCR\n    pass"
+  },
+  "utf8_logging_handler": {
+    "class_name": "UTF8LoggingHandler",
+    "file_location": "config.py",
+    "extends": "logging.StreamHandler",
+    "description": "Specialized logging handler to ensure proper UTF-8 encoding for all log messages across platforms",
+    "purpose": "This handler ensures consistent UTF-8 encoding for log messages across different platforms and terminal environments, handling encoding errors gracefully.",
+    "behavior": [
+      "Creates a stream with UTF-8 encoding if none provided",
+      "Ensures all messages are properly encoded as UTF-8",
+      "Handles encoding errors gracefully with replacement characters",
+      "Prevents encoding-related crashes during logging"
+    ],
+    "implementation": "class UTF8LoggingHandler(logging.StreamHandler):\n    def __init__(self, stream=None):\n        # If no stream is provided, use stdout with UTF-8 encoding\n        if stream is None:\n            # Create a new stream with UTF-8 encoding instead of modifying an existing one\n            stream = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)\n        super().__init__(stream)\n    \n    def emit(self, record):\n        \"\"\"Emit a log record with UTF-8 encoding.\"\"\"\n        try:\n            msg = self.format(record)\n            # Ensure message is properly encoded as UTF-8\n            if isinstance(msg, bytes):\n                msg = msg.decode('utf-8', errors='replace')\n            self.stream.write(msg + self.terminator)\n            self.flush()\n        except Exception:\n            self.handleError(record)",
+    "methods": [
+      {
+        "name": "__init__",
+        "signature": "__init__(self, stream=None)",
+        "description": "Initialize with optional stream, defaulting to UTF-8 encoded stdout",
+        "parameters": [
+          {
+            "name": "stream",
+            "type": "TextIO",
+            "description": "Optional stream to use for logging output",
+            "default": "None"
+          }
+        ],
+        "behavior": "If no stream is provided, creates a new UTF-8 encoded stream using stdout file descriptor"
+      },
+      {
+        "name": "emit",
+        "signature": "emit(self, record)",
+        "description": "Emit a log record with UTF-8 encoding, handling encoding errors gracefully",
+        "parameters": [
+          {
+            "name": "record",
+            "type": "logging.LogRecord",
+            "description": "Log record to emit"
+          }
+        ],
+        "behavior": [
+          "Formats the record using the formatter",
+          "Decodes byte strings to UTF-8 with replacement for invalid characters",
+          "Writes to the stream and flushes",
+          "Handles exceptions through handleError"
+        ]
+      }
+    ],
+    "usage_example": "# Creating a UTF-8 console handler\nconsole_handler = UTF8LoggingHandler()\nconsole_handler.setFormatter(logging.Formatter(\"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"))\n\n# Add to logger\nlogger = logging.getLogger('my_logger')\nlogger.addHandler(console_handler)"
+  },
+  "feature_flags": {
+    "description": "System of boolean flags that control which features are enabled in the application",
+    "usage": "Feature flags allow for conditional enabling/disabling of functionality without code changes, particularly for visualization generation and optional processing steps.",
+    "implementation": "Direct attributes in the Config class",
+    "runtime_detection": "Some features are detected at runtime based on available packages",
+    "access_patterns": {
+      "direct_access": "Config.FEATURE_NAME for simple checks in the main thread",
+      "thread_safe_access": "Using _is_feature_enabled() helper function for thread-safe checks"
+    },
+    "thread_safety": {
+      "description": "Thread-safe feature flag checking for visualization generation",
+      "implementation": "# Thread-local storage for thread safety\nimport threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    from config import Config\n    result = getattr(Config, feature_name, default)\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+    },
+    "visualization_flags": [
+      {
+        "name": "ENABLE_CLUSTER_TIMELINE",
+        "default": false,
+        "purpose": "Enable/disable cluster timeline visualization",
+        "impact": "Controls generation of cluster_timeline.png",
+        "implementation_status": "Correctly implemented in reports/visualizations.py"
+      },
+      {
+        "name": "ENABLE_COMPONENT_DISTRIBUTION",
+        "default": true,
+        "purpose": "Enable/disable component distribution charts",
+        "impact": "Controls generation of component_distribution.png and component_errors.png",
+        "implementation_status": "Correctly implemented in reports/visualizations.py"
+      },
+      {
+        "name": "ENABLE_COMPONENT_RELATIONSHIPS",
+        "default": true,
+        "purpose": "Enable/disable component relationship diagrams",
+        "impact": "Controls generation of component_relationships.png",
+        "implementation_status": "Correctly implemented in components/component_visualizer.py"
+      },
+      {
+        "name": "ENABLE_ERROR_PROPAGATION",
+        "default": false,
+        "purpose": "Enable/disable error propagation visualization",
+        "impact": "Controls generation of error_propagation.png",
+        "implementation_status": "Correctly implemented in components/component_visualizer.py"
+      },
+      {
+        "name": "ENABLE_STEP_REPORT_IMAGES",
+        "default": false,
+        "purpose": "Enable/disable step report visualizations",
+        "impact": "Controls generation of step report visualizations",
+        "implementation_status": "Correctly implemented in step_aware_analyzer.py"
+      },
+      {
+        "name": "ENABLE_COMPONENT_REPORT_IMAGES",
+        "default": true,
+        "purpose": "Enable/disable component report visualizations",
+        "impact": "Controls all component-related visualizations",
+        "implementation_status": "Correctly implemented in reports/component_report.py"
+      },
+      {
+        "name": "ENABLE_VISUALIZATION_PLACEHOLDERS",
+        "default": false,
+        "purpose": "Enable/disable generation of placeholder visualizations",
+        "impact": "Controls whether placeholder images are generated for invalid/empty data",
+        "implementation_status": "Partially implemented across visualization functions",
+        "concerns": "This flag is inconsistently checked across visualization functions"
+      }
+    ],
+    "runtime_detection_example": {
+      "component_integration": "# Try to import the component integration module\ntry:\n    from components.component_integration import ComponentIntegration\n    COMPONENT_INTEGRATION_AVAILABLE = True\nexcept ImportError as e:\n    COMPONENT_INTEGRATION_AVAILABLE = False\n    logging.warning(f\"Component integration module not available - will use direct component mapping: {str(e)}\")",
+      "gherkin_correlation": "try:\n    from gherkin_log_correlator import GherkinParser, correlate_logs_with_steps\n    from step_aware_analyzer import generate_step_report, run_step_aware_analysis\n    GHERKIN_AVAILABLE = True\nexcept ImportError as e:\n    GHERKIN_AVAILABLE = False\n    logging.warning(f\"Gherkin log correlation modules not available - step-aware analysis disabled: {str(e)}\")",
+      "cluster_timeline": "try:\n    from reports.visualizations import generate_cluster_timeline_image, generate_visualization_placeholder\n    CLUSTER_TIMELINE_AVAILABLE = True\nexcept ImportError as e:\n    CLUSTER_TIMELINE_AVAILABLE = False\n    \n    # Define fallback function for visualization generation\n    def generate_visualization_placeholder(output_dir, test_id, message):\n        # Fallback implementation...\n    \n    # Define fallback function for cluster timeline\n    def generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id):\n        return generate_visualization_placeholder(\n            output_dir, \n            test_id, \n            \"Cluster timeline visualization is not available\"\n        )"
+    }
+  },
+  "visualization_configuration": {
+    "description": "System for configuring visualization generation settings and ensuring thread safety",
+    "primary_function": "configure_matplotlib",
+    "behavior": [
+      "Forces non-interactive 'Agg' backend for matplotlib",
+      "Ensures visualizations work in headless environments",
+      "Configures consistent appearance settings",
+      "Thread safety for parallel visualization generation"
+    ],
+    "thread_safety": {
+      "description": "Thread-safe visualization configuration with fallback mechanisms",
+      "implementation": "def _configure_matplotlib_backend():\n    # Force Agg backend to avoid tkinter thread issues completely\n    import matplotlib\n    matplotlib.use('Agg', force=True)\n    \n    import matplotlib.pyplot as plt\n    \n    # Configure global settings\n    plt.rcParams['figure.max_open_warning'] = 50  # Prevent warnings for many figures\n    plt.rcParams['font.size'] = 10  # Readable default font size\n    \n    return plt",
+      "thread_local_implementation": "def _configure_matplotlib_thread_local():\n    \"\"\"Configure matplotlib for current thread.\"\"\"\n    # Use thread-local storage\n    if not hasattr(_visualization_local, 'matplotlib_configured'):\n        import matplotlib\n        matplotlib.use('Agg', force=True)\n        _visualization_local.matplotlib_configured = True\n    return True"
+    },
+    "key_components": [
+      {
+        "component": "Backend Selection",
+        "purpose": "Ensures visualizations work in all environments",
+        "implementation": "matplotlib.use('Agg', force=True)",
+        "rationale": "The 'Agg' backend is a non-interactive backend that works across all platforms without requiring a display or GUI dependencies"
+      },
+      {
+        "component": "Global Settings",
+        "purpose": "Consistent appearance across visualizations",
+        "implementation": "plt.rcParams['figure.max_open_warning'] = 50\nplt.rcParams['font.size'] = 10\nplt.rcParams['figure.dpi'] = 100",
+        "values": {
+          "figure.max_open_warning": 50,
+          "font.size": 10, 
+          "figure.dpi": 100
+        }
+      },
+      {
+        "component": "Error Handling",
+        "purpose": "Graceful degradation when visualization configuration fails",
+        "implementation": "try:\n    import matplotlib\n    matplotlib.use('Agg', force=True)\n    return True\nexcept Exception as e:\n    logging.error(f\"Error configuring matplotlib: {str(e)}\")\n    return False",
+        "fallback_behavior": "Returns False to indicate configuration failure, allowing callers to handle the error appropriately"
+      },
+      {
+        "component": "Memory Management",
+        "purpose": "Prevents memory leaks from unclosed figures",
+        "implementation": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)",
+        "best_practice": "Always use plt.close() in a finally block to ensure figures are closed even when exceptions occur"
+      },
+      {
+        "component": "Fallback Generation",
+        "purpose": "Ensures visualizations fail gracefully",
+        "implementation": "def generate_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n    try:\n        # Attempt to generate the requested visualization\n        viz_path = generation_func(output_dir, test_id, *args, **kwargs)\n        \n        # Check if generation returned None or if file doesn't exist\n        if viz_path is None or not os.path.exists(viz_path):\n            # Get function name for the message\n            func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n            return generate_visualization_placeholder(\n                output_dir, \n                test_id,\n                f\"{func_name} generation failed\"\n            )\n        \n        return viz_path\n    except Exception as e:\n        # Get function name for error message\n        func_name = getattr(generation_func, \"__name__\", \"Visualization\")\n        logging.error(f\"Error in {func_name} generation: {str(e)}\")\n        \n        # Generate informative placeholder\n        return generate_visualization_placeholder(\n            output_dir, \n            test_id, \n            f\"Error generating {func_name}: {str(e)}\"\n        )",
+        "usage": "Wrap visualization function calls to ensure they always return a valid path even when generation fails"
+      }
+    ],
+    "recommended_usage_pattern": "# 1. Configure matplotlib globally early in application\nConfig.configure_matplotlib()\n\n# 2. Use thread-local configuration in multi-threaded contexts\ndef generate_visualization_in_thread(output_dir, test_id):\n    _configure_matplotlib_thread_local()\n    \n    # Create and configure figure\n    fig = plt.figure(figsize=(10, 6))\n    # ... plotting code ...\n    \n    # Always use cleanup to prevent memory leaks\n    try:\n        image_path = os.path.join(output_dir, f\"{test_id}_visualization.png\")\n        fig.savefig(image_path, bbox_inches='tight', dpi=100)\n        return image_path\n    finally:\n        plt.close(fig)"
+  },
+  "implementation_examples": {
+    "loading_environment_variables": {
+      "description": "Examples of loading environment variables with fallbacks",
+      "examples": [
+        {
+          "name": "Basic environment variable with default",
+          "code": "LOG_BASE_DIR = os.getenv(\"LOG_BASE_DIR\", \"./logs\")",
+          "explanation": "Gets LOG_BASE_DIR from environment or uses './logs' as default"
+        },
+        {
+          "name": "Boolean environment variable",
+          "code": "ENABLE_OCR = os.getenv(\"ENABLE_OCR\", \"True\").lower() in (\"true\", \"1\", \"yes\")",
+          "explanation": "Converts string environment variable to boolean with case-insensitive matching"
+        },
+        {
+          "name": "Environment variable with validation",
+          "code": "DEFAULT_MODEL = os.getenv(\"DEFAULT_MODEL\", \"gpt-3.5-turbo\")\nif DEFAULT_MODEL.lower() not in valid_models:\n    logging.warning(f\"Unknown model: {DEFAULT_MODEL}.\")\n    DEFAULT_MODEL = \"gpt-3.5-turbo\"",
+          "explanation": "Validates the value against a list of valid models and falls back if invalid"
+        },
+        {
+          "name": "Secure API key retrieval",
+          "code": "def get_openai_api_key():\n    # First try to get from environment variable\n    api_key = os.environ.get(\"OPENAI_API_KEY\", \"\")\n    \n    # If not found in environment, try loading from .env file\n    if not api_key:\n        try:\n            dotenv.load_dotenv()\n            api_key = os.environ.get(\"OPENAI_API_KEY\", \"\")\n        except Exception:\n            pass\n    \n    # If still not found, try keyring\n    if not api_key:\n        try:\n            keyring_key = keyring.get_password(\"orbit_analyzer\", \"openai_api_key\")\n            if keyring_key:\n                api_key = keyring_key\n        except Exception as e:\n            logging.warning(f\"Could not access system keyring: {str(e)}\")\n    \n    # If no key found, log a warning\n    if not api_key:\n        logging.warning(\"OpenAI API key not found. GPT-based analysis will not be available.\")\n        return \"\"  # Return empty string instead of None\n    \n    return api_key",
+          "explanation": "Multi-layered approach to retrieving sensitive API keys with multiple fallback options"
+        }
+      ]
+    },
+    "utf8_logging_setup": {
+      "description": "Example of setting up UTF-8 compliant logging",
+      "code": "# Set PYTHONIOENCODING environment variable to utf-8\nos.environ[\"PYTHONIOENCODING\"] = \"utf-8\"\n\nlog_format = \"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"\nlog_level = getattr(logging, cls.LOG_LEVEL.upper(), logging.INFO)\n\n# Get root logger\nroot_logger = logging.getLogger()\nroot_logger.setLevel(log_level)\n\n# Clear existing handlers to avoid duplicates\nfor handler in root_logger.handlers[:]:\n    root_logger.removeHandler(handler)\n\n# Create a UTF-8 enabled file handler\nfile_handler = logging.FileHandler(cls.LOG_FILE, encoding='utf-8')\nfile_handler.setFormatter(logging.Formatter(log_format))\n\n# Create a UTF-8 enabled console handler\nconsole_handler = UTF8LoggingHandler()\nconsole_handler.setFormatter(logging.Formatter(log_format))\n\n# Add handlers to the root logger\nroot_logger.addHandler(file_handler)\nroot_logger.addHandler(console_handler)\n\n# Mark logging as initialized\ncls._logging_initialized = True\n\nlogging.info(f\"Logging initialized at {datetime.now().isoformat()} with UTF-8 encoding\")",
+      "key_concepts": [
+        "Setting PYTHONIOENCODING environment variable",
+        "Clearing existing handlers to prevent duplicates",
+        "Using UTF-8 encoding for file handler",
+        "Using custom UTF8LoggingHandler for console output",
+        "Using _logging_initialized flag to prevent duplicate initialization"
+      ]
+    },
+    "matplotlib_configuration": {
+      "description": "Example of configuring matplotlib for thread safety",
+      "code": "def configure_matplotlib():\n    \"\"\"Configure matplotlib for thread safety.\"\"\"\n    try:\n        import matplotlib\n        # Force Agg backend for headless environments and thread safety\n        matplotlib.use('Agg', force=True)\n        \n        import matplotlib.pyplot as plt\n        # Configure global settings\n        plt.rcParams['figure.max_open_warning'] = 50  # Prevent warnings for many figures\n        plt.rcParams['font.size'] = 10  # Readable default font size\n        plt.rcParams['figure.dpi'] = 100  # Default DPI\n        \n        logging.info(\"Matplotlib configured with Agg backend for thread safety\")\n        return True\n    except Exception as e:\n        logging.error(f\"Error configuring matplotlib: {str(e)}\")\n        return False",
+      "key_concepts": [
+        "Using Agg backend for non-GUI environments",
+        "force=True option for reliability across multiple calls",
+        "Setting global rcParams for consistent appearance",
+        "Robust error handling"
+      ]
+    },
+    "thread_safe_feature_checking": {
+      "description": "Example of thread-safe feature flag checking",
+      "code": "# Thread-local storage for thread safety\nimport threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    from config import Config\n    result = getattr(Config, feature_name, default)\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result",
+      "key_concepts": [
+        "Using thread-local storage for thread safety",
+        "Caching results to improve performance",
+        "Lazy initialization of thread-local cache",
+        "Providing default values for missing flags"
+      ],
+      "usage_example": "# In visualization code\nif _is_feature_enabled('ENABLE_COMPONENT_DISTRIBUTION', True):\n    generate_component_distribution_chart()\nelse:\n    generate_placeholder_image(\"Component distribution visualization is disabled\")"
+    },
+    "memory_management": {
+      "description": "Example of proper memory management for visualizations",
+      "code": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)",
+      "key_concepts": [
+        "Using try/finally to ensure cleanup",
+        "Closing figure to free memory",
+        "Ensuring directory exists before saving",
+        "Using bbox_inches='tight' for better image sizing"
+      ]
+    }
+  },
+  "best_practices": {
+    "environment_variables": [
+      "Use consistent variable names with descriptive prefixes",
+      "Always provide sensible defaults for non-required variables",
+      "Use proper type conversion for boolean variables",
+      "Validate critical settings and issue warnings for problems",
+      "Document all variables with purpose, default, and requirements"
+    ],
+    "configuration": [
+      "Initialize configuration early in the application lifecycle",
+      "Validate all settings before application operation",
+      "Use class-based configuration for better organization",
+      "Ensure thread safety for configuration access",
+      "Log configuration issues at appropriate levels"
+    ],
+    "logging": [
+      "Always use UTF-8 encoding for logs",
+      "Set up logging only once to prevent duplicate handlers",
+      "Use appropriate log levels for different message types",
+      "Include timestamp and source information in log formats",
+      "Handle logging initialization errors gracefully"
+    ],
+    "visualization": [
+      "Always use 'Agg' backend for non-GUI environments",
+      "Configure visualization settings explicitly",
+      "Use thread-local storage for thread safety",
+      "Clean up resources properly to prevent memory leaks",
+      "Handle visualization failures gracefully with fallbacks"
+    ]
+  },
+  "common_issues": [
+    {
+      "issue": "UTF-8 Encoding Problems",
+      "symptoms": ["Garbled log output with special characters", "UnicodeEncodeError exceptions", "Inconsistent character display across platforms"],
+      "solutions": [
+        "Use UTF8LoggingHandler for console output",
+        "Set PYTHONIOENCODING=utf-8 in environment",
+        "Use encoding='utf-8' for all file handlers",
+        "Handle encoding errors with errors='replace' for graceful degradation"
+      ],
+      "prevention": "Always initialize logging through Config.setup_logging() which properly configures UTF-8 handling"
+    },
+    {
+      "issue": "Configuration Initialization Order",
+      "symptoms": ["Missing or duplicate log entries", "Uninitialized configuration settings", "Multiple log handlers"],
+      "solutions": [
+        "Use _logging_initialized flag to prevent duplicate initialization",
+        "Initialize Config early in application lifecycle",
+        "Use Config.setup_logging() before any logging operations",
+        "Clear existing handlers before adding new ones"
+      ],
+      "prevention": "Follow the standard initialization sequence: Config.setup_logging() → Config.validate() → application logic"
+    },
+    {
+      "issue": "Matplotlib Thread Safety",
+      "symptoms": ["'Agg' backend cannot be loaded multiple times", "MainThread is not in main loop", "Visualization hangs"],
+      "solutions": [
+        "Use 'Agg' backend with force=True option",
+        "Configure matplotlib once at application startup",
+        "Use thread-local storage for visualization state",
+        "Implement timeout protection for visualization generation"
+      ],
+      "prevention": "Use Config.configure_matplotlib() early and _configure_matplotlib_thread_local() in thread contexts"
+    },
+    {
+      "issue": "Feature Flag Consistency",
+      "symptoms": ["Inconsistent feature enabling", "Features enabled in some threads but not others", "Race conditions"],
+      "solutions": [
+        "Use thread-local cache for feature flags",
+        "Check feature flags with consistent helper methods",
+        "Initialize feature flags at application startup",
+        "Use clear naming conventions for related flags"
+      ],
+      "prevention": "Always use _is_feature_enabled() helper function instead of direct attribute access in multi-threaded code"
+    },
+    {
+      "issue": "Memory Leaks",
+      "symptoms": ["MemoryError or application slowdown after many visualizations", "Growing memory usage during batch processing"],
+      "solutions": [
+        "Always use the _save_figure_with_cleanup() function to ensure figures are properly closed",
+        "Add plt.close('all') in finally blocks",
+        "Limit number of visualizations in a single run",
+        "Use lower DPI settings for large visualizations"
+      ],
+      "prevention": "Always clean up resources in finally blocks and use proper memory management patterns"
+    }
+  ],
+  "related_subsystems": [
+    {
+      "subsystem": "Component Analysis",
+      "interaction": "Uses feature flags to enable/disable component relationship visualizations",
+      "interface": "Config.ENABLE_COMPONENT_RELATIONSHIPS",
+      "dependency_direction": "Component Analysis depends on Config"
+    },
+    {
+      "subsystem": "Visualization System",
+      "interaction": "Uses matplotlib configuration for consistent visualization generation",
+      "interface": "Config.configure_matplotlib()",
+      "dependency_direction": "Visualization System depends on Config"
+    },
+    {
+      "subsystem": "Report Generation",
+      "interaction": "Uses feature flags to enable/disable different report types",
+      "interface": "ReportConfig uses Config settings",
+      "dependency_direction": "Report Generation depends on Config"
+    },
+    {
+      "subsystem": "OCR Processing",
+      "interaction": "Uses configuration setting to enable/disable OCR",
+      "interface": "Config.ENABLE_OCR",
+      "dependency_direction": "OCR Processing depends on Config"
+    },
+    {
+      "subsystem": "GPT Integration",
+      "interaction": "Uses API key and model settings for AI integration",
+      "interface": "Config.OPENAI_API_KEY, Config.DEFAULT_MODEL",
+      "dependency_direction": "GPT Integration depends on Config"
+    }
+  ],
+  "token_budget_management": {
+    "description": "System for managing token budgets for GPT API calls based on model limits",
+    "implementation": "gpt_summarizer.py",
+    "key_functions": [
+      {
+        "name": "get_model_token_limits",
+        "signature": "get_model_token_limits(model: str) -> int",
+        "description": "Get the token limit for a specific GPT model",
+        "implementation": "def get_model_token_limits(model: str) -> int:\n    # Define limits for different models\n    model_limits = {\n        # GPT-3.5 family\n        \"gpt-3.5-turbo\": 16385,\n        \"gpt-3.5-turbo-1106\": 16385,\n        \"gpt-3.5-turbo-0125\": 16385,\n        \n        # GPT-4 family\n        \"gpt-4\": 8192,\n        \"gpt-4-0613\": 8192,\n        \"gpt-4-32k\": 32768,\n        \"gpt-4-32k-0613\": 32768,\n        \"gpt-4-turbo\": 128000,\n        \"gpt-4o\": 128000,\n        \n        # Default fallback - conservative estimate\n        \"default\": 8000\n    }\n    \n    # Normalize model name to lowercase\n    model_lower = model.lower()\n    \n    # Return the limit for the specified model, or the default limit if not found\n    if model_lower in model_limits:\n        return model_limits[model_lower]\n    else:\n        # For unknown models, check for patterns\n        if \"gpt-3.5\" in model_lower:\n            return 16385\n        elif \"gpt-4-32k\" in model_lower:\n            return 32768\n        elif \"gpt-4\" in model_lower:\n            return 8192\n        else:\n            return model_limits[\"default\"]"
+      },
+      {
+        "name": "allocate_token_budgets",
+        "signature": "allocate_token_budgets(model: str, safety_margin: float = 0.2)",
+        "description": "Allocate token budgets based on the model's token limit",
+        "implementation": "def allocate_token_budgets(model: str, safety_margin: float = 0.2):\n    # Get the token limit for this model\n    model_limit = get_model_token_limits(model)\n    \n    # Reserve tokens for system message, instructions, and safety margin\n    reserved_tokens = int(model_limit * safety_margin) + 500  # 500 tokens for system and instructions\n    \n    # Calculate available tokens\n    available_tokens = model_limit - reserved_tokens\n    \n    # Allocate tokens proportionally\n    return {\n        \"test_info\": int(available_tokens * 0.05),        # 5% for test info\n        \"component_analysis\": int(available_tokens * 0.25),  # 25% for component analysis\n        \"errors\": int(available_tokens * 0.35),              # 35% for errors\n        \"ocr_data\": int(available_tokens * 0.15),            # 15% for OCR\n        \"scenario_text\": int(available_tokens * 0.15),       # 15% for scenario\n        \"blueprints\": int(available_tokens * 0.05)           # 5% for future blueprint data\n    }"
+      },
+      {
+        "name": "build_token_managed_prompt",
+        "signature": "build_token_managed_prompt(test_id: str, all_data: Dict, model: str) -> str",
+        "description": "Build a prompt with dynamic token management based on model limits",
+        "implementation_summary": "Calculates available tokens, allocates budgets, and progressively reduces content until it fits within token limits"
+      }
+    ],
+    "adaptive_content_management": {
+      "description": "Functions to adaptively reduce content to fit within token budgets",
+      "functions": [
+        "reduce_component_analysis(content, available_tokens, reduction_level=0)",
+        "reduce_errors(errors, available_tokens, reduction_level=0)",
+        "reduce_ocr_data(ocr_data, available_tokens, reduction_level=0)",
+        "reduce_scenario_text(scenario_text, available_tokens, reduction_level=0)"
+      ],
+      "reduction_levels": {
+        "0": "Full content (no reduction)",
+        "1": "Reduced content (partial information)",
+        "2": "Minimal content (essential information only)",
+        "3": "Critical information only"
+      }
+    }
+  }
+}
+"cross_references": {
+  "description": "References to related documentation for complementary information",
+  "related_documents": [
+    {
+      "file": "environment-AI2AI.json",
+      "purpose": "Detailed documentation of environment configuration, variables, and runtime behavior customization",
+      "complementary_topics": [
+        {"topic": "Configuration System", "details": "Complete details of the Config class implementation"},
+        {"topic": "Environment Variables", "details": "Comprehensive list of all environment variables and their processing"},
+        {"topic": "UTF-8 Logging Implementation", "details": "In-depth coverage of the UTF-8 compliant logging system"},
+        {"topic": "Feature Flag System", "details": "Detailed documentation of the feature flag implementation and runtime detection"},
+        {"topic": "Visualization Configuration", "details": "Thread-safe visualization configuration implementation details"},
+        {"topic": "Token Budget Management", "details": "GPT API token budget allocation and management"}
+      ]
+    }
+  ]
+},
+"scope_boundary": {
+  "description": "Explicit scope definition for this architecture document",
+  "included": [
+    "System architecture and component structure",
+    "Module responsibilities and relationships",
+    "Pipeline and processing flows",
+    "Data flows between components",
+    "Critical functional mechanisms",
+    "Component preservation system",
+    "Directory structure and organization",
+    "Interface definitions and external dependencies"
+  ],
+  "excluded": [
+    "Detailed configuration implementation",
+    "Environment variable processing",
+    "Runtime behavior customization details",
+    "Thread-safe configuration mechanisms",
+    "Token budget management algorithms"
+  ],
+  "primary_audience": [
+    "System architects",
+    "Developers working on component implementations",
+    "Maintainers needing to understand system relationships",
+    "AI systems requiring structural understanding of the codebase"
+  ]
+}
