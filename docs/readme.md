@@ -109,6 +109,8 @@ All reports are generated in the `output\SXM-xxxxxxx` folder:
 - `SXM-xxxxxxx_component_report.html` - Component relationship analysis
 - Various visualization files (PNG)
 
+HTML reports are rendered using **Jinja2** templates located in `reports/templates`.
+
 ---
 
 ## 📊 Understanding Reports

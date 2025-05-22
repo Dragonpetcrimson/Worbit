@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin:0; padding:20px; color:#333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2, h3 { color:#444; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .summary { background-color: #f9f9f9; padding:15px; border-radius:5px; margin-bottom:20px; }
+        .visualization { margin:20px 0; text-align:center; }
+        .visualization img { max-width:100%; height:auto; border:1px solid #ddd; border-radius:5px; }
+        .step { border:1px solid #ddd; margin-bottom:20px; border-radius:5px; overflow:hidden; }
+        .step-header { padding:10px 15px; background-color:#f5f5f5; }
+        .step-body { padding:15px; }
+        .stats { background-color:#f9f9f9; padding:10px; margin-bottom:10px; border-radius:3px; }
+        .log-entry { padding:5px; margin:5px 0; border-left:3px solid #ccc; }
+        .timestamp { color:#888; font-size:0.9em; }
+        .format-distribution { margin:10px 0; }
+        .format { display:inline-block; margin-right:10px; padding:3px 8px; background-color:#eee; border-radius:3px; }
+        .timeline-image { margin:20px 0; border:1px solid #ddd; border-radius:5px; max-width:100%; height:auto; }
+        .timeline-container { text-align:center; margin-bottom:30px; }
+        .error-message { background-color:#fff0f0; border-left:3px solid #ff5555; padding:10px; margin:10px 0; color:#444; }
+        .timeline-info { background-color:#f8f9fa; border-left:3px solid #6c757d; padding:15px; margin:15px 0; border-radius:5px; text-align:center; }
+        .report-link { background-color:#f0f7ff; border-left:3px solid #3498db; padding:15px; margin:15px 0; border-radius:5px; }
+        .report-link a { color:#3498db; font-weight:bold; text-decoration:none; }
+        .report-link a:hover { text-decoration:underline; }
+        .component-info { background-color:#f0fff0; border-left:3px solid #2ecc71; padding:15px; margin:15px 0; border-radius:5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+    {% block content %}{% endblock %}
+    </div>
+    <script>
+        function toggleLogs(element) {
+            var container = element.parentNode.nextElementSibling;
+            if (container.style.display === "none" || container.style.display === "") {
+                container.style.display = "block";
+                element.textContent = "Hide Log Samples";
+            } else {
+                container.style.display = "none";
+                element.textContent = "Show Log Samples";
+            }
+        }
+    </script>
+</body>
+</html>
