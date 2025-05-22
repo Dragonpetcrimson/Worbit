@@ -1,0 +1,2648 @@
+{
+  "documentPurpose": "This document provides comprehensive interface specifications and architectural details of the Orbit Analyzer's report generation subsystem. It enables knowledge transfer to developers or AI systems for implementation, maintenance, or extension of the reporting capabilities without requiring access to the original source code.",
+  "metadata": {
+    "version": "1.0.0",
+    "timestamp": "2025-05-16T12:00:00Z",
+    "documentType": "Interface Specification",
+    "system": "Orbit Analyzer Reports Subsystem",
+    "contextRequirements": "Understanding of Python, data visualization concepts, and component-based system architecture"
+  },
+  "systemOverview": {
+    "name": "Orbit Analyzer Report Generation System",
+    "coreFunctionality": "Transforms raw analysis data into structured, human-readable reports across multiple formats with interactive visualizations for error analysis and component relationship exploration",
+    "designPhilosophy": "Modular architecture with centralized orchestration, standardized path handling, robust error recovery, and consistent component information preservation throughout the processing pipeline",
+    "primaryCapabilities": [
+      "Multiple report format generation (Excel, JSON, DOCX, Markdown, HTML)",
+      "Component relationship analysis and visualization",
+      "Error clustering and timeline visualization",
+      "Path handling with standardized directory structure",
+      "Thread-safe visualization generation with comprehensive fallback mechanisms"
+    ]
+  },
+  "modulesAndComponents": [
+    {
+      "name": "ReportManager",
+      "fileLocation": "reports/report_manager.py",
+      "purpose": "Central orchestrator that coordinates the report generation process, initializes generators, and manages consistent path handling and component information preservation",
+      "dependencies": [
+        "reports.base",
+        "reports.json_generator",
+        "reports.excel_generator",
+        "reports.docx_generator",
+        "reports.markdown_generator",
+        "reports.visualizations"
+      ],
+      "classes": [
+        {
+          "name": "ReportManager",
+          "purpose": "Orchestrates the report generation process with enhanced component information preservation",
+          "constructor": {
+            "signature": "__init__(self, config: ReportConfig)",
+            "parameters": [
+              {
+                "name": "config",
+                "type": "ReportConfig",
+                "description": "Configuration settings for report generation"
+              }
+            ],
+            "behavior": "Initializes generators based on config flags, sets up directory structure, and cleans up any existing nested directories"
+          },
+          "methods": [
+            {
+              "name": "generate_reports",
+              "signature": "generate_reports(self, data: ReportData) -> Dict[str, Any]",
+              "purpose": "Generate all enabled reports with component information preservation",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Container with all data needed for report generation"
+                }
+              ],
+              "returns": {
+                "type": "Dict[str, Any]",
+                "description": "Dictionary with results including report paths and metadata"
+              },
+              "processingSteps": [
+                "Preprocess errors with enhanced component handling",
+                "Preprocess clusters for consistent component attribution",
+                "Build or update component analysis",
+                "Normalize timestamps and validate component information",
+                "Enhance component analysis with consistent primary_issue_component propagation",
+                "Generate component report if enabled",
+                "Generate visualizations if enabled",
+                "Generate each enabled report format (JSON, Excel, DOCX, Markdown)",
+                "Verify directory structure and fix any issues",
+                "Return results dictionary with all report paths"
+              ],
+              "example": "manager = ReportManager(config)\nresults = manager.generate_reports(data)"
+            },
+            {
+              "name": "_enhance_component_analysis",
+              "signature": "_enhance_component_analysis(self, component_analysis, errors, clusters, primary_issue_component)",
+              "purpose": "Enhance component analysis with consistent primary_issue_component propagation",
+              "parameters": [
+                {
+                  "name": "component_analysis",
+                  "type": "Dict[str, Any]",
+                  "description": "Component analysis data or None"
+                },
+                {
+                  "name": "errors",
+                  "type": "List[Dict]",
+                  "description": "List of error dictionaries"
+                },
+                {
+                  "name": "clusters",
+                  "type": "Dict[int, List[Dict]]",
+                  "description": "Dictionary of clustered errors"
+                },
+                {
+                  "name": "primary_issue_component",
+                  "type": "str",
+                  "description": "Primary issue component identifier"
+                }
+              ],
+              "returns": {
+                "type": "Dict[str, Any]",
+                "description": "Enhanced component analysis"
+              }
+            },
+            {
+              "name": "_propagate_primary_component",
+              "signature": "_propagate_primary_component(self, errors, primary_component)",
+              "purpose": "Propagate primary_issue_component to all errors",
+              "parameters": [
+                {
+                  "name": "errors",
+                  "type": "List[Dict]",
+                  "description": "List of error dictionaries"
+                },
+                {
+                  "name": "primary_component",
+                  "type": "str",
+                  "description": "Primary component to propagate"
+                }
+              ],
+              "returns": {
+                "type": "List[Dict]",
+                "description": "Updated errors with consistent primary_issue_component"
+              }
+            },
+            {
+              "name": "_ensure_serializable_error_graph",
+              "signature": "_ensure_serializable_error_graph(self, component_analysis)",
+              "purpose": "Ensure the error_graph in component_analysis is in a serializable format",
+              "parameters": [
+                {
+                  "name": "component_analysis",
+                  "type": "Dict[str, Any]",
+                  "description": "Component analysis data"
+                }
+              ],
+              "returns": {
+                "type": "Dict[str, Any]",
+                "description": "Component analysis with serializable error_graph"
+              }
+            }
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Basic report generation with ReportManager",
+          "code": "# Create configuration\nconfig = ReportConfig(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    primary_issue_component=\"soa\",\n    enable_excel=True,\n    enable_markdown=True,\n    enable_json=True,\n    enable_docx=True,\n    enable_component_report=True\n)\n\n# Create data container\ndata = ReportData(\n    errors=errors,\n    summary=summary,\n    clusters=clusters,\n    ocr_data=ocr_data,\n    background_text=background_text,\n    scenario_text=scenario_text,\n    ymir_flag=ymir_flag,\n    component_analysis=component_analysis\n)\n\n# Create report manager and generate reports\nmanager = ReportManager(config)\nresults = manager.generate_reports(data)"
+        }
+      ]
+    },
+    {
+      "name": "Base Classes",
+      "fileLocation": "reports/base.py",
+      "purpose": "Provides foundational classes and utilities for report generation, including data containers, configuration, and component information preservation",
+      "dependencies": [],
+      "classes": [
+        {
+          "name": "ReportConfig",
+          "purpose": "Configuration settings for report generation",
+          "constructor": {
+            "signature": "__init__(self, output_dir: str, test_id: str, primary_issue_component: str = \"unknown\", enable_excel: bool = True, enable_markdown: bool = True, enable_json: bool = True, enable_docx: bool = True, enable_component_report: bool = True)",
+            "parameters": [
+              {
+                "name": "output_dir",
+                "type": "str",
+                "description": "Directory to write reports to"
+              },
+              {
+                "name": "test_id",
+                "type": "str",
+                "description": "Test ID for reports"
+              },
+              {
+                "name": "primary_issue_component",
+                "type": "str",
+                "description": "Primary component for issue",
+                "default": "unknown"
+              },
+              {
+                "name": "enable_excel",
+                "type": "bool",
+                "description": "Whether to generate Excel reports",
+                "default": "True"
+              },
+              {
+                "name": "enable_markdown",
+                "type": "bool",
+                "description": "Whether to generate Markdown reports",
+                "default": "True"
+              },
+              {
+                "name": "enable_json",
+                "type": "bool",
+                "description": "Whether to generate JSON reports",
+                "default": "True"
+              },
+              {
+                "name": "enable_docx",
+                "type": "bool",
+                "description": "Whether to generate DOCX reports",
+                "default": "True"
+              },
+              {
+                "name": "enable_component_report",
+                "type": "bool",
+                "description": "Whether to generate component reports",
+                "default": "True"
+              }
+            ],
+            "behavior": "Initializes configuration and creates output directory if it doesn't exist"
+          }
+        },
+        {
+          "name": "ReportData",
+          "purpose": "Container for all data used in report generation",
+          "constructor": {
+            "signature": "__init__(self, errors: List[Dict], summary: str, clusters: Dict[int, List[Dict]], ocr_data: List[Dict] = None, background_text: str = \"\", scenario_text: str = \"\", ymir_flag: bool = False, component_analysis: Dict[str, Any] = None, component_diagnostic: Dict[str, Any] = None)",
+            "parameters": [
+              {
+                "name": "errors",
+                "type": "List[Dict]",
+                "description": "List of error dictionaries"
+              },
+              {
+                "name": "summary",
+                "type": "str",
+                "description": "AI-generated summary"
+              },
+              {
+                "name": "clusters",
+                "type": "Dict[int, List[Dict]]",
+                "description": "Dictionary mapping cluster IDs to lists of errors"
+              },
+              {
+                "name": "ocr_data",
+                "type": "List[Dict]",
+                "description": "List of OCR data dictionaries",
+                "default": "None"
+              },
+              {
+                "name": "background_text",
+                "type": "str",
+                "description": "Background section from feature file",
+                "default": "\"\""
+              },
+              {
+                "name": "scenario_text",
+                "type": "str",
+                "description": "Scenario section from feature file",
+                "default": "\"\""
+              },
+              {
+                "name": "ymir_flag",
+                "type": "bool",
+                "description": "Whether this is a Ymir test",
+                "default": "False"
+              },
+              {
+                "name": "component_analysis",
+                "type": "Dict[str, Any]",
+                "description": "Results from component relationship analysis",
+                "default": "None"
+              },
+              {
+                "name": "component_diagnostic",
+                "type": "Dict[str, Any]",
+                "description": "Additional diagnostic information for components",
+                "default": "None"
+              }
+            ],
+            "behavior": "Stores all report data in class attributes"
+          }
+        },
+        {
+          "name": "ReportGenerator",
+          "purpose": "Base class for report generators",
+          "constructor": {
+            "signature": "__init__(self, config: ReportConfig)",
+            "parameters": [
+              {
+                "name": "config",
+                "type": "ReportConfig",
+                "description": "Report configuration"
+              }
+            ],
+            "behavior": "Stores the configuration"
+          },
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> str",
+              "purpose": "Generate a report (abstract method to be implemented by subclasses)",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated report"
+              },
+              "behavior": "Raises NotImplementedError - subclasses must implement"
+            }
+          ]
+        },
+        {
+          "name": "ComponentAwareEncoder",
+          "purpose": "Enhanced JSON encoder that carefully preserves component information during serialization",
+          "inherits": "DateTimeEncoder",
+          "constructor": {
+            "signature": "__init__(self, *args, primary_issue_component=None, **kwargs)",
+            "parameters": [
+              {
+                "name": "primary_issue_component",
+                "type": "str",
+                "description": "Primary component for reference",
+                "default": "None"
+              },
+              {
+                "name": "*args",
+                "type": "Any",
+                "description": "Standard encoder parameters"
+              },
+              {
+                "name": "**kwargs",
+                "type": "Any",
+                "description": "Standard encoder keyword parameters"
+              }
+            ],
+            "behavior": "Initializes encoder with component field tracking"
+          },
+          "methods": [
+            {
+              "name": "default",
+              "signature": "default(self, obj)",
+              "purpose": "Enhanced encoding that preserves component information without modification",
+              "parameters": [
+                {
+                  "name": "obj",
+                  "type": "Any",
+                  "description": "Object to encode"
+                }
+              ],
+              "returns": {
+                "type": "Any",
+                "description": "JSON-serializable representation with preserved component information"
+              }
+            },
+            {
+              "name": "_preserve_component_fields",
+              "signature": "_preserve_component_fields(self, data_dict)",
+              "purpose": "Carefully preserve component fields in a dictionary and all its nested structures",
+              "parameters": [
+                {
+                  "name": "data_dict",
+                  "type": "Dict",
+                  "description": "Dictionary containing component data to preserve"
+                }
+              ],
+              "returns": {
+                "type": "Dict",
+                "description": "Processed dictionary or None if data_dict was None"
+              }
+            }
+          ],
+          "usageNotes": "Must be used as a factory through lambda or helper function, not pre-instantiated"
+        }
+      ],
+      "constants": [
+        {
+          "name": "COMPONENT_FIELDS",
+          "type": "Set[str]",
+          "value": "{'component', 'component_source', 'source_component', 'root_cause_component', 'primary_issue_component', 'affected_components', 'expected_component', 'component_scores', 'component_distribution', 'parent_component', 'child_components', 'related_components'}",
+          "purpose": "Defines component-related fields globally to ensure consistency"
+        }
+      ],
+      "functions": [
+        {
+          "name": "ensure_datetime",
+          "signature": "ensure_datetime(timestamp_value)",
+          "purpose": "Ensure a timestamp is a datetime object",
+          "parameters": [
+            {
+              "name": "timestamp_value",
+              "type": "Union[str, datetime, Any]",
+              "description": "A timestamp which could be a string or datetime object"
+            }
+          ],
+          "returns": {
+            "type": "Optional[datetime]",
+            "description": "datetime object or None if conversion fails"
+          },
+          "behavior": "Tries multiple timestamp formats, handles ISO format, common date formats, and regex extraction"
+        },
+        {
+          "name": "sanitize_text",
+          "signature": "sanitize_text(value)",
+          "purpose": "Sanitize a string value for safe output in reports",
+          "parameters": [
+            {
+              "name": "value",
+              "type": "Any",
+              "description": "String value to sanitize or other value"
+            }
+          ],
+          "returns": {
+            "type": "Any",
+            "description": "Sanitized string or original value if not a string"
+          },
+          "behavior": "Removes control characters and other potentially problematic content"
+        },
+        {
+          "name": "apply_component_fields",
+          "signature": "apply_component_fields(data_dict, source_dict)",
+          "purpose": "Apply component fields from source_dict to data_dict",
+          "parameters": [
+            {
+              "name": "data_dict",
+              "type": "Dict",
+              "description": "Target dictionary to update (or None)"
+            },
+            {
+              "name": "source_dict",
+              "type": "Dict",
+              "description": "Source dictionary with component fields"
+            }
+          ],
+          "returns": {
+            "type": "Dict",
+            "description": "Updated data_dict or None if data_dict is None"
+          }
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Using ComponentAwareEncoder for JSON serialization",
+          "code": "# CORRECT - Use the lambda factory pattern\njson.dump(data, file, \n         cls=lambda *a, **kw: ComponentAwareEncoder(primary_issue_component=\"soa\"),\n         indent=2)"
+        },
+        {
+          "purpose": "Creating report configuration and data",
+          "code": "# Create configuration\nconfig = ReportConfig(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    primary_issue_component=\"soa\"\n)\n\n# Create data container\ndata = ReportData(\n    errors=errors,\n    summary=summary,\n    clusters=clusters,\n    ocr_data=ocr_data\n)"
+        }
+      ]
+    },
+    {
+      "name": "Visualizations",
+      "fileLocation": "reports/visualizations.py",
+      "purpose": "Generates visualizations for reports, including timeline, component relationship, and error propagation visualizations",
+      "dependencies": [
+        "reports.base",
+        "utils.path_utils",
+        "matplotlib",
+        "networkx",
+        "PIL"
+      ],
+      "classes": [
+        {
+          "name": "VisualizationGenerator",
+          "inherits": "ReportGenerator",
+          "purpose": "Generator for report visualizations with enhanced thread safety and error handling",
+          "constructor": {
+            "signature": "__init__(self, config: ReportConfig)",
+            "parameters": [
+              {
+                "name": "config",
+                "type": "ReportConfig",
+                "description": "Report configuration"
+              }
+            ]
+          },
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> Dict[str, str]",
+              "purpose": "Generate visualizations for the report with enhanced error handling",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data containing errors, clusters, and component information"
+                }
+              ],
+              "returns": {
+                "type": "Dict[str, str]",
+                "description": "Dictionary mapping visualization types to file paths"
+              },
+              "processingSteps": [
+                "Initialize thread-local storage",
+                "Configure matplotlib backend",
+                "Get and validate component analysis data",
+                "Extract component data for visualization",
+                "Generate visualizations with thread safety and timeout protection",
+                "Return visualization paths dictionary"
+              ]
+            },
+            {
+              "name": "_generate_with_timeout",
+              "signature": "_generate_with_timeout(self, paths_dict, key, feature_flag, default_value, timeout_seconds, func_name, *args, **kwargs)",
+              "purpose": "Generate a visualization with timeout protection and comprehensive error handling",
+              "parameters": [
+                {
+                  "name": "paths_dict",
+                  "type": "Dict[str, str]",
+                  "description": "Dictionary to store the visualization path"
+                },
+                {
+                  "name": "key",
+                  "type": "str",
+                  "description": "Key to use in the paths dictionary"
+                },
+                {
+                  "name": "feature_flag",
+                  "type": "str",
+                  "description": "Name of the feature flag to check"
+                },
+                {
+                  "name": "default_value",
+                  "type": "bool",
+                  "description": "Default value if feature flag doesn't exist"
+                },
+                {
+                  "name": "timeout_seconds",
+                  "type": "int",
+                  "description": "Timeout in seconds"
+                },
+                {
+                  "name": "func_name",
+                  "type": "str",
+                  "description": "Name of the generation function to call"
+                },
+                {
+                  "name": "*args, **kwargs",
+                  "type": "Any",
+                  "description": "Arguments for the generator function"
+                }
+              ],
+              "behavior": "Uses threading with timeout to generate visualization, with fallback to placeholder if generation fails or times out"
+            }
+          ]
+        },
+        {
+          "name": "ComponentVisualizer",
+          "purpose": "Visualizer for component relationships and error propagation",
+          "constructor": {
+            "signature": "__init__(self, component_schema_path: str = None, component_graph = None)",
+            "parameters": [
+              {
+                "name": "component_schema_path",
+                "type": "str",
+                "description": "Path to the component schema JSON file",
+                "default": "None"
+              },
+              {
+                "name": "component_graph",
+                "type": "nx.DiGraph",
+                "description": "Existing component graph",
+                "default": "None"
+              }
+            ],
+            "behavior": "Initializes visualizer with component schema or graph and sets up component colors"
+          },
+          "methods": [
+            {
+              "name": "generate_component_relationship_diagram",
+              "signature": "generate_component_relationship_diagram(self, output_dir: str, test_id: str = None, width=800, height=600) -> str",
+              "purpose": "Generate a component relationship diagram using advanced layout techniques",
+              "parameters": [
+                {
+                  "name": "output_dir",
+                  "type": "str",
+                  "description": "Directory to save the diagram"
+                },
+                {
+                  "name": "test_id",
+                  "type": "str",
+                  "description": "Test ID for the filename",
+                  "default": "None"
+                },
+                {
+                  "name": "width",
+                  "type": "int",
+                  "description": "Width of the diagram in pixels",
+                  "default": "800"
+                },
+                {
+                  "name": "height",
+                  "type": "int",
+                  "description": "Height of the diagram in pixels",
+                  "default": "600"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated image"
+              }
+            },
+            {
+              "name": "_get_graph_layout",
+              "signature": "_get_graph_layout(self, G)",
+              "purpose": "Get a layout for the graph using available algorithms with robust fallbacks",
+              "parameters": [
+                {
+                  "name": "G",
+                  "type": "networkx.Graph",
+                  "description": "NetworkX graph"
+                }
+              ],
+              "returns": {
+                "type": "Dict[Any, Tuple[float, float]]",
+                "description": "Dictionary of node positions"
+              },
+              "behavior": "Uses a multi-layered layout approach with fallbacks from pydot to spectral to shell to spring layout"
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "generate_timeline_image",
+          "signature": "generate_timeline_image(step_to_logs, step_dict, output_dir, test_id)",
+          "purpose": "Generate a PNG image of the timeline visualization with enhanced error handling",
+          "parameters": [
+            {
+              "name": "step_to_logs",
+              "type": "Dict[int, List]",
+              "description": "Dictionary mapping step numbers to log entries"
+            },
+            {
+              "name": "step_dict",
+              "type": "Dict[int, Any]",
+              "description": "Dictionary mapping step numbers to step objects"
+            },
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to write the image"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the filename"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Path to the generated image or placeholder if generation fails"
+          },
+          "behavior": "Creates a timeline visualization showing errors across test steps with severity-based coloring"
+        },
+        {
+          "name": "generate_cluster_timeline_image",
+          "signature": "generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id)",
+          "purpose": "Generate a cluster timeline image with enhanced thread safety and data validation",
+          "parameters": [
+            {
+              "name": "step_to_logs",
+              "type": "Dict[int, List]",
+              "description": "Dictionary mapping step numbers to log entries"
+            },
+            {
+              "name": "step_dict",
+              "type": "Dict[int, Any]",
+              "description": "Dictionary mapping step numbers to step objects"
+            },
+            {
+              "name": "clusters",
+              "type": "Dict[int, List]",
+              "description": "Dictionary mapping cluster IDs to lists of errors"
+            },
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to write the image"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the filename"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Path to the generated image or None if generation fails or is disabled"
+          },
+          "behavior": "Creates a timeline visualization showing errors grouped by similarity clusters with cluster-based coloring"
+        },
+        {
+          "name": "_is_feature_enabled",
+          "signature": "_is_feature_enabled(feature_name, default=False)",
+          "purpose": "Check if a feature is enabled with thread-safe fallback",
+          "parameters": [
+            {
+              "name": "feature_name",
+              "type": "str",
+              "description": "Name of the feature flag in Config"
+            },
+            {
+              "name": "default",
+              "type": "bool",
+              "description": "Default value if flag doesn't exist",
+              "default": "False"
+            }
+          ],
+          "returns": {
+            "type": "bool",
+            "description": "Boolean indicating if feature is enabled"
+          },
+          "behavior": "Uses thread-local cache and handles missing Config module"
+        },
+        {
+          "name": "generate_visualization_placeholder",
+          "signature": "generate_visualization_placeholder(output_dir: str, test_id: str, message: str = \"Visualization not available\") -> str",
+          "purpose": "Generate a placeholder image with an error message when visualization fails",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to save the image"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the filename"
+            },
+            {
+              "name": "message",
+              "type": "str",
+              "description": "Message to display in the placeholder",
+              "default": "\"Visualization not available\""
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Path to the generated placeholder image"
+          }
+        }
+      ],
+      "featureFlags": [
+        {
+          "name": "ENABLE_CLUSTER_TIMELINE",
+          "default": "False",
+          "purpose": "Controls cluster timeline visualization generation"
+        },
+        {
+          "name": "ENABLE_COMPONENT_DISTRIBUTION",
+          "default": "True",
+          "purpose": "Controls component error distribution visualization generation"
+        },
+        {
+          "name": "ENABLE_ERROR_PROPAGATION",
+          "default": "False",
+          "purpose": "Controls error propagation diagram generation"
+        },
+        {
+          "name": "ENABLE_COMPONENT_REPORT_IMAGES",
+          "default": "True",
+          "purpose": "Controls all component visualization generation"
+        }
+      ],
+      "threadSafety": {
+        "mechanism": "Thread-local storage",
+        "implementation": "import threading\n_visualization_local = threading.local()",
+        "purpose": "Prevents race conditions in multithreaded environments",
+        "features": [
+          "Cache feature flag values in thread-local storage",
+          "Prevent matplotlib backend issues in threaded environments",
+          "Isolate visualization generation in separate threads",
+          "Timeout protection for long-running operations"
+        ]
+      },
+      "codeExamples": [
+        {
+          "purpose": "Using the visualization generator",
+          "code": "# Initialize visualization generator\nfrom reports.visualizations import VisualizationGenerator\nfrom reports.base import ReportConfig\n\nconfig = ReportConfig(output_dir=\"output/test-123\", test_id=\"test-123\")\nviz_generator = VisualizationGenerator(config)\n\n# Generate visualizations with timeout protection\nviz_paths = viz_generator.generate(data)\n\n# Access specific visualization paths\nif \"component_errors\" in viz_paths:\n    component_viz_path = viz_paths[\"component_errors\"]\n    # Use the visualization path..."
+        },
+        {
+          "purpose": "Direct timeline visualization",
+          "code": "from reports.visualizations import generate_timeline_image\n\n# Generate timeline image directly\ntimeline_path = generate_timeline_image(\n    step_to_logs=step_to_logs,\n    step_dict=step_dict,\n    output_dir=\"output/test-123\",\n    test_id=\"test-123\"\n)"
+        }
+      ]
+    },
+    {
+      "name": "Component Analyzer",
+      "fileLocation": "reports/component_analyzer.py",
+      "purpose": "Analyze component relationships and generate component reports",
+      "dependencies": [
+        "reports.base",
+        "utils.path_utils",
+        "reports.data_preprocessor"
+      ],
+      "functions": [
+        {
+          "name": "build_component_analysis",
+          "signature": "build_component_analysis(errors: List[Dict], primary_issue_component: str, existing_analysis: Optional[Dict] = None) -> Dict[str, Any]",
+          "purpose": "Build comprehensive component analysis data structure",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component"
+            },
+            {
+              "name": "existing_analysis",
+              "type": "Optional[Dict]",
+              "description": "Optional existing analysis to enhance",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, Any]",
+            "description": "Component analysis data structure"
+          },
+          "behavior": "Creates or enhances component analysis with relationships, metrics, and summary"
+        },
+        {
+          "name": "generate_component_report",
+          "signature": "generate_component_report(output_dir: str, test_id: str, component_analysis: Dict[str, Any], primary_issue_component: str = \"unknown\") -> str",
+          "purpose": "Generate component analysis report",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to write the report to"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test identifier"
+            },
+            {
+              "name": "component_analysis",
+              "type": "Dict[str, Any]",
+              "description": "Component analysis data"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component",
+              "default": "\"unknown\""
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Path to the generated report"
+          },
+          "behavior": "Generates an HTML report focused on component relationships"
+        },
+        {
+          "name": "build_error_graph",
+          "signature": "build_error_graph(errors: List[Dict], primary_issue_component: str) -> Dict[str, Any]",
+          "purpose": "Build an error propagation graph for visualization",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, Any]",
+            "description": "Serializable dictionary representation of error graph"
+          }
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Building and visualizing component analysis",
+          "code": "# Build component analysis\ncomponent_analysis = build_component_analysis(\n    errors=errors,\n    primary_issue_component=\"soa\"\n)\n\n# Generate component report\nreport_path = generate_component_report(\n    output_dir=\"output/test-123\",\n    test_id=\"test-123\",\n    component_analysis=component_analysis,\n    primary_issue_component=\"soa\"\n)"
+        }
+      ]
+    },
+    {
+      "name": "Data Preprocessor",
+      "fileLocation": "reports/data_preprocessor.py",
+      "purpose": "Normalizes and validates data before report generation",
+      "dependencies": [
+        "reports.base"
+      ],
+      "functions": [
+        {
+          "name": "preprocess_errors",
+          "signature": "preprocess_errors(errors: List[Dict], primary_issue_component: str, component_diagnostic: Optional[Dict] = None) -> Tuple[List[Dict], str]",
+          "purpose": "Preprocess errors to ensure component information is consistent without overriding",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component"
+            },
+            {
+              "name": "component_diagnostic",
+              "type": "Optional[Dict]",
+              "description": "Optional diagnostic data",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "Tuple[List[Dict], str]",
+            "description": "Tuple of (processed errors, primary_issue_component)"
+          },
+          "behavior": "Processes errors with careful component information handling"
+        },
+        {
+          "name": "preprocess_clusters",
+          "signature": "preprocess_clusters(clusters: Dict[int, List[Dict]], primary_issue_component: str, component_diagnostic: Optional[Dict] = None) -> Dict[int, List[Dict]]",
+          "purpose": "Preprocess clusters with consistent component handling",
+          "parameters": [
+            {
+              "name": "clusters",
+              "type": "Dict[int, List[Dict]]",
+              "description": "Dictionary mapping cluster IDs to lists of errors"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component"
+            },
+            {
+              "name": "component_diagnostic",
+              "type": "Optional[Dict]",
+              "description": "Optional diagnostic data",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "Dict[int, List[Dict]]",
+            "description": "Processed clusters"
+          }
+        },
+        {
+          "name": "normalize_data",
+          "signature": "normalize_data(errors: List[Dict], clusters: Dict[int, List[Dict]], primary_issue_component: str) -> Tuple[List[Dict], Dict[int, List[Dict]]]",
+          "purpose": "Normalize and validate data for reports",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "clusters",
+              "type": "Dict[int, List[Dict]]",
+              "description": "Dictionary mapping cluster IDs to lists of errors"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component"
+            }
+          ],
+          "returns": {
+            "type": "Tuple[List[Dict], Dict[int, List[Dict]]]",
+            "description": "Tuple of (normalized errors, normalized clusters)"
+          }
+        },
+        {
+          "name": "extract_primary_component",
+          "signature": "extract_primary_component(errors: List[Dict], fallback: str = \"unknown\") -> str",
+          "purpose": "Extract the primary component from error data",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "fallback",
+              "type": "str",
+              "description": "Fallback value if no primary component can be determined",
+                "default": "\"unknown\""
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Primary component identifier"
+          }
+        },
+        {
+          "name": "count_components",
+          "signature": "count_components(data: List[Dict]) -> Dict[str, int]",
+          "purpose": "Count component occurrences in a list of error dictionaries",
+          "parameters": [
+            {
+              "name": "data",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, int]",
+            "description": "Dictionary mapping components to their counts"
+          }
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Preprocessing errors with component handling",
+          "code": "from reports.data_preprocessor import preprocess_errors, normalize_data\n\n# Preprocess errors\nprocessed_errors, primary_component = preprocess_errors(\n    errors=errors,\n    primary_issue_component=\"unknown\"\n)\n\n# Normalize data structures\nnormalized_errors, normalized_clusters = normalize_data(\n    errors=processed_errors,\n    clusters=clusters,\n    primary_issue_component=primary_component\n)"
+        }
+      ]
+    },
+    {
+      "name": "Path Utilities",
+      "fileLocation": "utils/path_utils.py",
+      "purpose": "Provides standardized path handling with sanitization to prevent nested directories",
+      "dependencies": [],
+      "enums": [
+        {
+          "name": "OutputType",
+          "values": [
+            {"name": "PRIMARY_REPORT", "value": "primary", "description": "Goes in root directory (Excel, DOCX, HTML)"},
+            {"name": "JSON_DATA", "value": "json", "description": "Goes in json/ subdirectory"},
+            {"name": "VISUALIZATION", "value": "image", "description": "Goes in supporting_images/ subdirectory"},
+            {"name": "DEBUGGING", "value": "debug", "description": "Goes in debug/ subdirectory (optional)"}
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "sanitize_base_directory",
+          "signature": "sanitize_base_directory(base_dir: str, expected_subdir: str = None) -> str",
+          "purpose": "Sanitize the base directory to prevent nested subdirectories",
+          "parameters": [
+            {
+              "name": "base_dir",
+              "type": "str",
+              "description": "Base directory path to sanitize"
+            },
+            {
+              "name": "expected_subdir",
+              "type": "str",
+              "description": "Optional subdirectory to check for",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Sanitized base directory path"
+          },
+          "behavior": "Detects and fixes potential directory nesting issues"
+        },
+        {
+          "name": "get_output_path",
+          "signature": "get_output_path(base_dir: str, test_id: str, filename: str, output_type: OutputType = OutputType.PRIMARY_REPORT, create_dirs: bool = True) -> str",
+          "purpose": "Get standardized output path based on file type",
+          "parameters": [
+            {
+              "name": "base_dir",
+              "type": "str",
+              "description": "Base output directory"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID (will be normalized)"
+            },
+            {
+              "name": "filename",
+              "type": "str",
+              "description": "Filename to use"
+            },
+            {
+              "name": "output_type",
+              "type": "OutputType",
+              "description": "Type of output determining subdirectory",
+              "default": "OutputType.PRIMARY_REPORT"
+            },
+            {
+              "name": "create_dirs",
+              "type": "bool",
+              "description": "Whether to create directories if they don't exist",
+              "default": "True"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Full path for the output file"
+          }
+        },
+        {
+          "name": "get_standardized_filename",
+          "signature": "get_standardized_filename(test_id: str, file_type: str, extension: str) -> str",
+          "purpose": "Create standardized filename with test ID prefix",
+          "parameters": [
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID (will be normalized)"
+            },
+            {
+              "name": "file_type",
+              "type": "str",
+              "description": "Type identifier (e.g., log_analysis, component_report)"
+            },
+            {
+              "name": "extension",
+              "type": "str",
+              "description": "File extension (without dot)"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Standardized filename in format \"{test_id}_{file_type}.{extension}\""
+          }
+        },
+        {
+          "name": "normalize_test_id",
+          "signature": "normalize_test_id(test_id: str) -> str",
+          "purpose": "Normalize test ID to standard SXM-#### format",
+          "parameters": [
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Input test ID"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Normalized test ID with SXM- prefix"
+          }
+        },
+        {
+          "name": "get_path_reference",
+          "signature": "get_path_reference(path, base_dir, reference_type=\"html\")",
+          "purpose": "Convert a full path to a standardized reference format",
+          "parameters": [
+            {
+              "name": "path",
+              "type": "str",
+              "description": "Full path to the file"
+            },
+            {
+              "name": "base_dir",
+              "type": "str",
+              "description": "Base directory for reference calculation"
+            },
+            {
+              "name": "reference_type",
+              "type": "str",
+              "description": "Type of reference to generate (html, json, relative)",
+              "default": "\"html\""
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "A standardized reference string"
+          }
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Standard path handling",
+          "code": "from utils.path_utils import sanitize_base_directory, get_output_path, OutputType, get_standardized_filename\n\n# Sanitize output directory to prevent nested directories\noutput_dir = sanitize_base_directory(output_dir, \"supporting_images\")\n\n# Get standardized path for a file\nfile_path = get_output_path(\n    output_dir,\n    test_id,\n    get_standardized_filename(test_id, \"log_analysis\", \"xlsx\"),\n    OutputType.PRIMARY_REPORT\n)"
+        },
+        {
+          "purpose": "HTML path references",
+          "code": "from utils.path_utils import get_path_reference\n\n# Get HTML reference to a visualization\nviz_path = \"C:/gitrepos/Orbit/output/SXM-123456/supporting_images/SXM-123456_timeline.png\"\nhtml_ref = get_path_reference(viz_path, base_dir, \"html\")  # Returns \"supporting_images/SXM-123456_timeline.png\""
+        }
+      ]
+    },
+    {
+      "name": "Path Validator",
+      "fileLocation": "utils/path_validator.py",
+      "purpose": "Validates and fixes directory structure issues",
+      "dependencies": [
+        "utils.path_utils"
+      ],
+      "functions": [
+        {
+          "name": "fix_directory_structure",
+          "signature": "fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+          "purpose": "Find and fix directory structure issues",
+          "parameters": [
+            {
+              "name": "base_dir",
+              "type": "str",
+              "description": "Base output directory"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, List[str]]",
+            "description": "Dictionary of fixes made by category"
+          },
+          "behavior": "Fixes misplaced files, nested directories, and HTML references"
+        },
+        {
+          "name": "fix_html_references",
+          "signature": "fix_html_references(html_path: str, base_dir: str) -> List[str]",
+          "purpose": "Fix HTML references to supporting files",
+          "parameters": [
+            {
+              "name": "html_path",
+              "type": "str",
+              "description": "Path to HTML file"
+            },
+            {
+              "name": "base_dir",
+              "type": "str",
+              "description": "Base directory for the test"
+            }
+          ],
+          "returns": {
+            "type": "List[str]",
+            "description": "List of fixes made"
+          },
+          "behavior": "Updates image references, fixes hidden elements, ensures correct paths"
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Fixing directory structure",
+          "code": "from utils.path_validator import fix_directory_structure\n\n# Find and fix issues\nissues = fix_directory_structure(\"output/SXM-123456\", \"SXM-123456\")\n\n# Log issues found\nif issues[\"fixed_files\"]:\n    print(f\"Fixed {len(issues['fixed_files'])} files\")"
+        }
+      ]
+    },
+    {
+      "name": "Excel Generator",
+      "fileLocation": "reports/excel_generator.py",
+      "purpose": "Generates Excel reports with multiple sheets",
+      "dependencies": [
+        "reports.base",
+        "pandas",
+        "openpyxl",
+        "utils.path_utils"
+      ],
+      "classes": [
+        {
+          "name": "ExcelReportGenerator",
+          "inherits": "ReportGenerator",
+          "purpose": "Generator for Excel reports",
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> str",
+              "purpose": "Generate an Excel report",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated report"
+              }
+            },
+            {
+              "name": "_create_summary_sheet",
+              "signature": "_create_summary_sheet(self, writer, summary: str)",
+              "purpose": "Create the Summary sheet",
+              "parameters": [
+                {
+                  "name": "writer",
+                  "type": "pd.ExcelWriter",
+                  "description": "Excel writer object"
+                },
+                {
+                  "name": "summary",
+                  "type": "str",
+                  "description": "AI-generated summary"
+                }
+              ]
+            },
+            {
+              "name": "_create_component_analysis_sheet",
+              "signature": "_create_component_analysis_sheet(self, writer, component_analysis: Dict[str, Any])",
+              "purpose": "Create the Component Analysis sheet",
+              "parameters": [
+                {
+                  "name": "writer",
+                  "type": "pd.ExcelWriter",
+                  "description": "Excel writer object"
+                },
+                {
+                  "name": "component_analysis",
+                  "type": "Dict[str, Any]",
+                  "description": "Component analysis data"
+                }
+              ]
+            },
+            {
+              "name": "_create_grouped_issues_sheet",
+              "signature": "_create_grouped_issues_sheet(self, writer, clusters: Dict[int, List[Dict]])",
+              "purpose": "Create the Grouped Issues sheet",
+              "parameters": [
+                {
+                  "name": "writer",
+                  "type": "pd.ExcelWriter",
+                  "description": "Excel writer object"
+                },
+                {
+                  "name": "clusters",
+                  "type": "Dict[int, List[Dict]]",
+                  "description": "Dictionary mapping cluster IDs to lists of errors"
+                }
+              ]
+            },
+            {
+              "name": "_format_cell",
+              "signature": "_format_cell(self, cell, wrap_text=True, alignment='left', bold=False, fill_color=None, border=True)",
+              "purpose": "Apply consistent formatting to Excel cells",
+              "parameters": [
+                {
+                  "name": "cell",
+                  "type": "openpyxl.cell.Cell",
+                  "description": "Cell to format"
+                },
+                {
+                  "name": "wrap_text",
+                  "type": "bool",
+                  "description": "Whether to wrap text",
+                  "default": "True"
+                },
+                {
+                  "name": "alignment",
+                  "type": "str",
+                  "description": "Horizontal alignment",
+                  "default": "'left'"
+                },
+                {
+                  "name": "bold",
+                  "type": "bool",
+                  "description": "Whether to use bold font",
+                  "default": "False"
+                },
+                {
+                  "name": "fill_color",
+                  "type": "str",
+                  "description": "Fill color code",
+                  "default": "None"
+                },
+                {
+                  "name": "border",
+                  "type": "bool",
+                  "description": "Whether to add border",
+                  "default": "True"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "excelSheets": [
+        {
+          "name": "Summary",
+          "purpose": "Contains the AI-generated analysis"
+        },
+        {
+          "name": "Scenario",
+          "purpose": "Contains Background and Scenario text from feature file (for Ymir tests)"
+        },
+        {
+          "name": "Technical Summary",
+          "purpose": "Contains the first 20 errors with full details"
+        },
+        {
+          "name": "Component Analysis",
+          "purpose": "Contains component relationship information"
+        },
+        {
+          "name": "Images Extraction",
+          "purpose": "Contains OCR data from screenshots"
+        },
+        {
+          "name": "Grouped Issues",
+          "purpose": "Contains errors grouped by cluster with colorization"
+        },
+        {
+          "name": "Cluster Summary",
+          "purpose": "Contains high-level summary of each cluster"
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Generating Excel report",
+          "code": "from reports.excel_generator import ExcelReportGenerator\nfrom reports.base import ReportConfig, ReportData\n\n# Create Excel generator\nconfig = ReportConfig(output_dir=\"output/SXM-123456\", test_id=\"SXM-123456\")\ngenerator = ExcelReportGenerator(config)\n\n# Generate Excel report\nexcel_path = generator.generate(data)"
+        }
+      ]
+    },
+    {
+      "name": "JSON Generator",
+      "fileLocation": "reports/json_generator.py",
+      "purpose": "Generates JSON reports with component preservation",
+      "dependencies": [
+        "reports.base",
+        "utils.path_utils"
+      ],
+      "classes": [
+        {
+          "name": "JsonReportGenerator",
+          "inherits": "ReportGenerator",
+          "purpose": "Generator for JSON reports",
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> str",
+              "purpose": "Generate a JSON report",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated report"
+              }
+            },
+            {
+              "name": "write_json_report",
+              "signature": "write_json_report(self, data: Dict, filename: str) -> str",
+              "purpose": "Write JSON report with component-preserving encoding",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "Dict",
+                  "description": "Data to serialize"
+                },
+                {
+                  "name": "filename",
+                  "type": "str",
+                  "description": "Output filename"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the written file"
+              }
+            },
+            {
+              "name": "_process_image_references",
+              "signature": "_process_image_references(self, data: Any) -> None",
+              "purpose": "Process data to ensure any image references point to the supporting_images directory",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "Any",
+                  "description": "Data structure to process"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Generating JSON report",
+          "code": "from reports.json_generator import JsonReportGenerator\nfrom reports.base import ReportConfig, ReportData\n\n# Create JSON generator\nconfig = ReportConfig(output_dir=\"output/SXM-123456\", test_id=\"SXM-123456\")\ngenerator = JsonReportGenerator(config)\n\n# Generate JSON report\njson_path = generator.generate(data)"
+        }
+      ]
+    },
+    {
+      "name": "DOCX Generator",
+      "fileLocation": "reports/docx_generator.py",
+      "purpose": "Generates DOCX reports for bug submission",
+      "dependencies": [
+        "reports.base",
+        "utils.path_utils",
+        "docx"
+      ],
+      "functions": [
+        {
+          "name": "generate_bug_document",
+          "signature": "generate_bug_document(output_dir: str, test_id: str, summary: str, errors: List[Dict], ocr_data: List[Dict], clusters: Dict[int, List[Dict]], background_text: str = \"\", scenario_text: str = \"\", component_analysis: Optional[Dict[str, Any]] = None, primary_issue_component: str = \"unknown\", component_report_path: Optional[str] = None) -> str",
+          "purpose": "Generate a DOCX file formatted for Jira bug submission",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to save the document"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the document title"
+            },
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "Analysis summary text"
+            },
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of errors"
+            },
+            {
+              "name": "ocr_data",
+              "type": "List[Dict]",
+              "description": "OCR text from screenshots"
+            },
+            {
+              "name": "clusters",
+              "type": "Dict[int, List[Dict]]",
+              "description": "Dictionary mapping cluster IDs to lists of errors"
+            },
+            {
+              "name": "background_text",
+              "type": "str",
+              "description": "Background section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "scenario_text",
+              "type": "str",
+              "description": "Scenario section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "component_analysis",
+              "type": "Optional[Dict[str, Any]]",
+              "description": "Optional component relationship analysis results",
+              "default": "None"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary component identified as causing issues",
+              "default": "\"unknown\""
+            },
+            {
+              "name": "component_report_path",
+              "type": "Optional[str]",
+              "description": "Path to component report file",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Path to the generated document"
+          }
+        },
+        {
+          "name": "extract_root_cause_from_summary",
+          "signature": "extract_root_cause_from_summary(summary: str) -> str",
+          "purpose": "Extract root cause section from the AI-generated summary",
+          "parameters": [
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "AI-generated summary text"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Extracted root cause text"
+          }
+        },
+        {
+          "name": "extract_impact_from_summary",
+          "signature": "extract_impact_from_summary(summary: str) -> str",
+          "purpose": "Extract impact section from the AI-generated summary",
+          "parameters": [
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "AI-generated summary text"
+            }
+          ],
+          "returns": {
+            "type": "str",
+            "description": "Extracted impact text"
+          }
+        },
+        {
+          "name": "extract_recommended_actions",
+          "signature": "extract_recommended_actions(summary: str) -> List[str]",
+          "purpose": "Extract recommended actions from the AI-generated summary",
+          "parameters": [
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "AI-generated summary text"
+            }
+          ],
+          "returns": {
+            "type": "List[str]",
+            "description": "List of recommended actions"
+          }
+        }
+      ],
+      "classes": [
+        {
+          "name": "DocxReportGenerator",
+          "inherits": "ReportGenerator",
+          "purpose": "Generator for DOCX reports",
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> str",
+              "purpose": "Generate a DOCX report",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated report"
+              }
+            }
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Generating DOCX report",
+          "code": "from reports.docx_generator import DocxReportGenerator\nfrom reports.base import ReportConfig, ReportData\n\n# Create DOCX generator\nconfig = ReportConfig(output_dir=\"output/SXM-123456\", test_id=\"SXM-123456\")\ngenerator = DocxReportGenerator(config)\n\n# Generate DOCX report\ndocx_path = generator.generate(data)"
+        }
+      ]
+    },
+    {
+      "name": "Markdown Generator",
+      "fileLocation": "reports/markdown_generator.py",
+      "purpose": "Generates Markdown reports for quick summaries",
+      "dependencies": [
+        "reports.base",
+        "utils.path_utils"
+      ],
+      "classes": [
+        {
+          "name": "MarkdownReportGenerator",
+          "inherits": "ReportGenerator",
+          "purpose": "Generator for Markdown reports",
+          "methods": [
+            {
+              "name": "generate",
+              "signature": "generate(self, data: ReportData) -> str",
+              "purpose": "Generate a Markdown report",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "ReportData",
+                  "description": "Report data"
+                }
+              ],
+              "returns": {
+                "type": "str",
+                "description": "Path to the generated report"
+              }
+            }
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Generating Markdown report",
+          "code": "from reports.markdown_generator import MarkdownReportGenerator\nfrom reports.base import ReportConfig, ReportData\n\n# Create Markdown generator\nconfig = ReportConfig(output_dir=\"output/SXM-123456\", test_id=\"SXM-123456\")\ngenerator = MarkdownReportGenerator(config)\n\n# Generate Markdown report\nmarkdown_path = generator.generate(data)"
+        }
+      ]
+    },
+    {
+"name": "Entry Point",
+    "fileLocation": "reports/__init__.py",
+    "purpose": "Package initialization and main entry point for report generation",
+    "dependencies": [
+        "reports.base",
+        "reports.report_manager",
+        "reports.component_analyzer",
+        "reports.visualizations",
+        "utils.path_utils",
+        "utils.path_validator"
+      ],
+      "functions": [
+        {
+          "name": "write_reports",
+          "signature": "write_reports(output_dir: str, test_id: str, summary: str, errors: List[Dict], clusters: Dict[int, List[Dict]] = None, ocr_data: List[Dict] = None, ymir_flag: bool = False, background_text: str = \"\", scenario_text: str = \"\", primary_issue_component: str = \"unknown\", component_analysis: Dict[str, Any] = None, component_diagnostic: Dict[str, Any] = None) -> Dict[str, Any]",
+          "purpose": "Main entry point for report generation with simplified interface",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to save reports"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for reports"
+            },
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "AI-generated summary"
+            },
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "clusters",
+              "type": "Dict[int, List[Dict]]",
+              "description": "Dictionary mapping cluster IDs to lists of errors",
+              "default": "None"
+            },
+            {
+              "name": "ocr_data",
+              "type": "List[Dict]",
+              "description": "OCR text from screenshots",
+              "default": "None"
+            },
+            {
+              "name": "ymir_flag",
+              "type": "bool",
+              "description": "Whether this is a Ymir test",
+              "default": "False"
+            },
+            {
+              "name": "background_text",
+              "type": "str",
+              "description": "Background section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "scenario_text",
+              "type": "str",
+              "description": "Scenario section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component",
+              "default": "\"unknown\""
+            },
+            {
+              "name": "component_analysis",
+              "type": "Dict[str, Any]",
+              "description": "Results from component relationship analysis",
+              "default": "None"
+            },
+            {
+              "name": "component_diagnostic",
+              "type": "Dict[str, Any]",
+              "description": "Additional diagnostic information for components",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, Any]",
+            "description": "Dictionary with report paths and metadata"
+          },
+          "behavior": "Creates report configuration and data containers, initializes report manager, generates reports, and returns results",
+          "processingSteps": [
+            "Normalize test_id to ensure consistent format",
+            "Create ReportConfig object with output directory and test ID",
+            "Create ReportData object with all input data",
+            "Initialize ReportManager with config",
+            "Call ReportManager.generate_reports() with data",
+            "Return results dictionary with report paths and metadata"
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Basic report generation",
+          "code": "from reports import write_reports\n\n# Generate all reports with default settings\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failure analysis...\",\n    errors=errors,\n    ocr_data=ocr_data,\n    clusters=error_clusters\n)"
+        },
+        {
+          "purpose": "Report generation with component information",
+          "code": "from reports import write_reports\n\n# Generate reports with component information\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failure analysis...\",\n    errors=errors,\n    ocr_data=ocr_data,\n    clusters=error_clusters,\n    primary_issue_component=\"soa\",\n    component_analysis=component_analysis_results\n)"
+        }
+      ]
+    }
+  ],
+  "architectureFlows": [
+    {
+      "name": "Report Generation Process",
+      "description": "Complete end-to-end flow for report generation",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Data Preparation",
+          "description": "Incoming data is normalized, validated, and enhanced with component information",
+          "modules": ["data_preprocessor.py"],
+          "functions": ["preprocess_errors", "preprocess_clusters"],
+          "inputData": "Raw errors, clusters, and component information",
+          "outputData": "Processed errors and clusters with consistent component information"
+        },
+        {
+          "step": 2,
+          "name": "Orchestration",
+          "description": "The Report Manager coordinates generation across formats with component preservation",
+          "modules": ["report_manager.py"],
+          "functions": ["generate_reports", "_enhance_component_analysis", "_propagate_primary_component"],
+          "inputData": "Processed errors, clusters, and component information",
+          "outputData": "Enhanced component analysis and report paths"
+        },
+        {
+          "step": 3,
+          "name": "Component Analysis",
+          "description": "Component relationships are analyzed and visualized",
+          "modules": ["component_analyzer.py"],
+          "functions": ["build_component_analysis", "generate_component_report"],
+          "inputData": "Processed errors and primary component",
+          "outputData": "Component analysis data and component report"
+        },
+        {
+          "step": 4,
+          "name": "Visualization Generation",
+          "description": "Visualizations are created with thread safety and fallbacks",
+          "modules": ["visualizations.py"],
+          "functions": ["generate_timeline_image", "generate_component_visualization"],
+          "inputData": "Processed data and component analysis",
+          "outputData": "Visualization image paths"
+        },
+        {
+          "step": 5,
+          "name": "Format-Specific Generation",
+          "description": "Specialized generators create each report type",
+          "modules": ["excel_generator.py", "json_generator.py", "docx_generator.py", "markdown_generator.py"],
+          "functions": ["generate"],
+          "inputData": "Processed data with component analysis",
+          "outputData": "Format-specific reports"
+        },
+        {
+          "step": 6,
+          "name": "Path Verification",
+          "description": "Directory structure is verified and fixed if needed",
+          "modules": ["path_validator.py"],
+          "functions": ["fix_directory_structure"],
+          "inputData": "Generated report paths",
+          "outputData": "Verified and fixed directory structure"
+        }
+      ]
+    },
+    {
+      "name": "Component Information Preservation Flow",
+      "description": "Process for preserving component information throughout report generation",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Initial Component Extraction",
+          "description": "Component information is extracted from raw errors",
+          "modules": ["data_preprocessor.py"],
+          "functions": ["extract_primary_component", "count_components"],
+          "inputData": "Raw errors with component data",
+          "outputData": "Extracted primary component and component counts"
+        },
+        {
+          "step": 2,
+          "name": "Component Information Validation",
+          "description": "Component fields are validated for consistency",
+          "modules": ["data_preprocessor.py"],
+          "functions": ["validate_component_fields"],
+          "inputData": "Errors with component information",
+          "outputData": "Validated component fields"
+        },
+        {
+          "step": 3,
+          "name": "Component Analysis Enhancement",
+          "description": "Component analysis is enhanced with consistent primary_issue_component propagation",
+          "modules": ["report_manager.py"],
+          "functions": ["_enhance_component_analysis"],
+          "inputData": "Component analysis data, errors, and primary component",
+          "outputData": "Enhanced component analysis"
+        },
+        {
+          "step": 4,
+          "name": "Component Propagation",
+          "description": "Primary component is propagated to all errors and clusters",
+          "modules": ["report_manager.py"],
+          "functions": ["_propagate_primary_component", "_propagate_primary_component_to_clusters"],
+          "inputData": "Processed errors, clusters, and primary component",
+          "outputData": "Errors and clusters with consistent primary component"
+        },
+        {
+          "step": 5,
+          "name": "Component-Aware Serialization",
+          "description": "JSON serialization with component preservation",
+          "modules": ["base.py", "json_generator.py"],
+          "functions": ["ComponentAwareEncoder.default", "write_json_report"],
+          "inputData": "Data with component information",
+          "outputData": "Serialized JSON with preserved component information"
+        },
+        {
+          "step": 6,
+          "name": "Component Preservation Verification",
+          "description": "Verification of component information preservation",
+          "modules": ["report_manager.py"],
+          "functions": ["_verify_component_consistency", "_save_component_preservation_diagnostic"],
+          "inputData": "Processed data with component information",
+          "outputData": "Verification results and diagnostic information"
+        }
+      ]
+    },
+    {
+      "name": "Visualization Generation Flow",
+      "description": "Process for generating visualizations with thread safety and fallbacks",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Backend Configuration",
+          "description": "Configure matplotlib backend for thread safety",
+          "modules": ["visualizations.py"],
+          "functions": ["_configure_matplotlib_backend"],
+          "inputData": "None",
+          "outputData": "Configured matplotlib backend"
+        },
+        {
+          "step": 2,
+          "name": "Thread-Local Storage Initialization",
+          "description": "Initialize thread-local storage for feature flags",
+          "modules": ["visualizations.py"],
+          "functions": ["_is_feature_enabled"],
+          "inputData": "Feature flag name and default value",
+          "outputData": "Feature flag value from thread-local cache or Config"
+        },
+        {
+          "step": 3,
+          "name": "Path Sanitization",
+          "description": "Sanitize output directory to prevent nested directories",
+          "modules": ["visualizations.py", "utils/path_utils.py"],
+          "functions": ["sanitize_base_directory", "get_visualization_path"],
+          "inputData": "Output directory and expected subdirectory",
+          "outputData": "Sanitized output directory and visualization path"
+        },
+        {
+          "step": 4,
+          "name": "Visualization Generation with Timeout",
+          "description": "Generate visualization in a thread with timeout protection",
+          "modules": ["visualizations.py"],
+          "functions": ["_generate_with_timeout", "generate_timeline_image", "generate_component_visualization"],
+          "inputData": "Processed data for visualization",
+          "outputData": "Visualization file path or placeholder path on error/timeout"
+        },
+        {
+          "step": 5,
+          "name": "Graph Layout Computation",
+          "description": "Compute graph layout with multi-layered fallback system",
+          "modules": ["visualizations.py"],
+          "functions": ["_get_graph_layout"],
+          "inputData": "NetworkX graph",
+          "outputData": "Node positions for visualization"
+        },
+        {
+          "step": 6,
+          "name": "Image Verification",
+          "description": "Verify generated image is valid",
+          "modules": ["visualizations.py"],
+          "functions": ["_verify_image"],
+          "inputData": "Image file path",
+          "outputData": "Boolean indicating if image is valid"
+        },
+        {
+          "step": 7,
+          "name": "Visualization Resource Cleanup",
+          "description": "Clean up matplotlib resources to prevent memory leaks",
+          "modules": ["visualizations.py"],
+          "functions": ["_save_figure_with_cleanup"],
+          "inputData": "Matplotlib figure and output path",
+          "outputData": "Path to saved figure with resources cleaned up"
+        }
+      ]
+    }
+  ],
+  "integrationPoints": [
+    {
+      "name": "write_reports",
+      "type": "Function",
+      "location": "reports/__init__.py",
+      "description": "Main entry point for report generation with simplified interface",
+      "signature": "write_reports(output_dir: str, test_id: str, summary: str, errors: List[Dict], clusters: Dict[int, List[Dict]] = None, ocr_data: List[Dict] = None, ymir_flag: bool = False, background_text: str = \"\", scenario_text: str = \"\", primary_issue_component: str = \"unknown\", component_analysis: Dict[str, Any] = None, component_diagnostic: Dict[str, Any] = None) -> Dict[str, Any]",
+      "usagePurpose": "Simplified interface for generating all report types from analysis data",
+      "codeExample": "from reports import write_reports\n\n# Generate all reports\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failure analysis...\",\n    errors=errors,\n    clusters=error_clusters,\n    primary_issue_component=\"soa\"\n)"
+    },
+    {
+      "name": "ReportManager",
+      "type": "Class",
+      "location": "reports/report_manager.py",
+      "description": "Orchestrates the report generation process with enhanced component handling",
+      "signature": "ReportManager(config: ReportConfig)",
+      "usagePurpose": "Advanced interface with more control over report generation options",
+      "codeExample": "from reports.report_manager import ReportManager\nfrom reports.base import ReportConfig, ReportData\n\n# Create configuration with specific options\nconfig = ReportConfig(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    enable_excel=True,\n    enable_json=True,\n    enable_docx=False,\n    enable_component_report=True\n)\n\n# Create data container\ndata = ReportData(\n    errors=errors,\n    summary=summary,\n    clusters=clusters,\n    ocr_data=ocr_data\n)\n\n# Generate reports\nmanager = ReportManager(config)\nresults = manager.generate_reports(data)"
+    },
+    {
+      "name": "VisualizationGenerator",
+      "type": "Class",
+      "location": "reports/visualizations.py",
+      "description": "Generator for report visualizations with thread safety and fallbacks",
+      "signature": "VisualizationGenerator(config: ReportConfig)",
+      "usagePurpose": "Direct generation of visualizations without other report types",
+      "codeExample": "from reports.visualizations import VisualizationGenerator\nfrom reports.base import ReportConfig, ReportData\n\n# Create configuration for visualizations only\nconfig = ReportConfig(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    enable_excel=False,\n    enable_json=False,\n    enable_docx=False,\n    enable_markdown=False,\n    enable_component_report=True\n)\n\n# Create data container\ndata = ReportData(\n    errors=errors,\n    summary=summary,\n    clusters=clusters,\n    component_analysis=component_analysis\n)\n\n# Generate visualizations only\nviz_generator = VisualizationGenerator(config)\nviz_paths = viz_generator.generate(data)"
+    },
+    {
+      "name": "build_component_analysis",
+      "type": "Function",
+      "location": "reports/component_analyzer.py",
+      "description": "Build comprehensive component analysis data structure",
+      "signature": "build_component_analysis(errors: List[Dict], primary_issue_component: str, existing_analysis: Optional[Dict] = None) -> Dict[str, Any]",
+      "usagePurpose": "Direct component analysis without generating reports",
+      "codeExample": "from reports.component_analyzer import build_component_analysis\n\n# Generate component analysis only\ncomponent_analysis = build_component_analysis(\n    errors=errors,\n    primary_issue_component=\"soa\"\n)"
+    },
+    {
+      "name": "Path Utilities",
+      "type": "Module",
+      "location": "utils/path_utils.py",
+      "description": "Utilities for standardized path handling and directory structure",
+      "usagePurpose": "Consistent path handling across the system",
+      "codeExample": "from utils.path_utils import sanitize_base_directory, get_output_path, OutputType, get_standardized_filename\n\n# Sanitize output directory to prevent nested directories\noutput_dir = sanitize_base_directory(output_dir, \"supporting_images\")\n\n# Get standardized path for a file\nfile_path = get_output_path(\n    output_dir,\n    test_id,\n    get_standardized_filename(test_id, \"log_analysis\", \"xlsx\"),\n    OutputType.PRIMARY_REPORT\n)"
+    }
+  ],
+  "criticalMechanisms": [
+    {
+      "name": "Component Information Preservation",
+      "description": "Ensures component data is maintained consistently throughout the report generation process",
+      "mechanism": "The system uses the ComponentAwareEncoder and explicit component field tracking to preserve component information during serialization and processing",
+      "implementation": [
+        {
+          "name": "ComponentAwareEncoder",
+          "description": "Custom JSON encoder that preserves component information during serialization",
+          "location": "reports/base.py",
+          "key_logic": "Extracts component fields before serialization, processes the data, then carefully reapplies component information",
+          "code_snippet": "def default(self, obj):\n    # For dictionaries with component fields\n    if isinstance(obj, dict):\n        # Store original component information\n        original_component_info = self._extract_component_info(obj)\n        \n        # Create deep copy to avoid modification\n        result = copy.deepcopy(obj)\n        \n        # Process the dictionary with component preservation\n        self._preserve_component_fields(result)\n        \n        # Verify and restore component fields\n        processed_component_info = self._extract_component_info(result)\n        if not self.validate_component_preservation(original_component_info, processed_component_info):\n            # Restore original values for critical fields\n            for field in self.component_fields:\n                if field in original_component_info and field not in (None, '', 'unknown'):\n                    result[field] = original_component_info[field]\n        \n        return result"
+        },
+        {
+          "name": "Component Field Propagation",
+          "description": "Propagates primary_issue_component to all errors and clusters",
+          "location": "reports/report_manager.py",
+          "key_logic": "Updates all errors with consistent primary_issue_component while preserving other component information",
+          "code_snippet": "def _propagate_primary_component(self, errors, primary_component):\n    errors = copy.deepcopy(errors)\n    \n    # Update all errors\n    for err in errors:\n        if isinstance(err, dict):\n            err['primary_issue_component'] = primary_component\n            # Also ensure component_source exists\n            if 'component' in err and 'component_source' not in err:\n                err['component_source'] = 'default'\n    \n    return errors"
+        },
+        {
+          "name": "Component Enhancement",
+          "description": "Enhances component analysis with consistent information",
+          "location": "reports/report_manager.py",
+          "key_logic": "Updates component analysis with consistent primary_issue_component and ensures all required data structures exist",
+          "code_snippet": "def _enhance_component_analysis(self, component_analysis, errors, clusters, primary_issue_component):\n    # Create a deep copy to avoid modifying original data\n    component_analysis = copy.deepcopy(component_analysis or {})\n    \n    # Set primary_issue_component consistently\n    component_analysis[\"primary_issue_component\"] = primary_issue_component\n    \n    # Ensure metrics exist\n    if \"metrics\" not in component_analysis:\n        component_analysis[\"metrics\"] = {}\n    \n    component_analysis[\"metrics\"][\"root_cause_component\"] = primary_issue_component\n    \n    # Ensure component_summary exists\n    if \"component_summary\" not in component_analysis:\n        # Build component_summary from errors\n        component_counts = {}\n        for err in errors:\n            if isinstance(err, dict) and 'component' in err:\n                comp = err.get('component', 'unknown')\n                component_counts[comp] = component_counts.get(comp, 0) + 1\n        \n        # Create component_summary\n        component_analysis[\"component_summary\"] = [\n            {\n                \"id\": comp,\n                \"name\": comp.upper(),\n                \"error_count\": count,\n                \"is_primary\": comp == primary_issue_component\n            }\n            for comp, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True)\n            if comp != 'unknown'\n        ]\n    \n    return component_analysis"
+        }
+      ]
+    },
+    {
+      "name": "Thread-Safe Visualization",
+      "description": "Ensures visualizations can be generated safely in multithreaded environments",
+      "mechanism": "The system uses thread-local storage, explicit backend configuration, timeout protection, and resource cleanup to ensure thread safety",
+      "implementation": [
+        {
+          "name": "Thread-Local Storage",
+          "description": "Uses thread-local storage to prevent race conditions in feature flag access",
+          "location": "reports/visualizations.py",
+          "key_logic": "Stores feature flag values in thread-local storage to prevent conflicts",
+          "code_snippet": "import threading\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    from config import Config\n    result = getattr(Config, feature_name, default)\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+        },
+        {
+          "name": "Timeout Protection",
+          "description": "Uses threading with timeout to prevent hangs in visualization generation",
+          "location": "reports/visualizations.py",
+          "key_logic": "Runs visualization generation in a separate thread with timeout protection",
+          "code_snippet": "def _generate_with_timeout(self, paths_dict, key, feature_flag, default_value, timeout_seconds, func_name, *args, **kwargs):\n    # Setup thread safety for visualization\n    result = [None]\n    error = [None]\n    \n    def generate_with_timeout():\n        try:\n            result[0] = generator_func(*args, **kwargs)\n        except Exception as e:\n            error[0] = e\n    \n    # Start thread and wait with timeout\n    thread = threading.Thread(target=generate_with_timeout)\n    thread.daemon = True\n    thread.start()\n    thread.join(timeout=timeout_seconds)\n    \n    if thread.is_alive():\n        # Timeout occurred\n        logging.warning(f\"Timeout generating {key} visualization\")\n        # Generate a placeholder instead\n        path = self._generate_placeholder(args[0], args[1], f\"Timeout while generating {key} visualization\")\n        if path:\n            paths_dict[key] = path\n        return"
+        },
+        {
+          "name": "Backend Configuration",
+          "description": "Configures matplotlib backend for thread safety",
+          "location": "reports/visualizations.py",
+          "key_logic": "Forces Agg backend to avoid GUI-related thread issues",
+          "code_snippet": "def _configure_matplotlib_backend():\n    # Force Agg backend to avoid tkinter thread issues completely\n    import matplotlib\n    matplotlib.use('Agg', force=True)\n    \n    import matplotlib.pyplot as plt\n    \n    # Configure global settings\n    plt.rcParams['figure.max_open_warning'] = 50\n    plt.rcParams['font.size'] = 10\n    \n    return plt"
+        },
+        {
+          "name": "Memory Management",
+          "description": "Ensures proper cleanup of matplotlib resources to prevent memory leaks",
+          "location": "reports/visualizations.py",
+          "key_logic": "Always closes figures, even when exceptions occur",
+          "code_snippet": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)"
+        }
+      ]
+    },
+    {
+      "name": "Directory Structure Management",
+      "description": "Ensures consistent file organization and prevents nested directories",
+      "mechanism": "The system uses path sanitization, standardized path generation, and directory structure verification to maintain proper file organization",
+      "implementation": [
+        {
+          "name": "Path Sanitization",
+          "description": "Sanitizes output directory to prevent nested directories",
+          "location": "utils/path_utils.py",
+          "key_logic": "Detects and corrects nested directory paths",
+          "code_snippet": "def sanitize_base_directory(base_dir: str, expected_subdir: str = None) -> str:\n    # Normalize path separators\n    norm_path = os.path.normpath(base_dir)\n    parts = norm_path.replace('\\\\', '/').split('/')\n    \n    # Check if last part is a known subdirectory\n    known_subdirs = [\"json\", \"supporting_images\", \"debug\"]\n    \n    if expected_subdir and expected_subdir in parts[-1]:\n        # Directory already contains the expected subdirectory\n        logging.info(f\"Sanitizing path: '{base_dir}' contains '{expected_subdir}' subdirectory\")\n        # Use parent directory\n        return os.path.dirname(norm_path)\n        \n    if parts and parts[-1] in known_subdirs:\n        # Using a known subdirectory directly\n        logging.info(f\"Sanitizing path: '{base_dir}' is a known subdirectory\")\n        # Use parent directory\n        return os.path.dirname(norm_path)\n        \n    return base_dir"
+        },
+        {
+          "name": "Standardized Path Generation",
+          "description": "Generates standardized paths based on output type",
+          "location": "utils/path_utils.py",
+          "key_logic": "Uses OutputType enum to determine correct subdirectory for each file type",
+          "code_snippet": "def get_output_path(base_dir: str, test_id: str, filename: str, output_type: OutputType = OutputType.PRIMARY_REPORT, create_dirs: bool = True) -> str:\n    test_id = normalize_test_id(test_id)\n    \n    # Sanitize the base directory\n    expected_subdir = None\n    if output_type == OutputType.JSON_DATA:\n        expected_subdir = \"json\"\n    elif output_type == OutputType.VISUALIZATION:\n        expected_subdir = \"supporting_images\"\n    elif output_type == OutputType.DEBUGGING:\n        expected_subdir = \"debug\"\n        \n    base_dir = sanitize_base_directory(base_dir, expected_subdir)\n    \n    # Determine path based on output type\n    if output_type == OutputType.JSON_DATA:\n        path = os.path.join(base_dir, \"json\", filename)\n    elif output_type == OutputType.VISUALIZATION:\n        path = os.path.join(base_dir, \"supporting_images\", filename)\n    elif output_type == OutputType.DEBUGGING:\n        path = os.path.join(base_dir, \"debug\", filename)\n    else:  # PRIMARY_REPORT\n        path = os.path.join(base_dir, filename)\n        \n    # Create directory if needed\n    if create_dirs:\n        os.makedirs(os.path.dirname(path), exist_ok=True)\n        \n    return path"
+        },
+        {
+          "name": "Directory Structure Verification",
+          "description": "Verifies and fixes directory structure issues",
+          "location": "utils/path_validator.py",
+          "key_logic": "Identifies and fixes misplaced files and nested directories",
+          "code_snippet": "def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]:\n    issues = {\n        \"json_dir_images\": [],\n        \"images_dir_json\": [],\n        \"nested_directories\": [],\n        \"misplaced_visualizations\": [],\n        \"fixed_files\": []\n    }\n    \n    # First, clean up nested directories\n    cleanup_results = cleanup_nested_directories(base_dir)\n    \n    # Check and fix for images in json directory\n    json_dir = os.path.join(base_dir, \"json\")\n    if os.path.exists(json_dir):\n        for file in os.listdir(json_dir):\n            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg')):\n                # This is an image file in the json directory\n                file_path = os.path.join(json_dir, file)\n                target_path = os.path.join(base_dir, \"supporting_images\", file)\n                issues[\"json_dir_images\"].append(file_path)\n                \n                # Move the file to the correct directory\n                os.makedirs(os.path.join(base_dir, \"supporting_images\"), exist_ok=True)\n                if not os.path.exists(target_path):\n                    shutil.copy2(file_path, target_path)\n                    issues[\"fixed_files\"].append(file_path)\n    \n    # Check and fix for JSON files in images directory\n    # And similar code for other directory structure issues...\n    \n    return issues"
+        }
+      ]
+    },
+    {
+      "name": "Multi-Layered Graph Layout System",
+      "description": "Provides optimal graph layouts for visualizations without external dependencies",
+      "mechanism": "The system uses a multi-layered approach to graph layouts with robust fallbacks",
+      "implementation": [
+        {
+          "name": "Graph Layout Selection",
+          "description": "Selects appropriate layout algorithm based on graph characteristics",
+          "location": "reports/visualizations.py",
+          "key_logic": "Tries multiple layout algorithms with fallbacks",
+          "code_snippet": "def _get_graph_layout(self, G):\n    # Check graph size to optimize layout approach\n    node_count = G.number_of_nodes()\n    if node_count == 0:\n        return {}\n    \n    # For very small graphs, spring layout is sufficient and fast\n    if node_count <= 3:\n        return nx.spring_layout(G, seed=42)\n    \n    # First attempt: Try pydot (part of NetworkX)\n    try:\n        import pydot\n        from networkx.drawing.nx_pydot import graphviz_layout\n        # Silence warning messages from Pydot\n        with warnings.catch_warnings():\n            warnings.simplefilter(\"ignore\")\n            return graphviz_layout(G, prog='dot')\n    except (ImportError, Exception) as e:\n        logging.debug(f\"Pydot layout unavailable ({str(e)}), trying next option\")\n    \n    # Second attempt: Try spectral layout (good for component relationships)\n    try:\n        # Spectral layout works well for tree-like structures\n        return nx.spectral_layout(G)\n    except Exception as e:\n        logging.debug(f\"Spectral layout failed ({str(e)}), trying next option\")\n    \n    # Third attempt: Try shell layout (good for visualizing hierarchies)\n    try:\n        # Group nodes by type or relationships\n        groups = []\n        # Implementation details...\n            \n        # Only use shell layout if we have valid groups\n        if groups:\n            return nx.shell_layout(G, groups)\n    except Exception as e:\n        logging.debug(f\"Shell layout failed ({str(e)}), falling back to spring layout\")\n    \n    # Final fallback: Enhanced spring layout with optimized parameters\n    return nx.spring_layout(\n        G, \n        k=0.3 + (0.1 / max(node_count, 1)),  # Dynamic spacing based on node count\n        iterations=100,                      # More iterations for better layout\n        seed=42                              # Consistent layout between runs\n    )"
+        },
+        {
+          "name": "Error Handling in Layout Computation",
+          "description": "Provides robust error handling and fallbacks for layout algorithms",
+          "location": "reports/visualizations.py",
+          "key_logic": "Catches and logs all exceptions during layout computation, providing fallbacks",
+          "code_snippet": "# Each layout algorithm is wrapped in a try-except block\ntry:\n    # Try spectral layout (good for component relationships)\n    return nx.spectral_layout(G)\nexcept Exception as e:\n    logging.debug(f\"Spectral layout failed ({str(e)}), trying next option\")\n\n# Additional attempts with other algorithms...\n\n# Final fallback that should always work\nreturn nx.spring_layout(G, k=0.3, iterations=100, seed=42)"
+        },
+        {
+          "name": "Dynamic Layout Parameters",
+          "description": "Adjusts layout parameters based on graph characteristics",
+          "location": "reports/visualizations.py",
+          "key_logic": "Uses graph size and structure to optimize layout parameters",
+          "code_snippet": "# Dynamic spacing based on node count for spring layout\nk = 0.3 + (0.1 / max(node_count, 1))\nreturn nx.spring_layout(G, k=k, iterations=100, seed=42)\n\n# For hierarchical graphs, use dot algorithm\nif is_hierarchical(G):\n    return graphviz_layout(G, prog='dot')\n\n# For radial structures, use twopi algorithm\nif is_radial(G):\n    return graphviz_layout(G, prog='twopi')"
+        }
+      ]
+    }
+  ],
+  "visualizationSystem": {
+    "visualizationTypes": [
+      {
+        "name": "Component Relationship Diagram",
+        "description": "Shows relationships between components with directed edges",
+        "generatorFunction": "generate_component_visualization",
+        "outputFormat": "PNG or SVG",
+        "features": [
+          "Component Nodes",
+          "Relationship Edges",
+          "Type-Based Coloring",
+          "Highlighting for Primary Issue Component",
+          "Dynamic Node Sizing",
+          "Legend for Component Types"
+        ],
+        "featureFlag": "ENABLE_COMPONENT_REPORT_IMAGES"
+      },
+      {
+        "name": "Component Error Distribution",
+        "description": "Shows error counts across components as a bar chart",
+        "generatorFunction": "generate_component_error_distribution",
+        "outputFormat": "PNG",
+        "features": [
+          "Horizontal Bars",
+          "Component-Based Coloring",
+          "Sorted Display",
+          "Value Labels",
+          "Primary Component Highlight"
+        ],
+        "featureFlag": "ENABLE_COMPONENT_DISTRIBUTION"
+      },
+      {
+        "name": "Error Propagation Diagram",
+        "description": "Shows how errors propagate between components",
+        "generatorFunction": "generate_error_propagation_diagram",
+        "outputFormat": "PNG or SVG",
+        "features": [
+          "Error Nodes",
+          "Propagation Edges",
+          "Role-Based Coloring",
+          "Edge Weights",
+          "Multi-format Input Handling"
+        ],
+        "featureFlag": "ENABLE_ERROR_PROPAGATION"
+      },
+      {
+        "name": "Timeline Visualization",
+        "description": "Shows errors across test steps with severity-based coloring",
+        "generatorFunction": "generate_timeline_image",
+        "outputFormat": "PNG",
+        "features": [
+          "Step Boundaries",
+          "Severity Coloring",
+          "Time-Based X-Axis",
+          "Step-Based Y-Axis",
+          "Legend"
+        ],
+        "featureFlag": "Always enabled"
+      },
+      {
+        "name": "Cluster Timeline Visualization",
+        "description": "Shows errors grouped by similarity clusters",
+        "generatorFunction": "generate_cluster_timeline_image",
+        "outputFormat": "PNG",
+        "features": [
+          "Cluster-Based Coloring",
+          "Step Boundaries",
+          "Time-Based X-Axis",
+          "Step-Based Y-Axis",
+          "Legend"
+        ],
+        "featureFlag": "ENABLE_CLUSTER_TIMELINE"
+      }
+    ],
+    "layoutAlgorithms": [
+      {
+        "name": "Pydot/Graphviz Layout",
+        "algorithms": ["dot", "neato", "twopi", "circo", "fdp"],
+        "bestFor": "Hierarchical structures, trees, and directed graphs",
+        "implementation": "Uses NetworkX's graphviz_layout function with pydot backend"
+      },
+      {
+        "name": "Spectral Layout",
+        "algorithms": ["spectral_layout"],
+        "bestFor": "Simple graph structures with natural clustering",
+        "implementation": "Uses NetworkX's spectral_layout function"
+      },
+      {
+        "name": "Shell Layout",
+        "algorithms": ["shell_layout"],
+        "bestFor": "Concentric circles of nodes grouped by type",
+        "implementation": "Groups nodes by type and uses NetworkX's shell_layout function"
+      },
+      {
+        "name": "Spring Layout",
+        "algorithms": ["spring_layout"],
+        "bestFor": "General-purpose layout for any graph",
+        "implementation": "Uses NetworkX's spring_layout function with optimized parameters based on graph size"
+      }
+    ],
+    "threadSafety": {
+      "mechanisms": [
+        {
+          "name": "Backend Configuration",
+          "implementation": "Forces Agg backend to avoid GUI-related thread issues",
+          "code": "matplotlib.use('Agg', force=True)"
+        },
+        {
+          "name": "Thread-Local Storage",
+          "implementation": "Uses thread-local storage for feature flags and other state",
+          "code": "_visualization_local = threading.local()"
+        },
+        {
+          "name": "Timeout Protection",
+          "implementation": "Runs visualization generation in a separate thread with timeout",
+          "code": "thread = threading.Thread(target=generate_with_timeout)\nthread.daemon = True\nthread.start()\nthread.join(timeout=timeout_seconds)"
+        },
+        {
+          "name": "Figure Cleanup",
+          "implementation": "Always closes figures, even when exceptions occur",
+          "code": "try:\n    fig.savefig(image_path)\n    return image_path\nfinally:\n    plt.close(fig)"
+        }
+      ]
+    },
+    "fallbackMechanisms": [
+      {
+        "name": "Layout Algorithm Fallbacks",
+        "description": "Tries multiple layout algorithms when preferred ones fail",
+        "implementation": "Tries pydot, spectral, shell, and spring layouts in sequence with exception handling"
+      },
+      {
+        "name": "Timeout Handling",
+        "description": "Generates placeholder visualizations when generation times out",
+        "implementation": "Runs visualization in thread with timeout, falls back to placeholder on timeout"
+      },
+      {
+        "name": "Error Handling",
+        "description": "Catches and logs all exceptions during visualization generation",
+        "implementation": "Wraps all visualization code in try-except blocks with detailed logging"
+      },
+      {
+        "name": "Empty Data Handling",
+        "description": "Creates informative placeholders when data is missing or empty",
+        "implementation": "Checks data availability and creates placeholder with message when missing"
+      },
+      {
+        "name": "Image Verification",
+        "description": "Verifies generated images are valid and creates placeholders when invalid",
+        "implementation": "Uses PIL to verify image validity and falls back to placeholder if invalid"
+      }
+    ]
+  },
+  "directoryStructure": {
+    "outputDirectory": {
+      "pattern": "output/[test_id]/",
+      "description": "Root directory for all outputs, named after the test ID",
+      "contents": [
+        {
+          "pattern": "[test_id]_log_analysis.xlsx",
+          "description": "Excel report with multiple sheets",
+          "type": "PRIMARY_REPORT"
+        },
+        {
+          "pattern": "[test_id]_bug_report.docx",
+          "description": "DOCX report formatted for bug submission",
+          "type": "PRIMARY_REPORT"
+        },
+        {
+          "pattern": "[test_id]_log_analysis.md",
+          "description": "Markdown report with summary and key errors",
+          "type": "PRIMARY_REPORT"
+        },
+        {
+          "pattern": "[test_id]_component_report.html",
+          "description": "HTML report focused on component relationships",
+          "type": "PRIMARY_REPORT"
+        },
+        {
+          "pattern": "json/",
+          "description": "Subdirectory for JSON data",
+          "contents": [
+            {
+              "pattern": "[test_id]_log_analysis.json",
+              "description": "Complete JSON export of analysis data",
+              "type": "JSON_DATA"
+            },
+            {
+              "pattern": "[test_id]_component_analysis.json",
+              "description": "Component analysis data",
+              "type": "JSON_DATA"
+            },
+            {
+              "pattern": "[test_id]_component_preservation.json",
+              "description": "Diagnostic data for component preservation",
+              "type": "JSON_DATA"
+            }
+          ]
+        },
+        {
+          "pattern": "supporting_images/",
+          "description": "Subdirectory for visualizations",
+          "contents": [
+            {
+              "pattern": "[test_id]_timeline.png",
+              "description": "Timeline visualization",
+              "type": "VISUALIZATION"
+            },
+            {
+              "pattern": "[test_id]_component_errors.png",
+              "description": "Component error distribution (current name)",
+              "type": "VISUALIZATION"
+            },
+            {
+              "pattern": "[test_id]_component_distribution.png",
+              "description": "Component error distribution (legacy name)",
+              "type": "VISUALIZATION"
+            },
+            {
+              "pattern": "[test_id]_component_relationships.png",
+              "description": "Component relationship diagram",
+              "type": "VISUALIZATION"
+            },
+            {
+              "pattern": "[test_id]_error_propagation.png",
+              "description": "Error propagation diagram",
+              "type": "VISUALIZATION"
+            },
+            {
+              "pattern": "[test_id]_cluster_timeline.png",
+              "description": "Cluster timeline visualization",
+              "type": "VISUALIZATION"
+            }
+          ]
+        },
+        {
+          "pattern": "debug/",
+          "description": "Subdirectory for debugging information",
+          "contents": [
+            {
+              "pattern": "[test_id]_timeline_debug.txt",
+              "description": "Debug log for timeline generation",
+              "type": "DEBUGGING"
+            },
+            {
+              "pattern": "[test_id]_cluster_timeline_debug.txt",
+              "description": "Debug log for cluster timeline generation",
+              "type": "DEBUGGING"
+            }
+          ]
+        }
+      ]
+    },
+    "sourceCodeDirectory": {
+      "pattern": "reports/",
+      "description": "Root package directory for report generation code",
+      "contents": [
+        {
+          "pattern": "__init__.py",
+          "description": "Package initialization and main entry point"
+        },
+        {
+          "pattern": "base.py",
+          "description": "Base classes and utilities for report generation"
+        },
+        {
+          "pattern": "report_manager.py",
+          "description": "Central orchestrator for report generation"
+        },
+        {
+          "pattern": "component_analyzer.py",
+          "description": "Component relationship analysis and reporting"
+        },
+        {
+          "pattern": "data_preprocessor.py",
+          "description": "Data normalization and validation"
+        },
+        {
+          "pattern": "visualizations.py",
+          "description": "Visualization generation with thread safety"
+        },
+        {
+          "pattern": "excel_generator.py",
+          "description": "Excel report generation"
+        },
+        {
+          "pattern": "json_generator.py",
+          "description": "JSON report generation"
+        },
+        {
+          "pattern": "docx_generator.py",
+          "description": "DOCX report generation"
+        },
+        {
+          "pattern": "markdown_generator.py",
+          "description": "Markdown report generation"
+        }
+      ]
+    },
+    "utilsDirectory": {
+      "pattern": "utils/",
+      "description": "Utility modules for report generation",
+      "contents": [
+        {
+          "pattern": "path_utils.py",
+          "description": "Path handling utilities with standardization"
+        },
+        {
+          "pattern": "path_validator.py",
+          "description": "Directory structure validation and fixing"
+        },
+        {
+          "pattern": "visualization_utils.py",
+          "description": "Visualization utilities with fallbacks"
+        },
+        {
+          "pattern": "component_verification.py",
+          "description": "Component information verification utilities"
+        }
+      ]
+    }
+  },
+  "componentRelationships": {
+    "hierarchical": [
+      {
+        "parent": "write_reports",
+        "children": ["ReportManager"],
+        "relationship": "Uses",
+        "description": "write_reports function uses ReportManager to generate reports"
+      },
+      {
+        "parent": "ReportManager",
+        "children": ["ExcelReportGenerator", "JsonReportGenerator", "DocxReportGenerator", "MarkdownReportGenerator", "VisualizationGenerator"],
+        "relationship": "Creates and uses",
+        "description": "ReportManager creates and uses format-specific generators based on configuration"
+      },
+      {
+        "parent": "VisualizationGenerator",
+        "children": ["ComponentVisualizer", "generate_timeline_image", "generate_cluster_timeline_image"],
+        "relationship": "Uses",
+        "description": "VisualizationGenerator uses ComponentVisualizer and timeline functions to generate visualizations"
+      }
+    ],
+    "dependencies": [
+      {
+        "from": "All Modules",
+        "to": "reports/base.py",
+        "description": "All modules depend on base classes and utilities"
+      },
+      {
+        "from": "All Generators",
+        "to": "utils/path_utils.py",
+        "description": "All generators depend on path utilities for standardized file paths"
+      },
+      {
+        "from": "report_manager.py",
+        "to": "reports/data_preprocessor.py",
+        "description": "ReportManager depends on data preprocessing for component handling"
+      },
+      {
+        "from": "report_manager.py",
+        "to": "reports/component_analyzer.py",
+        "description": "ReportManager depends on component analyzer for component analysis"
+      },
+      {
+        "from": "visualizations.py",
+        "to": "matplotlib",
+        "description": "Visualization generation depends on matplotlib for creating visualizations"
+      },
+      {
+        "from": "visualizations.py",
+        "to": "networkx",
+        "description": "Component visualizations depend on networkx for graph operations"
+      },
+      {
+        "from": "report_manager.py",
+        "to": "utils/path_validator.py",
+        "description": "ReportManager depends on path validator for directory structure verification"
+      }
+    ],
+    "dataFlow": [
+      {
+        "from": "Raw Errors",
+        "to": "data_preprocessor.py",
+        "description": "Raw errors flow to data preprocessor for normalization and component identification"
+      },
+      {
+        "from": "data_preprocessor.py",
+        "to": "report_manager.py",
+        "description": "Processed errors flow to report manager for orchestration"
+      },
+      {
+        "from": "report_manager.py",
+        "to": "component_analyzer.py",
+        "description": "Processed errors flow to component analyzer for relationship analysis"
+      },
+      {
+        "from": "component_analyzer.py",
+        "to": "visualizations.py",
+        "description": "Component analysis flows to visualization generator for diagram creation"
+      },
+      {
+        "from": "report_manager.py",
+        "to": "Format-Specific Generators",
+        "description": "Processed data flows to format-specific generators for report creation"
+      },
+      {
+        "from": "Format-Specific Generators",
+        "to": "Output Files",
+        "description": "Generated reports flow to output files in standardized directory structure"
+      }
+    ]
+  },
+  "dependencies": {
+    "external": [
+      {
+        "name": "matplotlib",
+        "version": "3.7.1",
+        "purpose": "Visualization generation",
+        "required": true,
+        "notes": "Used with Agg backend for thread safety"
+      },
+      {
+        "name": "networkx",
+        "version": "3.1",
+        "purpose": "Graph operations for component visualization",
+        "required": true,
+        "notes": "Used for component relationship graphs"
+      },
+      {
+        "name": "pandas",
+        "version": "2.0.1",
+        "purpose": "Data manipulation for Excel reports",
+        "required": true,
+        "notes": "Used for Excel report generation"
+      },
+      {
+        "name": "openpyxl",
+        "version": "3.1.2",
+        "purpose": "Excel file operations",
+        "required": true,
+        "notes": "Used for Excel formatting and styling"
+      },
+      {
+        "name": "docx",
+        "version": "0.8.10",
+        "purpose": "DOCX file generation",
+        "required": false,
+        "notes": "Used for DOCX reports with fallback to text"
+      },
+      {
+        "name": "PIL/Pillow",
+        "version": "9.5.0",
+        "purpose": "Image verification",
+        "required": false,
+        "notes": "Used for verifying generated images with fallback"
+      },
+      {
+        "name": "pydot",
+        "version": "1.4.2",
+        "purpose": "Graph layout computation",
+        "required": false,
+        "notes": "Used for optimal layouts with fallback to NetworkX layouts"
+      }
+    ],
+    "internal": [
+      {
+        "name": "config",
+        "purpose": "Configuration settings",
+        "required": false,
+        "notes": "Used for feature flags with fallback to defaults"
+      },
+      {
+        "name": "components.direct_component_analyzer",
+        "purpose": "Component identification",
+        "required": false,
+        "notes": "Used for enhanced component identification with fallback"
+      },
+      {
+        "name": "utils.component_verification",
+        "purpose": "Component information verification",
+        "required": false,
+        "notes": "Used for verifying component information preservation"
+      },
+      {
+        "name": "json_utils",
+        "purpose": "JSON serialization utilities",
+        "required": false,
+        "notes": "Used for component-aware serialization with fallback to direct implementation"
+      }
+    ]
+  }
+}

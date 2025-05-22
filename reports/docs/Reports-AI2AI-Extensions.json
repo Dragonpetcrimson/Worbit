@@ -1,0 +1,1217 @@
+{
+  "documentPurpose": "This document provides updated technical specifications for the error graph generation, component verification, placeholder generation, and system integration aspects of the Orbit Analyzer's report generation subsystem. It enables knowledge transfer to AI systems or developers who need to maintain, extend, or interact with these specific components without requiring access to the complete codebase.",
+  "metadata": {
+    "version": "1.1.0",
+    "timestamp": "2025-05-16T14:30:00Z",
+    "documentType": "Interface Specification - Partial Update",
+    "system": "Orbit Analyzer Reports Subsystem - Enhanced Components",
+    "contextRequirements": "Understanding of Python, graph theory, component-based systems, and visualization techniques"
+  },
+  "systemOverview": {
+    "name": "Orbit Analyzer Error Analysis and Verification Components",
+    "coreFunctionality": "Generation of error propagation graphs, verification of component information integrity, creation of fallback visualizations, and integration with external systems",
+    "designPhilosophy": "Robust error handling with intelligent fallbacks, reliable component information preservation throughout processing, and seamless integration with external analysis systems",
+    "primaryCapabilities": [
+      "Sophisticated error graph generation with representative error selection",
+      "Comprehensive component information verification",
+      "Multi-tiered fallback system for failed visualizations",
+      "Flexible integration with external component analysis systems"
+    ]
+  },
+  "modulesAndComponents": [
+    {
+      "name": "Error Graph Generation",
+      "fileLocation": "reports/component_analyzer.py",
+      "purpose": "Creates a directed graph representing error propagation between components with sophisticated error selection and edge creation mechanisms",
+      "dependencies": [
+        "networkx",
+        "reports.base"
+      ],
+      "functions": [
+        {
+          "name": "build_error_graph",
+          "signature": "build_error_graph(errors: List[Dict], primary_issue_component: str) -> Dict[str, Any]",
+          "purpose": "Build an error propagation graph for visualization with representative error selection and intelligent edge creation",
+          "parameters": [
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary issue component identified as the root cause"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, Any]",
+            "description": "Serializable dictionary representation of error graph with nodes and edges"
+          },
+          "processingSteps": [
+            "Create a NetworkX DiGraph for error propagation modeling",
+            "Select representative errors using a sophisticated prioritization algorithm",
+            "First select up to 3 errors from the primary component to ensure root cause representation",
+            "Then select up to 2 additional errors from other components to show propagation paths",
+            "If fewer than 5 total errors are selected, include unknown component errors to reach 5",
+            "Add selected errors as nodes with component, severity, and text attributes",
+            "Mark primary component errors as root causes with is_root_cause attribute",
+            "Create edges based on component relationships and potential causality",
+            "Connect primary component errors to other errors to model propagation",
+            "Apply weights to edges based on component relationship strength",
+            "Convert the NetworkX graph to a serializable format with nodes and edges arrays",
+            "Include comprehensive error attributes for visualization",
+            "Handle error cases with graceful fallback to minimal graph"
+          ],
+          "code": "def build_error_graph(errors: List[Dict], primary_issue_component: str) -> Dict[str, Any]:\n    \"\"\"\n    Build an error propagation graph for visualization.\n    \n    Args:\n        errors: List of error dictionaries\n        primary_issue_component: Primary issue component\n        \n    Returns:\n        Serializable dictionary representation of error graph\n    \"\"\"\n    try:\n        # Create a simple NetworkX DiGraph for error propagation\n        G = nx.DiGraph()\n        \n        # Add representative errors as nodes (up to 5)\n        representative_errors = []\n        \n        # First add errors from primary component if available\n        primary_errors = [err for err in errors if isinstance(err, dict) \n                         and err.get('component') == primary_issue_component][:3]\n        representative_errors.extend(primary_errors)\n        \n        # Then add errors from other components to reach up to 5 total\n        other_errors = [err for err in errors if isinstance(err, dict) \n                       and err.get('component') != primary_issue_component \n                       and err.get('component') != 'unknown']\n        representative_errors.extend(other_errors[:5-len(representative_errors)])\n        \n        # If still fewer than 5, add unknown component errors\n        unknown_errors = [err for err in errors if isinstance(err, dict) \n                        and err.get('component') == 'unknown']\n        representative_errors.extend(unknown_errors[:5-len(representative_errors)])\n        \n        # Add nodes for each error\n        for i, error in enumerate(representative_errors):\n            if isinstance(error, dict):\n                error_id = f\"error_{i}\"\n                G.add_node(error_id, \n                         text=error.get('text', 'Error message unavailable'),\n                         component=error.get('component', 'unknown'),\n                         severity=error.get('severity', 'Medium'))\n                \n                # Mark primary component errors as root causes\n                if error.get('component') == primary_issue_component:\n                    G.nodes[error_id]['is_root_cause'] = True\n        \n        # Add some basic edges if we have multiple nodes\n        node_ids = list(G.nodes())\n        if len(node_ids) > 1:\n            # If we have primary component errors, make them roots\n            primary_nodes = [node for node in node_ids \n                           if G.nodes[node].get('component') == primary_issue_component]\n            \n            if primary_nodes:\n                # Connect primary nodes to others\n                for primary_node in primary_nodes:\n                    for node in node_ids:\n                        if node != primary_node:\n                            G.add_edge(primary_node, node, weight=1.0)\n            else:\n                # If no primary nodes, just connect first to others\n                for i in range(1, len(node_ids)):\n                    G.add_edge(node_ids[0], node_ids[i], weight=1.0)\n        \n        # Convert to serializable dictionary format\n        serializable_graph = {\n            \"nodes\": [],\n            \"edges\": []\n        }\n        \n        # Convert nodes and their attributes\n        for node_id in G.nodes():\n            node_data = {\"id\": str(node_id)}\n            # Add all node attributes\n            node_data.update({k: str(v) if not isinstance(v, (int, float, bool, str, list, dict, type(None))) else v \n                             for k, v in G.nodes[node_id].items()})\n            serializable_graph[\"nodes\"].append(node_data)\n        \n        # Convert edges and their attributes\n        for u, v in G.edges():\n            edge_data = {\n                \"source\": str(u),\n                \"target\": str(v)\n            }\n            # Add all edge attributes\n            edge_data.update({k: str(v) if not isinstance(v, (int, float, bool, str, list, dict, type(None))) else v \n                             for k, v in G.edges[u, v].items()})\n            serializable_graph[\"edges\"].append(edge_data)\n        \n        return serializable_graph\n        \n    except Exception as e:\n        logging.error(f\"Error building error graph: {str(e)}\")\n        # Return minimal graph if error occurs\n        return {\n            \"nodes\": [{\"id\": \"error_0\", \"text\": \"Error building graph\", \"component\": \"unknown\", \"severity\": \"Medium\"}],\n            \"edges\": []\n        }"
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Building an error propagation graph for visualization",
+          "code": "from reports.component_analyzer import build_error_graph\n\n# List of error dictionaries from log analysis\nerrors = [\n    {\"text\": \"Connection failed\", \"component\": \"soa\", \"severity\": \"High\"},\n    {\"text\": \"Data corrupted\", \"component\": \"mimosa\", \"severity\": \"Medium\"},\n    {\"text\": \"Timeout waiting for response\", \"component\": \"phoebe\", \"severity\": \"Medium\"}\n]\n\n# Primary issue component identified from analysis\nprimary_component = \"soa\"\n\n# Build error propagation graph\nerror_graph = build_error_graph(errors, primary_component)\n\n# Add graph to component analysis\ncomponent_analysis[\"error_graph\"] = error_graph"
+        }
+      ]
+    },
+    {
+      "name": "Component Verification",
+      "fileLocation": "utils/component_verification.py",
+      "purpose": "Verifies the integrity and consistency of component information throughout processing with specialized validation functions",
+      "dependencies": [
+        "reports.base"
+      ],
+      "functions": [
+        {
+          "name": "verify_component_preservation",
+          "signature": "verify_component_preservation(original: Dict, processed: Dict) -> bool",
+          "purpose": "Verify that component information is preserved between original and processed dictionaries",
+          "parameters": [
+            {
+              "name": "original",
+              "type": "Dict",
+              "description": "Original dictionary with component information"
+            },
+            {
+              "name": "processed",
+              "type": "Dict",
+              "description": "Processed dictionary to verify against original"
+            }
+          ],
+          "returns": {
+            "type": "bool",
+            "description": "True if component information is preserved, False otherwise"
+          },
+          "processingSteps": [
+            "Skip verification if either dictionary is empty",
+            "Iterate through all component fields defined in COMPONENT_FIELDS",
+            "Verify each field that exists in the original dictionary and has a non-trivial value",
+            "Check if the field exists in the processed dictionary",
+            "Compare values between original and processed dictionaries",
+            "Log detailed information about any preservation failures",
+            "Return False if any field fails verification",
+            "Return True only if all component fields are preserved"
+          ],
+          "code": "def verify_component_preservation(original: Dict, processed: Dict) -> bool:\n    \"\"\"\n    Verify that component information is preserved accurately.\n    \n    Args:\n        original: Original dictionary with component information\n        processed: Processed dictionary to verify\n        \n    Returns:\n        True if component information is preserved, False otherwise\n    \"\"\"\n    if not original or not processed:\n        return True  # Nothing to verify\n        \n    preserved = True\n    \n    # Check each component field\n    for field in COMPONENT_FIELDS:\n        if field in original and original[field] not in (None, '', 'unknown'):\n            # Only verify fields with meaningful values\n            if field not in processed:\n                logging.warning(f\"Component field {field} missing in processed data\")\n                preserved = False\n            elif processed[field] != original[field]:\n                logging.warning(f\"Component field {field} changed from '{original[field]}' to '{processed[field]}'\")\n                preserved = False\n                \n    return preserved"
+        },
+        {
+          "name": "count_component_fields",
+          "signature": "count_component_fields(data: Union[List[Dict], Dict]) -> Dict[str, int]",
+          "purpose": "Count the occurrences of each component field in a data structure",
+          "parameters": [
+            {
+              "name": "data",
+              "type": "Union[List[Dict], Dict]",
+              "description": "Data structure to analyze, either a dictionary or list of dictionaries"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, int]",
+            "description": "Dictionary mapping component field names to their occurrence counts"
+          },
+          "processingSteps": [
+            "Initialize counts for all component fields",
+            "If input is a dictionary, recursively count component fields",
+            "For lists, iterate and recursively process each dictionary item",
+            "For each dictionary, increment count for each component field present",
+            "Recursively process nested dictionaries and lists",
+            "Return field counts for analysis and verification"
+          ],
+          "code": "def count_component_fields(data):\n    \"\"\"Count component fields in data structure.\"\"\"\n    counts = {field: 0 for field in COMPONENT_FIELDS}\n    \n    def count_in_dict(d):\n        if not isinstance(d, dict):\n            return\n                \n        for field in COMPONENT_FIELDS:\n            if field in d and d[field] is not None:\n                counts[field] += 1\n                    \n        for value in d.values():\n            if isinstance(value, dict):\n                count_in_dict(value)\n            elif isinstance(value, list):\n                for item in value:\n                    if isinstance(item, dict):\n                        count_in_dict(item)\n                            \n    if isinstance(data, dict):\n        count_in_dict(data)\n    elif isinstance(data, list):\n        for item in data:\n            if isinstance(item, dict):\n                count_in_dict(item)\n                \n    return counts"
+        },
+        {
+          "name": "check_component_field_consistency",
+          "signature": "check_component_field_consistency(data: Dict) -> List[Dict[str, Any]]",
+          "purpose": "Check consistency of component fields within a dictionary and identify inconsistencies",
+          "parameters": [
+            {
+              "name": "data",
+              "type": "Dict",
+              "description": "Dictionary to check for component field consistency"
+            }
+          ],
+          "returns": {
+            "type": "List[Dict[str, Any]]",
+            "description": "List of inconsistencies found in component fields"
+          },
+          "processingSteps": [
+            "Initialize list for storing inconsistencies",
+            "Check related component fields for logical consistency",
+            "Verify that component and source_component are consistent when both are present",
+            "Ensure component_source is present when component is set",
+            "Check that primary_issue_component and root_cause_component are consistent",
+            "Validate that component-related lists like affected_components are proper lists",
+            "Validate that component values follow expected format (lowercase, non-empty)",
+            "Log detailed information about any inconsistencies found",
+            "Return list of all inconsistencies with field, value, and issue details"
+          ]
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Verifying component preservation during processing",
+          "code": "from utils.component_verification import verify_component_preservation, count_component_fields\n\n# Original error data\noriginal_error = {\n    \"text\": \"Connection failed\",\n    \"component\": \"soa\",\n    \"component_source\": \"log_analysis\",\n    \"severity\": \"High\"\n}\n\n# Processed data after serialization or transformation\nprocessed_error = deserialize_from_json(serialize_to_json(original_error))\n\n# Verify component information was preserved\nif not verify_component_preservation(original_error, processed_error):\n    logging.warning(\"Component information was not preserved correctly\")\n    \n    # Get detailed component field counts for diagnosis\n    original_counts = count_component_fields(original_error)\n    processed_counts = count_component_fields(processed_error)\n    \n    logging.info(f\"Original component fields: {original_counts}\")\n    logging.info(f\"Processed component fields: {processed_counts}\")"
+        }
+      ]
+    },
+    {
+      "name": "Placeholder Generation",
+      "fileLocation": "reports/visualizations.py",
+      "purpose": "Creates fallback visualizations when primary generation fails, ensuring users always receive visual feedback",
+      "dependencies": [
+        "matplotlib",
+        "utils.path_utils"
+      ],
+      "functions": [
+        {
+          "name": "generate_placeholder",
+          "signature": "generate_placeholder(output_dir: str, test_id: str, message: str = \"Visualization not available\") -> Optional[str]",
+          "purpose": "Generate a placeholder image with an error message when visualization fails",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to save the placeholder image"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the filename"
+            },
+            {
+              "name": "message",
+              "type": "str",
+              "description": "Error message to display in the placeholder",
+              "default": "\"Visualization not available\""
+            }
+          ],
+          "returns": {
+            "type": "Optional[str]",
+            "description": "Path to the generated placeholder image or None if disabled or failed"
+          },
+          "processingSteps": [
+            "Check if placeholder generation is enabled via feature flag",
+            "Configure matplotlib with non-interactive backend for thread safety",
+            "Generate standardized path for placeholder image",
+            "Create a simple figure with error message centered",
+            "Apply consistent styling for user readability",
+            "Save the figure with proper cleanup to prevent memory leaks",
+            "Verify the placeholder image was created successfully",
+            "Return the path to the placeholder for inclusion in reports",
+            "Handle any exceptions with graceful logging",
+            "Return None if disabled or if generation fails"
+          ],
+          "code": "def generate_placeholder(output_dir, test_id, message=\"Visualization not available\"):\n    \"\"\"\n    Generate a placeholder image with an error message when visualization fails.\n    \n    Args:\n        output_dir: Directory to save the image\n        test_id: Test ID for the filename\n        message: Message to display in the placeholder\n        \n    Returns:\n        Path to placeholder file or None\n    \"\"\"\n    # Check if placeholders are enabled\n    if not _is_feature_enabled('ENABLE_VISUALIZATION_PLACEHOLDERS', False):\n        return None\n        \n    # Configure matplotlib\n    if HAS_MATPLOTLIB:\n        try:\n            plt = configure_matplotlib()\n            \n            # Get path for placeholder\n            placeholder_path = get_viz_path(\n                output_dir, test_id, \"visualization_placeholder\", \"png\")\n            \n            # Create simple figure with message\n            fig = plt.figure(figsize=(8, 6))\n            plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)\n            plt.axis('off')\n            \n            # Add timestamp and border for context\n            timestamp = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n            plt.figtext(0.5, 0.05, f\"Generated: {timestamp}\", ha='center', fontsize=8)\n            plt.figtext(0.5, 0.95, f\"Error: {test_id}\", ha='center', fontsize=10, weight='bold')\n            \n            # Draw border around figure\n            plt.gca().spines['top'].set_visible(True)\n            plt.gca().spines['right'].set_visible(True)\n            plt.gca().spines['bottom'].set_visible(True)\n            plt.gca().spines['left'].set_visible(True)\n            \n            # Save with cleanup\n            return save_figure(fig, placeholder_path)\n            \n        except Exception as e:\n            logging.error(f\"Error generating placeholder: {str(e)}\")\n            plt.close('all')  # Ensure cleanup\n            return None\n    else:\n        return None"
+        },
+        {
+          "name": "_is_placeholder_enabled",
+          "signature": "_is_placeholder_enabled() -> bool",
+          "purpose": "Check if visualization placeholders are enabled via feature flag",
+          "returns": {
+            "type": "bool",
+            "description": "Boolean indicating if placeholders should be generated"
+          },
+          "processingSteps": [
+            "Check the ENABLE_VISUALIZATION_PLACEHOLDERS feature flag",
+            "Use thread-safe implementation of feature flag checking",
+            "Return True if placeholders are enabled, False otherwise",
+            "Default to False if feature flag is not specified"
+          ],
+          "code": "def _is_placeholder_enabled() -> bool:\n    \"\"\"\n    Check if visualization placeholders are enabled.\n    \n    Returns:\n        Boolean indicating if placeholders should be generated\n    \"\"\"\n    return _is_feature_enabled('ENABLE_VISUALIZATION_PLACEHOLDERS', False)"
+        },
+        {
+          "name": "handle_empty_data",
+          "signature": "handle_empty_data(output_dir: str, test_id: str, visualization_type: str, message: str) -> Optional[str]",
+          "purpose": "Create placeholder for visualizations when data is missing or empty",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to save the placeholder"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the filename"
+            },
+            {
+              "name": "visualization_type",
+              "type": "str",
+              "description": "Type of visualization that was attempted (e.g., 'timeline', 'component')"
+            },
+            {
+              "name": "message",
+              "type": "str",
+              "description": "Specific message explaining why data was insufficient"
+            }
+          ],
+          "returns": {
+            "type": "Optional[str]",
+            "description": "Path to placeholder or None if placeholders are disabled"
+          },
+          "processingSteps": [
+            "Log warning about empty or insufficient data",
+            "Format a clear message for the placeholder",
+            "Generate placeholder with specialized message",
+            "Return placeholder path or None if disabled"
+          ]
+        }
+      ],
+      "featureFlags": [
+        {
+          "name": "ENABLE_VISUALIZATION_PLACEHOLDERS",
+          "default": "False",
+          "purpose": "Controls whether placeholder images are generated when visualization fails",
+          "impact": "When disabled, failed visualizations result in None rather than a placeholder"
+        }
+      ],
+      "codeExamples": [
+        {
+          "purpose": "Using placeholders for failed visualizations in a fault-tolerant system",
+          "code": "from reports.visualizations import generate_timeline_image, generate_placeholder\n\n# Attempt to generate timeline visualization\ntry:\n    timeline_path = generate_timeline_image(\n        step_to_logs=step_to_logs,\n        step_dict=step_dict,\n        output_dir=\"output/SXM-123456\",\n        test_id=\"SXM-123456\"\n    )\n    \n    # Check if timeline generation failed\n    if not timeline_path or not os.path.exists(timeline_path):\n        # Generate placeholder with specific error message\n        timeline_path = generate_placeholder(\n            output_dir=\"output/SXM-123456\",\n            test_id=\"SXM-123456\",\n            message=\"Timeline visualization failed - insufficient step data\"\n        )\n    \n    # Add timeline to report regardless of whether it's real or placeholder\n    if timeline_path:\n        visualization_paths[\"timeline\"] = timeline_path\nexcept Exception as e:\n    logging.error(f\"Error in timeline generation: {str(e)}\")\n    # Generate placeholder for unexpected error\n    timeline_path = generate_placeholder(\n        output_dir=\"output/SXM-123456\",\n        test_id=\"SXM-123456\",\n        message=f\"Timeline visualization error: {str(e)}\"\n    )\n    if timeline_path:\n        visualization_paths[\"timeline\"] = timeline_path"
+        }
+      ]
+    },
+    {
+      "name": "System Integration",
+      "fileLocation": "reports/__init__.py",
+      "purpose": "Provides the main entry point for external systems to generate reports with simplified interface and consistent handling",
+      "dependencies": [
+        "reports.report_manager",
+        "reports.base",
+        "utils.path_utils"
+      ],
+      "functions": [
+        {
+          "name": "write_reports",
+          "signature": "write_reports(output_dir: str, test_id: str, summary: str, errors: List[Dict], ocr_data: List[Dict], clusters: Dict[int, List[Dict]], ymir_flag: bool = False, background_text: str = \"\", scenario_text: str = \"\", component_analysis: Dict[str, Any] = None, primary_issue_component: str = \"unknown\", component_diagnostic: Dict[str, Any] = None) -> Dict[str, Any]",
+          "purpose": "Main entry point for report generation with enhanced component information preservation",
+          "parameters": [
+            {
+              "name": "output_dir",
+              "type": "str",
+              "description": "Directory to write reports to"
+            },
+            {
+              "name": "test_id",
+              "type": "str",
+              "description": "Test ID for the report"
+            },
+            {
+              "name": "summary",
+              "type": "str",
+              "description": "AI-generated summary"
+            },
+            {
+              "name": "errors",
+              "type": "List[Dict]",
+              "description": "List of error dictionaries"
+            },
+            {
+              "name": "ocr_data",
+              "type": "List[Dict]",
+              "description": "List of OCR data dictionaries"
+            },
+            {
+              "name": "clusters",
+              "type": "Dict[int, List[Dict]]",
+              "description": "Dictionary mapping cluster IDs to lists of errors"
+            },
+            {
+              "name": "ymir_flag",
+              "type": "bool",
+              "description": "Whether this is a Ymir test",
+              "default": "False"
+            },
+            {
+              "name": "background_text",
+              "type": "str",
+              "description": "Background section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "scenario_text",
+              "type": "str",
+              "description": "Scenario section from feature file",
+              "default": "\"\""
+            },
+            {
+              "name": "component_analysis",
+              "type": "Dict[str, Any]",
+              "description": "Results from component relationship analysis",
+              "default": "None"
+            },
+            {
+              "name": "primary_issue_component",
+              "type": "str",
+              "description": "Primary component identified as causing issues",
+              "default": "\"unknown\""
+            },
+            {
+              "name": "component_diagnostic",
+              "type": "Dict[str, Any]",
+              "description": "Additional diagnostic information for components",
+              "default": "None"
+            }
+          ],
+          "returns": {
+            "type": "Dict[str, Any]",
+            "description": "Dictionary with report paths and metadata"
+          },
+          "processingSteps": [
+            "Normalize test_id to ensure consistent format",
+            "Normalize primary_issue_component to lowercase for consistency",
+            "Log initial component distribution for diagnostics",
+            "Create ReportConfig with specified options and output directory",
+            "Create ReportData container with all input data",
+            "Initialize ReportManager with the configuration",
+            "Generate all enabled reports through ReportManager",
+            "Verify and fix directory structure if needed",
+            "Log any fixed directory structure issues",
+            "Return dictionary with report paths and metadata"
+          ],
+          "integrationNotes": [
+            "Main API for external systems to generate reports",
+            "Handles all preprocessing and normalization automatically",
+            "Determines component relationships even with minimal input",
+            "Thread-safe for concurrent report generation",
+            "Uses a multi-format output approach with consistent naming",
+            "Verifies directory structure to prevent file organization issues",
+            "Component information preservation throughout the pipeline"
+          ]
+        }
+      ],
+      "externalSystemIntegration": {
+        "inputSystems": [
+          {
+            "name": "Log Analysis System",
+            "integrationPoint": "Provides errors list with minimal component information",
+            "dataFormat": "List of dictionaries with text, file, line_num, and optional component information",
+            "notes": "Components can be incomplete or missing; system will enhance when possible"
+          },
+          {
+            "name": "Clustering System",
+            "integrationPoint": "Provides clusters dictionary grouping similar errors",
+            "dataFormat": "Dictionary mapping cluster IDs to lists of error dictionaries",
+            "notes": "Clusters may not have component information initially"
+          },
+          {
+            "name": "Screenshot Analysis System",
+            "integrationPoint": "Provides OCR data extracted from screenshots",
+            "dataFormat": "List of dictionaries with file paths and extracted text",
+            "notes": "Optional integration that enhances reports with visual context"
+          },
+          {
+            "name": "External Component Analysis",
+            "integrationPoint": "Provides pre-existing component analysis if available",
+            "dataFormat": "Dictionary with component relationships, metrics, and error propagation information",
+            "notes": "Optional; system will generate this if not provided"
+          }
+        ],
+        "outputSystems": [
+          {
+            "name": "Visualization Consumers",
+            "integrationPoint": "Consume generated visualization images",
+            "dataFormat": "PNG files in standardized locations",
+            "notes": "May receive placeholders if visualization generation fails"
+          },
+          {
+            "name": "Report Viewers",
+            "integrationPoint": "View generated reports in various formats",
+            "dataFormat": "Excel, DOCX, Markdown, HTML, and JSON files in standardized locations",
+            "notes": "Reports maintain consistent structure across formats"
+          },
+          {
+            "name": "Automated Analysis Systems",
+            "integrationPoint": "Process JSON output for further automated analysis",
+            "dataFormat": "Structured JSON with full analysis data",
+            "notes": "JSON includes all component relationship information"
+          }
+        ]
+      },
+      "codeExamples": [
+        {
+          "purpose": "Basic report generation with minimal input",
+          "code": "from reports import write_reports\n\n# Generate reports with minimal input\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failed due to connection issue in the SOA component...\",\n    errors=error_list,  # List of error dictionaries from log analysis\n    ocr_data=[],        # No OCR data available\n    clusters={}          # No clustering available\n)\n\n# Access generated report paths\nexcel_path = results[\"reports\"].get(\"excel\")\ncomponent_report_path = results[\"reports\"].get(\"component_report\")\n\n# Log results\nlogging.info(f\"Generated Excel report at: {excel_path}\")\nlogging.info(f\"Generated component report at: {component_report_path}\")"
+        },
+        {
+          "purpose": "Advanced report generation with pre-existing component analysis",
+          "code": "from reports import write_reports\n\n# Pre-existing component analysis from external system\nexternal_component_analysis = {\n    \"component_summary\": [\n        {\"id\": \"soa\", \"name\": \"SOA\", \"error_count\": 5, \"is_primary\": True},\n        {\"id\": \"mimosa\", \"name\": \"Mimosa\", \"error_count\": 3, \"is_primary\": False}\n    ],\n    \"relationships\": [\n        {\"source\": \"soa\", \"target\": \"mimosa\", \"type\": \"affected\"}\n    ],\n    \"metrics\": {\n        \"component_tagged_logs\": 20,\n        \"component_tagged_errors\": 8\n    }\n}\n\n# Generate reports with comprehensive input\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failed due to connection issue in the SOA component...\",\n    errors=error_list,\n    ocr_data=ocr_data,\n    clusters=clusters,\n    component_analysis=external_component_analysis,\n    primary_issue_component=\"soa\",\n    background_text=\"Given the application is running\",\n    scenario_text=\"When the user navigates to the channel list...\",\n    ymir_flag=True\n)\n\n# Access all generated report paths\nall_reports = results[\"reports\"]\nvisualization_paths = all_reports.get(\"visualizations\", {})\n\n# Display key error distribution visualizations\ntimeline_path = visualization_paths.get(\"timeline\")\ncomponent_distribution_path = visualization_paths.get(\"component_distribution\")\n\nprint(f\"Timeline visualization: {timeline_path}\")\nprint(f\"Component distribution: {component_distribution_path}\")"
+        }
+      ]
+    }
+  ],
+  "architectureFlows": [
+    {
+      "name": "Error Propagation Analysis",
+      "description": "Process flow for analyzing error propagation between components",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Error Selection",
+          "description": "Select representative errors for visualization with priority on primary component errors",
+          "modules": ["reports/component_analyzer.py"],
+          "functions": ["build_error_graph"],
+          "inputData": "Full list of errors and primary_issue_component",
+          "outputData": "Selected representative errors for visualization"
+        },
+        {
+          "step": 2,
+          "name": "Graph Construction",
+          "description": "Create directed graph with errors as nodes and propagation paths as edges",
+          "modules": ["reports/component_analyzer.py"],
+          "functions": ["build_error_graph"],
+          "inputData": "Selected representative errors",
+          "outputData": "NetworkX DiGraph with node and edge attributes"
+        },
+        {
+          "step": 3,
+          "name": "Edge Creation",
+          "description": "Create edges based on component relationships and potential causality",
+          "modules": ["reports/component_analyzer.py"],
+          "functions": ["build_error_graph"],
+          "inputData": "NetworkX DiGraph with nodes",
+          "outputData": "NetworkX DiGraph with nodes and edges"
+        },
+        {
+          "step": 4,
+          "name": "Serialization",
+          "description": "Convert NetworkX graph to serializable dictionary format",
+          "modules": ["reports/component_analyzer.py"],
+          "functions": ["build_error_graph"],
+          "inputData": "NetworkX DiGraph with complete structure",
+          "outputData": "Serializable dictionary with nodes and edges arrays"
+        },
+        {
+          "step": 5,
+          "name": "Integration",
+          "description": "Add error graph to component analysis for visualization",
+          "modules": ["reports/report_manager.py"],
+          "functions": ["_enhance_component_analysis", "_ensure_serializable_error_graph"],
+          "inputData": "Serializable error graph",
+          "outputData": "Enhanced component analysis with error graph"
+        },
+        {
+          "step": 6,
+          "name": "Visualization",
+          "description": "Generate visual representation of error propagation graph",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["generate_error_propagation_diagram"],
+          "inputData": "Error graph from component analysis",
+          "outputData": "PNG visualization of error propagation"
+        }
+      ]
+    },
+    {
+      "name": "Component Preservation Verification",
+      "description": "Process flow for verifying component information integrity",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Initial Component Extraction",
+          "description": "Extract and record initial component information from errors",
+          "modules": ["reports/report_manager.py"],
+          "functions": ["generate_reports"],
+          "inputData": "Raw errors with component data",
+          "outputData": "Extracted component distribution"
+        },
+        {
+          "step": 2,
+          "name": "Preprocessing Verification",
+          "description": "Verify component information after preprocessing",
+          "modules": ["reports/report_manager.py", "utils/component_verification.py"],
+          "functions": ["generate_reports", "verify_component_preservation"],
+          "inputData": "Preprocessed errors",
+          "outputData": "Verification results for preprocessing stage"
+        },
+        {
+          "step": 3,
+          "name": "Post-Normalization Verification",
+          "description": "Verify component information after timestamp and field normalization",
+          "modules": ["reports/report_manager.py", "utils/component_verification.py"],
+          "functions": ["generate_reports", "verify_component_preservation"],
+          "inputData": "Normalized errors and clusters",
+          "outputData": "Verification results for normalization stage"
+        },
+        {
+          "step": 4,
+          "name": "JSON Serialization Verification",
+          "description": "Verify component information preservation during JSON serialization",
+          "modules": ["reports/json_generator.py", "utils/component_verification.py"],
+          "functions": ["write_json_report", "verify_component_preservation"],
+          "inputData": "Processed data with component information",
+          "outputData": "Verification results for JSON serialization"
+        },
+        {
+          "step": 5,
+          "name": "Final Component Verification",
+          "description": "Perform final verification of component information integrity",
+          "modules": ["reports/report_manager.py", "utils/component_verification.py"],
+          "functions": ["generate_reports", "_verify_component_consistency"],
+          "inputData": "Final processed data with component information",
+          "outputData": "Overall verification results"
+        },
+        {
+          "step": 6,
+          "name": "Diagnostic Information Generation",
+          "description": "Generate diagnostic information about component preservation",
+          "modules": ["reports/report_manager.py"],
+          "functions": ["_save_component_preservation_diagnostic"],
+          "inputData": "Verification results and component statistics",
+          "outputData": "JSON diagnostic file with preservation details"
+        }
+      ]
+    },
+    {
+      "name": "Visualization Fallback Process",
+      "description": "Process flow for handling visualization failures with placeholders",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Feature Flag Check",
+          "description": "Check if placeholder generation is enabled",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["_is_placeholder_enabled"],
+          "inputData": "None",
+          "outputData": "Boolean indicating if placeholders are enabled"
+        },
+        {
+          "step": 2,
+          "name": "Visualization Attempt",
+          "description": "Attempt to generate primary visualization with timeout protection",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["generate_timeline_image", "generate_component_visualization"],
+          "inputData": "Data for visualization",
+          "outputData": "Path to visualization or error/timeout"
+        },
+        {
+          "step": 3,
+          "name": "Error Detection",
+          "description": "Detect and categorize visualization failures",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["_generate_with_timeout"],
+          "inputData": "Visualization attempt result",
+          "outputData": "Error details or timeout indication"
+        },
+        {
+          "step": 4,
+          "name": "Placeholder Path Generation",
+          "description": "Generate standardized path for placeholder image",
+          "modules": ["reports/visualizations.py", "utils/path_utils.py"],
+          "functions": ["get_viz_path"],
+          "inputData": "Output directory and test ID",
+          "outputData": "Standardized path for placeholder image"
+        },
+        {
+          "step": 5,
+          "name": "Placeholder Image Creation",
+          "description": "Create placeholder image with informative error message",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["generate_placeholder"],
+          "inputData": "Error details and placeholder path",
+          "outputData": "Placeholder image file"
+        },
+        {
+          "step": 6,
+          "name": "Visualization Path Return",
+          "description": "Return placeholder path instead of failed visualization path",
+          "modules": ["reports/visualizations.py"],
+          "functions": ["_generate_with_timeout"],
+          "inputData": "Placeholder image path",
+          "outputData": "Visualization path in results dictionary"
+        }
+      ]
+    },
+    {
+      "name": "External System Integration Flow",
+      "description": "Process flow for integrating with external systems",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Input Data Normalization",
+          "description": "Normalize and validate input data from external systems",
+          "modules": ["reports/__init__.py"],
+          "functions": ["write_reports"],
+          "inputData": "Raw data from external systems",
+          "outputData": "Normalized test_id and primary_issue_component"
+        },
+        {
+          "step": 2,
+          "name": "Configuration Creation",
+          "description": "Create report configuration from input parameters",
+          "modules": ["reports/__init__.py", "reports/base.py"],
+          "functions": ["write_reports", "ReportConfig"],
+          "inputData": "Normalized parameters",
+          "outputData": "ReportConfig instance"
+        },
+        {
+          "step": 3,
+          "name": "Data Container Creation",
+          "description": "Create data container with all input and derived data",
+          "modules": ["reports/__init__.py", "reports/base.py"],
+          "functions": ["write_reports", "ReportData"],
+          "inputData": "Input data from external systems",
+          "outputData": "ReportData instance"
+        },
+        {
+          "step": 4,
+          "name": "Report Manager Initialization",
+          "description": "Initialize report manager with configuration",
+          "modules": ["reports/__init__.py", "reports/report_manager.py"],
+          "functions": ["write_reports", "ReportManager"],
+          "inputData": "ReportConfig instance",
+          "outputData": "ReportManager instance"
+        },
+        {
+          "step": 5,
+          "name": "Report Generation",
+          "description": "Generate all enabled reports through report manager",
+          "modules": ["reports/__init__.py", "reports/report_manager.py"],
+          "functions": ["write_reports", "generate_reports"],
+          "inputData": "ReportData instance",
+          "outputData": "Generated reports and visualization paths"
+        },
+        {
+          "step": 6,
+          "name": "Directory Structure Verification",
+          "description": "Verify and fix directory structure if needed",
+          "modules": ["reports/__init__.py", "utils/path_validator.py"],
+          "functions": ["write_reports", "fix_directory_structure"],
+          "inputData": "Output directory and test_id",
+          "outputData": "Verified directory structure"
+        },
+        {
+          "step": 7,
+          "name": "Results Return",
+          "description": "Return results dictionary to calling system",
+          "modules": ["reports/__init__.py"],
+          "functions": ["write_reports"],
+          "inputData": "Report generation results",
+          "outputData": "Dictionary with report paths and metadata"
+        }
+      ]
+    }
+  ],
+  "integrationPoints": [
+    {
+      "name": "write_reports",
+      "type": "Function",
+      "location": "reports/__init__.py",
+      "description": "Main entry point for report generation with simplified interface",
+      "signature": "write_reports(output_dir: str, test_id: str, summary: str, errors: List[Dict], ocr_data: List[Dict], clusters: Dict[int, List[Dict]], ymir_flag: bool = False, background_text: str = \"\", scenario_text: str = \"\", component_analysis: Dict[str, Any] = None, primary_issue_component: str = \"unknown\", component_diagnostic: Dict[str, Any] = None) -> Dict[str, Any]",
+      "usagePurpose": "For external systems to generate comprehensive reports with minimal setup",
+      "codeExample": "from reports import write_reports\n\n# Generate all reports\nresults = write_reports(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    summary=\"Test failure analysis...\",\n    errors=errors,\n    ocr_data=ocr_data,\n    clusters=error_clusters,\n    primary_issue_component=\"soa\"\n)",
+      "inputRequirements": [
+        "errors must be a list of dictionaries with at least 'text' field",
+        "primary_issue_component should be lowercase",
+        "output_dir must be a writable directory path",
+        "test_id should follow SXM-#### format but will be normalized if not"
+      ],
+      "outputFormat": "Dictionary with 'reports' key containing paths to all generated reports and 'primary_issue_component' key for the final component used"
+    },
+    {
+      "name": "build_error_graph",
+      "type": "Function",
+      "location": "reports/component_analyzer.py",
+      "description": "Creates serializable error propagation graph for visualization",
+      "signature": "build_error_graph(errors: List[Dict], primary_issue_component: str) -> Dict[str, Any]",
+      "usagePurpose": "For systems needing to generate error propagation visualizations",
+      "codeExample": "from reports.component_analyzer import build_error_graph\n\n# Build error graph\nerror_graph = build_error_graph(errors, primary_issue_component)\n\n# Add to component analysis\ncomponent_analysis['error_graph'] = error_graph",
+      "inputRequirements": [
+        "errors must be a list of dictionaries with 'text', 'component', and 'severity' fields",
+        "primary_issue_component should be a lowercase string matching component fields in errors"
+      ],
+      "outputFormat": "Dictionary with 'nodes' and 'edges' arrays for visualization"
+    },
+    {
+      "name": "verify_component_preservation",
+      "type": "Function",
+      "location": "utils/component_verification.py",
+      "description": "Verifies component information integrity between data structures",
+      "signature": "verify_component_preservation(original: Dict, processed: Dict) -> bool",
+      "usagePurpose": "For verifying component information integrity during processing",
+      "codeExample": "from utils.component_verification import verify_component_preservation\n\n# Check if component information was preserved\nif not verify_component_preservation(original_error, processed_error):\n    logging.warning(\"Component information was lost during processing\")",
+      "inputRequirements": [
+        "original and processed must be dictionaries",
+        "At least one of the dictionaries should contain component fields"
+      ],
+      "outputFormat": "Boolean indicating if component information was preserved"
+    },
+    {
+      "name": "generate_placeholder",
+      "type": "Function",
+      "location": "reports/visualizations.py",
+      "description": "Creates fallback visualization when primary generation fails",
+      "signature": "generate_placeholder(output_dir: str, test_id: str, message: str = \"Visualization not available\") -> Optional[str]",
+      "usagePurpose": "For creating informative fallback visualizations",
+      "codeExample": "from reports.visualizations import generate_placeholder\n\n# Create placeholder for failed visualization\nplaceholder_path = generate_placeholder(\n    output_dir=\"output/SXM-123456\",\n    test_id=\"SXM-123456\",\n    message=\"Timeline visualization failed - insufficient data\"\n)",
+      "inputRequirements": [
+        "output_dir must be a writable directory path",
+        "test_id should follow SXM-#### format",
+        "message should be a descriptive error explanation"
+      ],
+      "outputFormat": "String path to generated placeholder image or None if disabled"
+    }
+  ],
+  "criticalMechanisms": [
+    {
+      "name": "Enhanced Error Graph Generation",
+      "description": "Sophisticated mechanism for creating error propagation visualizations with intelligent representative error selection",
+      "mechanism": "The system uses a multi-stage selection process to identify the most relevant errors for visualization, prioritizing errors from the primary component while ensuring diverse representation",
+      "implementation": [
+        {
+          "name": "Representative Error Selection",
+          "description": "Selects the most relevant errors for visualization with sophisticated prioritization",
+          "location": "reports/component_analyzer.py - build_error_graph",
+          "key_logic": "First selects errors from primary component, then adds errors from other components, and finally adds unknown component errors if needed to reach target count",
+          "code_snippet": "# First add errors from primary component if available\nprimary_errors = [err for err in errors if isinstance(err, dict) \n                 and err.get('component') == primary_issue_component][:3]\nrepresentative_errors.extend(primary_errors)\n\n# Then add errors from other components to reach up to 5 total\nother_errors = [err for err in errors if isinstance(err, dict) \n               and err.get('component') != primary_issue_component \n               and err.get('component') != 'unknown']\nrepresentative_errors.extend(other_errors[:5-len(representative_errors)])\n\n# If still fewer than 5, add unknown component errors\nunknown_errors = [err for err in errors if isinstance(err, dict) \n                and err.get('component') == 'unknown']\nrepresentative_errors.extend(unknown_errors[:5-len(representative_errors)])"
+        },
+        {
+          "name": "Root Cause Marking",
+          "description": "Identifies and marks root cause errors in the graph for visualization",
+          "location": "reports/component_analyzer.py - build_error_graph",
+          "key_logic": "Adds is_root_cause attribute to errors from the primary component to highlight in visualization",
+          "code_snippet": "# Mark primary component errors as root causes\nif error.get('component') == primary_issue_component:\n    G.nodes[error_id]['is_root_cause'] = True"
+        },
+        {
+          "name": "Intelligent Edge Creation",
+          "description": "Creates meaningful edges between error nodes based on causality",
+          "location": "reports/component_analyzer.py - build_error_graph",
+          "key_logic": "Uses primary component errors as sources and connects to other errors to model propagation",
+          "code_snippet": "# If we have primary component errors, make them roots\nprimary_nodes = [node for node in node_ids \n               if G.nodes[node].get('component') == primary_issue_component]\n\nif primary_nodes:\n    # Connect primary nodes to others\n    for primary_node in primary_nodes:\n        for node in node_ids:\n            if node != primary_node:\n                G.add_edge(primary_node, node, weight=1.0)"
+        },
+        {
+          "name": "Graph Serialization",
+          "description": "Converts NetworkX graph to serializable format for visualization",
+          "location": "reports/component_analyzer.py - build_error_graph",
+          "key_logic": "Transforms graph structure to dictionary with nodes and edges arrays with all attributes preserved",
+          "code_snippet": "# Convert to serializable dictionary format\nserializable_graph = {\n    \"nodes\": [],\n    \"edges\": []\n}\n\n# Convert nodes and their attributes\nfor node_id in G.nodes():\n    node_data = {\"id\": str(node_id)}\n    # Add all node attributes\n    node_data.update({k: str(v) if not isinstance(v, (int, float, bool, str, list, dict, type(None))) else v \n                     for k, v in G.nodes[node_id].items()})\n    serializable_graph[\"nodes\"].append(node_data)"
+        }
+      ]
+    },
+    {
+      "name": "Comprehensive Component Verification",
+      "description": "Thorough verification of component information preservation throughout the processing pipeline",
+      "mechanism": "The system uses multiple verification points to ensure component information is preserved with detailed tracking of any discrepancies",
+      "implementation": [
+        {
+          "name": "Field-Level Comparison",
+          "description": "Verifies each component field individually between original and processed data",
+          "location": "utils/component_verification.py - verify_component_preservation",
+          "key_logic": "Checks each component field that exists in original and has a meaningful value",
+          "code_snippet": "for field in COMPONENT_FIELDS:\n    if field in original and original[field] not in (None, '', 'unknown'):\n        # Only verify fields with meaningful values\n        if field not in processed:\n            logging.warning(f\"Component field {field} missing in processed data\")\n            preserved = False\n        elif processed[field] != original[field]:\n            logging.warning(f\"Component field {field} changed from '{original[field]}' to '{processed[field]}'\")\n            preserved = False"
+        },
+        {
+          "name": "Distribution Comparison",
+          "description": "Compares component distribution statistics before and after processing",
+          "location": "reports/report_manager.py - generate_reports",
+          "key_logic": "Tracks and compares component counts at each stage of processing",
+          "code_snippet": "# Calculate final component distribution\nfinal_component_distribution = {}\nfor err in normalized_errors[:20]:  # Sample for logging\n    if isinstance(err, dict) and 'component' in err:\n        comp = err.get('component', 'unknown')\n        final_component_distribution[comp] = final_component_distribution.get(comp, 0) + 1\nlogging.info(f\"Final component distribution: {final_component_distribution}\")"
+        },
+        {
+          "name": "Field Count Tracking",
+          "description": "Counts component fields in data structures for verification",
+          "location": "utils/component_verification.py - count_component_fields",
+          "key_logic": "Recursively counts each component field in complex data structures",
+          "code_snippet": "def count_in_dict(d):\n    if not isinstance(d, dict):\n        return\n            \n    for field in COMPONENT_FIELDS:\n        if field in d and d[field] is not None:\n            counts[field] += 1\n                \n    for value in d.values():\n        if isinstance(value, dict):\n            count_in_dict(value)\n        elif isinstance(value, list):\n            for item in value:\n                if isinstance(item, dict):\n                    count_in_dict(item)"
+        },
+        {
+          "name": "Verification Reporting",
+          "description": "Generates detailed report of component information verification",
+          "location": "reports/report_manager.py - _save_component_preservation_diagnostic",
+          "key_logic": "Saves comprehensive diagnostic information about component preservation",
+          "code_snippet": "preservation_stats = {\n    \"test_id\": self.config.test_id,\n    \"timestamp\": datetime.now().isoformat(),\n    \"primary_issue_component\": self.config.primary_issue_component,\n    \"stage_info\": stage_info or {},\n    \"component_counts\": final_component_counts,\n    \"component_source_counts\": component_source_counts,\n    \"source_component_alignment\": source_alignment,\n    \"primary_component_presence\": primary_component_presence,\n    \"component_field_counts\": component_field_counts,\n    \"component_fields_preserved\": True\n}"
+        }
+      ]
+    },
+    {
+      "name": "Robust Visualization Fallback System",
+      "description": "Multi-tiered fallback system for visualization generation to ensure users always receive visual feedback",
+      "mechanism": "The system uses a combination of feature flags, timeout protection, and placeholder generation to provide visual feedback even when primary visualization fails",
+      "implementation": [
+        {
+          "name": "Feature Flag Control",
+          "description": "Controls placeholder generation based on system configuration",
+          "location": "reports/visualizations.py - _is_placeholder_enabled",
+          "key_logic": "Checks feature flag for placeholder generation with thread-safe implementation",
+          "code_snippet": "def _is_placeholder_enabled() -> bool:\n    \"\"\"\n    Check if visualization placeholders are enabled.\n    \n    Returns:\n        Boolean indicating if placeholders should be generated\n    \"\"\"\n    return _is_feature_enabled('ENABLE_VISUALIZATION_PLACEHOLDERS', False)"
+        },
+        {
+          "name": "Timeout Protection",
+          "description": "Prevents visualization generation from hanging indefinitely",
+          "location": "reports/visualizations.py - _generate_with_timeout",
+          "key_logic": "Uses threading with timeout to limit visualization generation time",
+          "code_snippet": "# Create and start the thread\nthread = threading.Thread(target=generate_with_timeout)\nthread.daemon = True\nthread.start()\n\n# Wait with timeout\nthread.join(timeout=timeout_seconds)\n\nif thread.is_alive():\n    # Timeout occurred\n    logging.warning(f\"Timeout generating {key} visualization after {timeout_seconds} seconds\")\n    # Generate a placeholder if enabled\n    placeholder_path = generate_placeholder(...)"
+        },
+        {
+          "name": "Enhanced Placeholder Generation",
+          "description": "Creates informative placeholder images with clear error messages",
+          "location": "reports/visualizations.py - generate_placeholder",
+          "key_logic": "Generates a visually consistent placeholder with detailed error information",
+          "code_snippet": "# Create simple figure with message\nfig = plt.figure(figsize=(8, 6))\nplt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)\nplt.axis('off')\n\n# Add timestamp and border for context\ntimestamp = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\nplt.figtext(0.5, 0.05, f\"Generated: {timestamp}\", ha='center', fontsize=8)\nplt.figtext(0.5, 0.95, f\"Error: {test_id}\", ha='center', fontsize=10, weight='bold')"
+        },
+        {
+          "name": "Empty Data Handling",
+          "description": "Creates specialized placeholders when visualization data is missing",
+          "location": "reports/visualizations.py - handle_empty_data",
+          "key_logic": "Generates placeholder with specific message about missing data",
+          "code_snippet": "def handle_empty_data(output_dir: str, test_id: str, visualization_type: str, message: str) -> Optional[str]:\n    logging.warning(f\"Missing required data for {visualization_type} visualization\")\n    formatted_message = f\"{visualization_type.title()} Visualization: {message}\"\n    return generate_placeholder(output_dir, test_id, formatted_message)"
+        }
+      ]
+    },
+    {
+      "name": "External System Integration",
+      "description": "Seamless integration with external systems through a simplified interface and consistent data handling",
+      "mechanism": "The system provides a streamlined entry point for external systems with automatic data normalization and comprehensive error handling",
+      "implementation": [
+        {
+          "name": "Interface Simplification",
+          "description": "Provides simplified interface for external systems with sensible defaults",
+          "location": "reports/__init__.py - write_reports",
+          "key_logic": "Exposes only necessary parameters with intelligent defaults and handles all normalization internally",
+          "code_snippet": "def write_reports(\n    output_dir: str,\n    test_id: str,\n    summary: str,\n    errors: List[Dict],\n    ocr_data: List[Dict],\n    clusters: Dict[int, List[Dict]],\n    ymir_flag: bool = False,\n    background_text: str = \"\",\n    scenario_text: str = \"\",\n    component_analysis: Dict[str, Any] = None,\n    primary_issue_component: str = \"unknown\",\n    component_diagnostic: Dict[str, Any] = None\n) -> Dict[str, Any]:"
+        },
+        {
+          "name": "Data Normalization",
+          "description": "Normalizes input data for consistent processing",
+          "location": "reports/__init__.py - write_reports",
+          "key_logic": "Normalizes test_id and primary_issue_component for consistent processing",
+          "code_snippet": "# Normalize test_id\ntest_id = normalize_test_id(test_id)\n\n# Normalize primary_issue_component\nif primary_issue_component:\n    primary_issue_component = primary_issue_component.lower()"
+        },
+        {
+          "name": "Diagnostic Logging",
+          "description": "Provides detailed diagnostic information for integration debugging",
+          "location": "reports/__init__.py - write_reports",
+          "key_logic": "Logs component distribution and primary issue component for diagnosis",
+          "code_snippet": "# Log component information for debugging\ncomponent_distribution = {}\nfor error in errors[:20]:  # Sample for logging\n    component = error.get('component', 'unknown')\n    if component not in component_distribution:\n        component_distribution[component] = 0\n    component_distribution[component] += 1\n\nlogging.info(f\"Component distribution (sample): {component_distribution}\")\nlogging.info(f\"Primary issue component: {primary_issue_component}\")"
+        },
+        {
+          "name": "Directory Structure Verification",
+          "description": "Verifies and fixes directory structure issues after report generation",
+          "location": "reports/__init__.py - write_reports",
+          "key_logic": "Checks for and fixes any directory structure issues to ensure consistent file organization",
+          "code_snippet": "# Verify and fix directory structure\nissues = fix_directory_structure(output_dir, test_id)\n\n# Log issues and fixes\nif issues.get(\"fixed_files\"):\n    logging.info(f\"Fixed {len(issues.get('fixed_files', []))} files with directory structure issues\")"
+        }
+      ]
+    }
+  ],
+  "visualizationSystem": {
+    "placeholderGeneration": {
+      "description": "Robust system for generating placeholders when primary visualizations fail",
+      "controlMechanism": "Feature flag (ENABLE_VISUALIZATION_PLACEHOLDERS) with thread-safe implementation",
+      "visualFormat": "PNG image with centered error message, border, and timestamp",
+      "triggerConditions": [
+        "Primary visualization generation timeout",
+        "Exception during visualization generation",
+        "Missing or insufficient data for visualization",
+        "Invalid input parameters for visualization",
+        "Failed image verification after generation"
+      ],
+      "implementation": "Using matplotlib to create simple text figure with error message and contextual information",
+      "messagingStrategy": "Clear error explanations with specific details about why visualization failed",
+      "resourceManagement": "Ensures proper resource cleanup even when errors occur during placeholder generation"
+    },
+    "errorGraphVisualization": {
+      "description": "Visualizes error propagation between components as a directed graph",
+      "nodeTypes": [
+        {
+          "name": "Root Cause Errors",
+          "representation": "Nodes from primary component with is_root_cause attribute",
+          "visual": "Red nodes with bold outline",
+          "selectionLogic": "Up to 3 errors from primary_issue_component"
+        },
+        {
+          "name": "Effect Errors",
+          "representation": "Nodes from non-primary components",
+          "visual": "Orange or yellow nodes with standard outline",
+          "selectionLogic": "Up to 2 errors from non-primary, non-unknown components"
+        },
+        {
+          "name": "Unknown Errors",
+          "representation": "Nodes from unknown component",
+          "visual": "Gray nodes with dashed outline",
+          "selectionLogic": "Used only if fewer than 5 total errors from known components"
+        }
+      ],
+      "edgeTypes": [
+        {
+          "name": "Causality Edges",
+          "representation": "Directed edges from root cause to effect errors",
+          "visual": "Solid arrows with weight-based thickness",
+          "creationLogic": "Connect primary component errors to all other errors"
+        },
+        {
+          "name": "Fallback Edges",
+          "representation": "Edges when no primary component errors exist",
+          "visual": "Dashed arrows with uniform thickness",
+          "creationLogic": "Connect first error to all others if no primary component errors"
+        }
+      ],
+      "layoutAlgorithm": "Hierarchical layout with root causes at top",
+      "interactivity": "Static visualization with component-based coloring and severity indicators",
+      "implementation": "Generated using NetworkX for graph creation and matplotlib for visualization"
+    }
+  },
+  "directoryStructure": {
+    "visualizationPlaceholders": {
+      "pattern": "output/[test_id]/supporting_images/",
+      "description": "Directory for visualization placeholders",
+      "contents": [
+        {
+          "pattern": "[test_id]_visualization_placeholder.png",
+          "description": "Generic placeholder for any failed visualization",
+          "type": "VISUALIZATION"
+        },
+        {
+          "pattern": "[test_id]_timeline_placeholder.png",
+          "description": "Placeholder specifically for timeline visualization failures",
+          "type": "VISUALIZATION"
+        },
+        {
+          "pattern": "[test_id]_component_placeholder.png",
+          "description": "Placeholder specifically for component visualization failures",
+          "type": "VISUALIZATION"
+        }
+      ]
+    },
+    "componentDiagnostics": {
+      "pattern": "output/[test_id]/json/",
+      "description": "Directory for component verification diagnostics",
+      "contents": [
+        {
+          "pattern": "[test_id]_component_preservation.json",
+          "description": "Component preservation verification results",
+          "type": "JSON_DATA"
+        },
+        {
+          "pattern": "[test_id]_component_verification.json",
+          "description": "Detailed component verification report",
+          "type": "JSON_DATA"
+        }
+      ]
+    }
+  },
+  "componentRelationships": {
+    "errorGraph": {
+      "components": [
+        {
+          "name": "build_error_graph",
+          "relationships": [
+            {
+              "to": "report_manager.py:_ensure_serializable_error_graph",
+              "type": "Consumed by",
+              "description": "Error graph is consumed by report manager for verification and enhancement"
+            },
+            {
+              "to": "visualizations.py:generate_error_propagation_diagram",
+              "type": "Visualized by",
+              "description": "Error graph is visualized by the visualization generator"
+            }
+          ]
+        }
+      ]
+    },
+    "componentVerification": {
+      "components": [
+        {
+          "name": "verify_component_preservation",
+          "relationships": [
+            {
+              "to": "report_manager.py:generate_reports",
+              "type": "Used by",
+              "description": "Used to verify component preservation at various stages of report generation"
+            },
+            {
+              "to": "json_generator.py:write_json_report",
+              "type": "Used by",
+              "description": "Used to verify component preservation during JSON serialization"
+            }
+          ]
+        },
+        {
+          "name": "count_component_fields",
+          "relationships": [
+            {
+              "to": "report_manager.py:_save_component_preservation_diagnostic",
+              "type": "Used by",
+              "description": "Used to generate component field statistics for diagnostic reports"
+            }
+          ]
+        }
+      ]
+    },
+    "placeholderGeneration": {
+      "components": [
+        {
+          "name": "generate_placeholder",
+          "relationships": [
+            {
+              "to": "visualizations.py:_generate_with_timeout",
+              "type": "Called by",
+              "description": "Called when visualization times out or fails"
+            },
+            {
+              "to": "visualizations.py:handle_empty_data",
+              "type": "Called by",
+              "description": "Called when visualization data is missing or empty"
+            }
+          ]
+        },
+        {
+          "name": "_is_placeholder_enabled",
+          "relationships": [
+            {
+              "to": "visualizations.py:generate_placeholder",
+              "type": "Controls",
+              "description": "Controls whether placeholder generation is enabled"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "external": [
+      {
+        "name": "matplotlib",
+        "version": "3.7.1",
+        "purpose": "Used for placeholder generation and visualization rendering",
+        "required": true,
+        "notes": "Used with Agg backend for thread safety in placeholder generation"
+      },
+      {
+        "name": "networkx",
+        "version": "3.1",
+        "purpose": "Used for error graph generation and manipulation",
+        "required": true,
+        "notes": "Required for build_error_graph functionality"
+      }
+    ],
+    "internal": [
+      {
+        "name": "config",
+        "purpose": "Provides feature flags for placeholder generation control",
+        "required": false,
+        "notes": "Uses _is_feature_enabled for thread-safe feature flag access with default fallback"
+      },
+      {
+        "name": "utils.path_utils",
+        "purpose": "Used for standardized path generation for placeholders and diagnostics",
+        "required": true,
+        "notes": "Required for consistent file naming and organization"
+      }
+    ]
+  },
+  "testingConsiderations": {
+    "errorGraphGeneration": [
+      "Test with empty error list to verify minimal graph generation",
+      "Test with errors that have missing component information",
+      "Test with errors from only the primary component",
+      "Test with errors from only non-primary components",
+      "Test with various error severity distributions",
+      "Verify serialization format is consistent with visualization expectations",
+      "Verify root cause marking works correctly for primary component errors"
+    ],
+    "componentVerification": [
+      "Test with missing component fields in original dictionary",
+      "Test with changed component values between original and processed dictionaries",
+      "Test with deeply nested component information",
+      "Test with arrays of dictionaries containing component information",
+      "Verify count_component_fields accurately counts all component field occurrences",
+      "Test edge cases like empty dictionaries and non-dictionary inputs"
+    ],
+    "placeholderGeneration": [
+      "Test with feature flag enabled and disabled",
+      "Test with various error messages to ensure proper formatting",
+      "Test with very long error messages to verify wrapping",
+      "Verify memory cleanup after placeholder generation",
+      "Test concurrent placeholder generation for thread safety",
+      "Verify placeholder images meet minimum quality standards"
+    ],
+    "externalIntegration": [
+      "Test with minimal required parameters",
+      "Test with all optional parameters provided",
+      "Test with invalid or malformed input data",
+      "Verify error handling for various integration scenarios",
+      "Test with pre-existing component analysis vs. generated analysis",
+      "Verify output directory structure and file organization"
+    ]
+  },
+  "performanceConsiderations": {
+    "errorGraphGeneration": {
+      "timeComplexity": "O(n) where n is the number of errors",
+      "memoryUsage": "Linear with number of selected errors (capped at 5)",
+      "optimizations": [
+        "Limited to representative subset of errors for manageable graph size",
+        "Uses separate node selection for primary component errors to ensure root cause visibility",
+        "Edge creation is optimized to focus on causality relationships"
+      ],
+      "largeDatasetHandling": "Automatically limits to representative errors regardless of input size"
+    },
+    "componentVerification": {
+      "timeComplexity": "O(n) where n is the total number of component fields",
+      "memoryUsage": "Minimal, does not create large data structures",
+      "optimizations": [
+        "Only verifies non-trivial component values (skips None, empty, 'unknown')",
+        "Uses early return for empty inputs",
+        "Only logs warnings when verification fails"
+      ],
+      "largeDatasetHandling": "Efficient for large datasets as verification is linear"
+    },
+    "placeholderGeneration": {
+      "timeComplexity": "O(1) - constant time operation",
+      "memoryUsage": "Minimal, creates a single matplotlib figure",
+      "optimizations": [
+        "Uses feature flag to completely skip generation when disabled",
+        "Always closes figures to prevent memory leaks",
+        "Uses non-interactive backend for better performance"
+      ],
+      "largeDatasetHandling": "Not applicable - placeholder generation does not process large datasets"
+    }
+  },
+  "futureExtensions": {
+    "errorGraphEnhancements": [
+      "Add support for weighted edges based on temporal relationships between errors",
+      "Enhance clustering of related errors within the graph",
+      "Add interactive visualization options for better exploration",
+      "Implement machine learning for more accurate causality detection"
+    ],
+    "componentVerificationImprovements": [
+      "Add support for partial matching of component fields",
+      "Implement repair strategies for corrupted component information",
+      "Add visualization of component verification results",
+      "Create automated component field inference for unknown components"
+    ],
+    "placeholderEnhancements": [
+      "Add component-specific styling to placeholders",
+      "Support custom placeholders based on visualization type",
+      "Implement placeholder templates with consistent branding",
+      "Add QR codes linking to documentation for common visualization failures"
+    ],
+    "integrationExpansions": [
+      "Add REST API for remote report generation",
+      "Support streaming input data for real-time report updates",
+      "Implement bidirectional integration with monitoring systems",
+      "Add support for custom report formats through plugins"
+    ]
+  }
+}
