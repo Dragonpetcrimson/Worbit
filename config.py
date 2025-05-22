@@ -76,8 +76,8 @@ class Config:
     
     # Visualization placeholder settings
     # When enabled, placeholder visualizations will be generated for invalid/empty data
-    # Default to True to ensure users always see some visualization, even if it's a placeholder
-    ENABLE_VISUALIZATION_PLACEHOLDERS = os.getenv("ENABLE_VISUALIZATION_PLACEHOLDERS", "True").lower() in ("true", "1", "yes")
+    # Default to False so placeholders are only created when explicitly enabled
+    ENABLE_VISUALIZATION_PLACEHOLDERS = os.getenv("ENABLE_VISUALIZATION_PLACEHOLDERS", "False").lower() in ("true", "1", "yes")
     
     # Diagnostic check enablement flag
     # When enabled, run pre-flight diagnostics before generating reports

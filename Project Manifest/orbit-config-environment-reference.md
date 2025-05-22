@@ -46,8 +46,10 @@ flowchart LR
 | `ENABLE_ERROR_PROPAGATION` | bool | `False` | Toggle for error propagation graphs |
 | `ENABLE_STEP_REPORT_IMAGES` | bool | `False` | Toggle for step report visualizations |
 | `ENABLE_COMPONENT_REPORT_IMAGES` | bool | `True` | Toggle for component report visualizations |
-| `ENABLE_VISUALIZATION_PLACEHOLDERS` | bool | `True` | Toggle for placeholder generation when visualization fails |
+| `ENABLE_VISUALIZATION_PLACEHOLDERS` | bool | `False` | Toggle for placeholder generation when visualization fails |
 | `ENABLE_DIAGNOSTIC_CHECKS` | bool | `False` | Toggle for pre-flight diagnostics before report generation |
+
+To enable placeholder images when visualizations fail or data is missing, set the environment variable `ENABLE_VISUALIZATION_PLACEHOLDERS` to `True` before running the application.
 
 ## 2. Config Class Architecture
 
