@@ -1,0 +1,1268 @@
+{
+"documentMetadata": {
+"title": "Orbit Analyzer System - Interface Documentation",
+"version": "1.0.0",
+"timestamp": "2025-05-16T10:00:00Z",
+"documentType": "Technical Interface Specification",
+"purpose": "This document provides a comprehensive interface specification of the Orbit Analyzer System, enabling developers and AI systems to understand the architecture, component relationships, and implementation details without access to the full source code. It serves as a knowledge transfer artifact that captures key interfaces, behaviors, and design patterns to facilitate maintenance, integration, and extension of the system.",
+"contextRequirements": [
+"Understanding of Python programming language",
+"Basic knowledge of file system operations",
+"Familiarity with data analysis concepts",
+"Experience with software architecture patterns"
+]
+},
+"systemOverview": {
+"name": "Orbit Analyzer",
+"description": "The Orbit Analyzer is a system designed for analyzing and reporting on component-based errors in complex systems. It processes log files, identifies components responsible for errors, generates visualizations, and creates comprehensive reports in various formats (HTML, JSON, Excel, DOCX).",
+"designPhilosophy": [
+"Standardized file organization and naming conventions",
+"Component-based error analysis and attribution",
+"Consistent output directory structure",
+"Visualization-rich reporting",
+"Robust error handling and validation"
+],
+"coreCapabilities": [
+"Log file analysis and error extraction",
+"Component attribution and root cause identification",
+"Error clustering and relationship mapping",
+"Multi-format report generation (HTML, JSON, Excel, DOCX)",
+"Component-centric visualizations",
+"Directory structure validation and correction"
+]
+},
+"moduleRegistry": [
+{
+"name": "Path Utilities",
+"filename": "path_utils.py",
+"namespace": "utils.path_utils",
+"purpose": "Provides centralized path handling utilities to ensure consistent file organization across the application, preventing nested directory creation and providing cleanup capabilities.",
+"keyResponsibilities": [
+"Test ID normalization",
+"Standardized output path generation",
+"Directory structure setup",
+"Filename standardization",
+"Path sanitization to prevent nested directories",
+"Directory cleanup",
+"Path reference standardization"
+],
+"classes": [
+{
+"name": "OutputType",
+"type": "Enum",
+"description": "Enumeration of output file types with their destinations",
+"values": [
+{"name": "PRIMARY_REPORT", "value": "primary", "description": "Goes in root directory (Excel, DOCX, HTML)"},
+{"name": "JSON_DATA", "value": "json", "description": "Goes in json/ subdirectory"},
+{"name": "VISUALIZATION", "value": "image", "description": "Goes in supporting_images/ subdirectory"},
+{"name": "DEBUGGING", "value": "debug", "description": "Goes in debug/ subdirectory (optional)"}
+]
+}
+],
+"functions": [
+{
+"name": "normalize_test_id",
+"signature": "normalize_test_id(test_id: str) -> str",
+"description": "Normalize test ID to standard SXM-#### format",
+"parameters": [
+{"name": "test_id", "type": "str", "description": "Input test ID"}
+],
+"returns": {"type": "str", "description": "Normalized test ID with SXM- prefix"},
+"example": "normalize_test_id('12345') # Returns 'SXM-12345'"
+},
+{
+"name": "sanitize_base_directory",
+"signature": "sanitize_base_directory(base_dir: str, expected_subdir: str = None) -> str",
+"description": "Sanitize the base directory to prevent nested subdirectories",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base directory path to sanitize"},
+{"name": "expected_subdir", "type": "str", "description": "Optional subdirectory to check for", "default": "None"}
+],
+"returns": {"type": "str", "description": "Sanitized base directory path"},
+"example": "sanitize_base_directory('/path/to/output/json') # Returns '/path/to/output'",
+"notes": "Detects and corrects paths that already contain known subdirectories (json, supporting_images, debug)"
+},
+{
+"name": "get_output_path",
+"signature": "get_output_path(base_dir: str, test_id: str, filename: str, output_type: OutputType = OutputType.PRIMARY_REPORT, create_dirs: bool = True) -> str",
+"description": "Get standardized output path based on file type, with validation to prevent directory nesting",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID (will be normalized)"},
+{"name": "filename", "type": "str", "description": "Filename to use"},
+{"name": "output_type", "type": "OutputType", "description": "Type of output determining subdirectory", "default": "OutputType.PRIMARY_REPORT"},
+{"name": "create_dirs", "type": "bool", "description": "Whether to create directories if they don't exist", "default": "True"}
+],
+"returns": {"type": "str", "description": "Full path for the output file"},
+"example": "get_output_path('/path/to/output', 'SXM-12345', 'report.json', OutputType.JSON_DATA) # Returns '/path/to/output/json/report.json'"
+},
+{
+"name": "setup_output_directories",
+"signature": "setup_output_directories(base_dir: str, test_id: str) -> Dict[str, str]",
+"description": "Create standard output directory structure",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"}
+],
+"returns": {"type": "Dict[str, str]", "description": "Dictionary of paths for each directory"},
+"example": "setup_output_directories('/path/to/output', 'SXM-12345') # Returns {'base': '/path/to/output', 'json': '/path/to/output/json', ...}"
+},
+{
+"name": "get_standardized_filename",
+"signature": "get_standardized_filename(test_id: str, file_type: str, extension: str) -> str",
+"description": "Create standardized filename with test ID prefix",
+"parameters": [
+{"name": "test_id", "type": "str", "description": "Test ID (will be normalized)"},
+{"name": "file_type", "type": "str", "description": "Type identifier (e.g., log_analysis, component_report)"},
+{"name": "extension", "type": "str", "description": "File extension (without dot)"}
+],
+"returns": {"type": "str", "description": "Standardized filename"},
+"example": "get_standardized_filename('12345', 'component_report', 'html') # Returns 'SXM-12345_component_report.html'"
+},
+{
+"name": "cleanup_nested_directories",
+"signature": "cleanup_nested_directories(base_dir: str) -> Dict[str, int]",
+"description": "Clean up nested directories that should not exist, to prevent accumulation of nested directories from previous runs",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"}
+],
+"returns": {"type": "Dict[str, int]", "description": "Dictionary with counts of fixes made"},
+"example": "cleanup_nested_directories('/path/to/output') # Returns {'json_dirs_fixed': 2, 'images_dirs_fixed': 1, 'debug_dirs_fixed': 0}"
+},
+{
+"name": "get_path_reference",
+"signature": "get_path_reference(path: str, base_dir: str, reference_type: str = 'html') -> Optional[str]",
+"description": "Convert a full path to a standardized reference format",
+"parameters": [
+{"name": "path", "type": "str", "description": "Full path to the file"},
+{"name": "base_dir", "type": "str", "description": "Base directory for reference calculation"},
+{"name": "reference_type", "type": "str", "description": "Type of reference to generate (html, json, relative)", "default": "'html'"}
+],
+"returns": {"type": "Optional[str]", "description": "A standardized reference string or None if path is invalid"},
+"example": "get_path_reference('/path/to/output/supporting_images/SXM-12345_component.png', '/path/to/output', 'html') # Returns 'supporting_images/SXM-12345_component.png'"
+}
+],
+"dependencies": [
+{"module": "os", "purpose": "Path manipulation and directory operations"},
+{"module": "logging", "purpose": "Error and warning logging"},
+{"module": "traceback", "purpose": "Stack trace information for error context"},
+{"module": "shutil", "purpose": "File copying operations"}
+],
+"integrationPoints": [
+{"module": "path_validator", "purpose": "Directory validation and correction"},
+{"module": "visualization_utils", "purpose": "Path handling for visualizations"},
+{"module": "reports.report_manager", "purpose": "Directory setup for report generation"}
+]
+},
+{
+"name": "Path Validator",
+"filename": "path_validator.py",
+"namespace": "utils.path_validator",
+"purpose": "Validates and fixes correct file placement within the standardized directory structure",
+"keyResponsibilities": [
+"Validating file structure against expected patterns",
+"Identifying misplaced files and nested directories",
+"Checking HTML references to supporting files",
+"Fixing directory structure issues",
+"Repairing HTML references",
+"Standardizing component visualization references"
+],
+"functions": [
+{
+"name": "validate_file_structure",
+"signature": "validate_file_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+"description": "Validate that files are in their proper locations",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"}
+],
+"returns": {"type": "Dict[str, List[str]]", "description": "Dictionary of misplaced files by category"},
+"example": "validate_file_structure('/path/to/output', 'SXM-12345') # Returns {'json_dir_images': [...], 'expected_but_missing': [...]}"
+},
+{
+"name": "check_html_references",
+"signature": "check_html_references(html_file: str) -> Dict[str, List[str]]",
+"description": "Check HTML file for correct references to supporting files",
+"parameters": [
+{"name": "html_file", "type": "str", "description": "Path to HTML file"}
+],
+"returns": {"type": "Dict[str, List[str]]", "description": "Dictionary of issues"},
+"example": "check_html_references('/path/to/output/SXM-12345_component_report.html')"
+},
+{
+"name": "print_validation_results",
+"signature": "print_validation_results(base_dir: str, test_id: str)",
+"description": "Run validation and print results in a user-friendly format",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"}
+],
+"returns": {"type": "None", "description": "Output is printed to console"},
+"example": "print_validation_results('/path/to/output', 'SXM-12345')"
+},
+{
+"name": "fix_directory_structure",
+"signature": "fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+"description": "Find and fix directory structure issues",
+"parameters": [
+{"name": "base_dir", "type": "str", "description": "Base output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"}
+],
+"returns": {"type": "Dict[str, List[str]]", "description": "Dictionary of fixes made by category"},
+"example": "fix_directory_structure('/path/to/output', 'SXM-12345')"
+},
+{
+"name": "fix_html_references",
+"signature": "fix_html_references(html_path: str, base_dir: str) -> List[str]",
+"description": "Fix HTML references to supporting files",
+"parameters": [
+{"name": "html_path", "type": "str", "description": "Path to HTML file"},
+{"name": "base_dir", "type": "str", "description": "Base directory for the test"}
+],
+"returns": {"type": "List[str]", "description": "List of fixes made"},
+"example": "fix_html_references('/path/to/output/SXM-12345_component_report.html', '/path/to/output')"
+}
+],
+"dependencies": [
+{"module": "os", "purpose": "Path manipulation and directory operations"},
+{"module": "logging", "purpose": "Error and warning logging"},
+{"module": "traceback", "purpose": "Stack trace information for error context"},
+{"module": "glob", "purpose": "Pattern matching for file paths"},
+{"module": "shutil", "purpose": "File copying operations"},
+{"module": "re", "purpose": "Regular expression pattern matching"},
+{"module": "utils.path_utils", "purpose": "Path handling utilities"},
+{"module": "utils.component_verification", "purpose": "Component information verification", "optional": true}
+],
+"behaviors": [
+{"name": "Component visualization standardization", "description": "Standardizes on component_errors.png while maintaining backward compatibility with component_distribution.png"},
+{"name": "HTML reference correction", "description": "Ensures all image references in HTML files use the correct supporting_images/ prefix"},
+{"name": "Nested directory correction", "description": "Detects and fixes incorrectly nested directories"},
+{"name": "Hidden visualization fixing", "description": "Removes display:none styles from visualizations and their containers"}
+]
+},
+{
+"name": "Component Verification",
+"filename": "component_verification.py",
+"namespace": "utils.component_verification",
+"purpose": "Provides utility functions to verify and diagnose issues with component information preservation throughout the processing pipeline",
+"keyResponsibilities": [
+"Verifying component information preservation between objects",
+"Validating component fields in lists of data",
+"Checking component fields in clusters",
+"Counting occurrences of component fields",
+"Generating diagnostic information about component fields",
+"Tracing and auditing component changes"
+],
+"constants": [
+{
+"name": "COMPONENT_FIELDS",
+"type": "Set[str]",
+"description": "Set of recognized component field names",
+"value": ["component", "component_source", "source_component", "root_cause_component", "primary_issue_component", "affected_components", "expected_component", "component_scores", "component_distribution", "parent_component", "child_components", "related_components"]
+}
+],
+"functions": [
+{
+"name": "verify_component_preservation",
+"signature": "verify_component_preservation(source: Any, target: Any, path: str = "") -> bool",
+"description": "Verify component information is preserved between two objects",
+"parameters": [
+{"name": "source", "type": "Any", "description": "Source object (dict, list, or primitive)"},
+{"name": "target", "type": "Any", "description": "Target object (dict, list, or primitive)"},
+{"name": "path", "type": "str", "description": "Current path for nested objects (for logging)", "default": """"}
+],
+"returns": {"type": "bool", "description": "Boolean indicating whether component information is preserved"},
+"example": "verify_component_preservation(source_data, target_data)"
+},
+{
+"name": "verify_component_preservation_in_file",
+"signature": "verify_component_preservation_in_file(source_path: str, target_path: str) -> bool",
+"description": "Verify component information is preserved between two JSON files",
+"parameters": [
+{"name": "source_path", "type": "str", "description": "Path to source JSON file"},
+{"name": "target_path", "type": "str", "description": "Path to target JSON file"}
+],
+"returns": {"type": "bool", "description": "Boolean indicating whether component information is preserved"},
+"example": "verify_component_preservation_in_file('/path/source.json', '/path/target.json')"
+},
+{
+"name": "verify_component_fields_in_list",
+"signature": "verify_component_fields_in_list(source_list: List[Dict], target_list: List[Dict]) -> bool",
+"description": "Checks component fields in lists of objects",
+"parameters": [
+{"name": "source_list", "type": "List[Dict]", "description": "Source list of dictionaries"},
+{"name": "target_list", "type": "List[Dict]", "description": "Target list of dictionaries"}
+],
+"returns": {"type": "bool", "description": "Boolean success status"},
+"example": "verify_component_fields_in_list(source_errors, target_errors)"
+},
+{
+"name": "verify_component_fields_in_clusters",
+"signature": "verify_component_fields_in_clusters(source_clusters: Dict[int, List[Dict]], target_clusters: Dict[int, List[Dict]]) -> bool",
+"description": "Validates component information in error clusters",
+"parameters": [
+{"name": "source_clusters", "type": "Dict[int, List[Dict]]", "description": "Source clusters dictionary"},
+{"name": "target_clusters", "type": "Dict[int, List[Dict]]", "description": "Target clusters dictionary"}
+],
+"returns": {"type": "bool", "description": "Boolean success status"},
+"example": "verify_component_fields_in_clusters(source_clusters, target_clusters)"
+},
+{
+"name": "count_component_fields",
+"signature": "count_component_fields(data: Any) -> Dict[str, int]",
+"description": "Counts occurrences of component fields in data",
+"parameters": [
+{"name": "data", "type": "Any", "description": "Data to analyze (dict, list, or other)"}
+],
+"returns": {"type": "Dict[str, int]", "description": "Dictionary of field counts"},
+"example": "count_component_fields(json_data) # Returns {'component': 12, 'component_source': 8, ...}"
+},
+{
+"name": "generate_component_diagnostic",
+"signature": "generate_component_diagnostic(file_path: str) -> Dict[str, Any]",
+"description": "Creates diagnostic information about component fields in a JSON file",
+"parameters": [
+{"name": "file_path", "type": "str", "description": "Path to JSON file"}
+],
+"returns": {"type": "Dict[str, Any]", "description": "Dictionary with diagnostic data"},
+"example": "generate_component_diagnostic('/path/to/data.json')"
+},
+{
+"name": "trace_component_changes",
+"signature": "trace_component_changes(obj: Dict, before_op: str, after_op: str) -> Dict[str, Any]",
+"description": "Create a snapshot of component fields before/after an operation for comparison",
+"parameters": [
+{"name": "obj", "type": "Dict", "description": "Object to trace changes on"},
+{"name": "before_op", "type": "str", "description": "Description of operation (before)"},
+{"name": "after_op", "type": "str", "description": "Description of operation (after)"}
+],
+"returns": {"type": "Dict[str, Any]", "description": "Dictionary with component field values"},
+"example": "trace_component_changes(error_obj, 'before_processing', 'after_processing')"
+},
+{
+"name": "audit_component_changes",
+"signature": "audit_component_changes(before_snapshot: Dict, after_snapshot: Dict) -> Dict[str, Any]",
+"description": "Compare component field snapshots to detect changes",
+"parameters": [
+{"name": "before_snapshot", "type": "Dict", "description": "Snapshot before operation"},
+{"name": "after_snapshot", "type": "Dict", "description": "Snapshot after operation"}
+],
+"returns": {"type": "Dict[str, Any]", "description": "Dictionary with detected changes"},
+"example": "audit_component_changes(before_snapshot, after_snapshot)"
+},
+{
+"name": "component_info_summary",
+"signature": "component_info_summary(data: Any) -> Dict[str, Any]",
+"description": "Generate a summary of component information in data",
+"parameters": [
+{"name": "data", "type": "Any", "description": "Data to analyze"}
+],
+"returns": {"type": "Dict[str, Any]", "description": "Summary dictionary"},
+"example": "component_info_summary(analysis_data)"
+},
+{
+"name": "export_diagnostic_report",
+"signature": "export_diagnostic_report(data: Any, output_path: str, primary_issue_component: str = "unknown") -> str",
+"description": "Export a detailed diagnostic report for component information",
+"parameters": [
+{"name": "data", "type": "Any", "description": "Data to analyze"},
+{"name": "output_path", "type": "str", "description": "Path to save the report"},
+{"name": "primary_issue_component", "type": "str", "description": "Primary issue component for context", "default": ""unknown""}
+],
+"returns": {"type": "str", "description": "Path to the exported report"},
+"example": "export_diagnostic_report(analysis_data, '/path/to/output/diagnostic.json', 'database')"
+}
+],
+"dependencies": [
+{"module": "logging", "purpose": "Error and warning logging"},
+{"module": "json", "purpose": "JSON serialization/deserialization"},
+{"module": "os", "purpose": "Path manipulation and file operations"},
+{"module": "traceback", "purpose": "Stack trace information for error context"},
+{"module": "reports.base", "purpose": "COMPONENT_FIELDS constant import", "optional": true}
+],
+"behaviors": [
+{"name": "Recursive structure traversal", "description": "Recursively examines nested data structures to verify component field preservation"},
+{"name": "Ignorance of 'unknown' values", "description": "Treats field changes from 'unknown' to specific values as enhancements, not preservation failures"},
+{"name": "Detailed path logging", "description": "Logs the exact path to problematic fields for easier debugging"}
+]
+},
+{
+"name": "Visualization Utilities",
+"filename": "visualization_utils.py",
+"namespace": "utils.visualization_utils",
+"purpose": "Provides centralized functions for visualization management, path handling, and error handling with proper memory management and thread safety",
+"keyResponsibilities": [
+"Configuring matplotlib for thread safety",
+"Validating data for visualization generation",
+"Handling empty or invalid data with placeholders",
+"Managing figure creation and cleanup",
+"Standardizing visualization paths",
+"Verifying generated image files",
+"Calculating appropriate figure sizes"
+],
+"functions": [
+{
+"name": "verify_visualization_data",
+"signature": "verify_visualization_data(data: Any, data_type: str) -> Tuple[bool, str]",
+"description": "Verifies data is valid for visualization generation",
+"parameters": [
+{"name": "data", "type": "Any", "description": "Data to verify"},
+{"name": "data_type", "type": "str", "description": "Type of data/visualization"}
+],
+"returns": {"type": "Tuple[bool, str]", "description": "Tuple of (is_valid, message)"},
+"example": "verify_visualization_data(component_data, 'component_summary')"
+},
+{
+"name": "handle_empty_data",
+"signature": "handle_empty_data(output_dir: str, test_id: str, data_type: str, message: Optional[str] = None) -> Optional[str]",
+"description": "Handles empty data based on configuration. Returns a placeholder path if placeholders are enabled, otherwise None",
+"parameters": [
+{"name": "output_dir", "type": "str", "description": "Output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"},
+{"name": "data_type", "type": "str", "description": "Type of data/visualization"},
+{"name": "message", "type": "Optional[str]", "description": "Optional specific message for the placeholder", "default": "None"}
+],
+"returns": {"type": "Optional[str]", "description": "Path to placeholder image or None"},
+"example": "handle_empty_data('/path/to/output', 'SXM-12345', 'component_distribution', 'No component data available')"
+},
+{
+"name": "configure_matplotlib_backend",
+"signature": "configure_matplotlib_backend()",
+"description": "Configure matplotlib to work in any environment. Forces Agg backend for thread safety and headless operation",
+"parameters": [],
+"returns": {"type": "Any", "description": "Matplotlib pyplot module or None if matplotlib not available"},
+"example": "plt = configure_matplotlib_backend()"
+},
+{
+"name": "save_figure_with_cleanup",
+"signature": "save_figure_with_cleanup(fig, image_path: str, dpi: int = 100) -> Optional[str]",
+"description": "Saves figure with guaranteed cleanup, even in error paths",
+"parameters": [
+{"name": "fig", "type": "matplotlib.figure.Figure", "description": "Matplotlib figure"},
+{"name": "image_path", "type": "str", "description": "Path to save the image"},
+{"name": "dpi", "type": "int", "description": "Resolution in dots per inch", "default": "100"}
+],
+"returns": {"type": "Optional[str]", "description": "Path to the saved image or None if saving failed"},
+"example": "save_figure_with_cleanup(fig, '/path/to/output/visualization.png', 300)"
+},
+{
+"name": "get_visualization_path",
+"signature": "get_visualization_path(output_dir: str, test_id: str, visualization_type: str, extension: str = "png") -> str",
+"description": "Get standardized path for a visualization file",
+"parameters": [
+{"name": "output_dir", "type": "str", "description": "Output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"},
+{"name": "visualization_type", "type": "str", "description": "Type of visualization (component, errors, etc.)"},
+{"name": "extension", "type": "str", "description": "File extension", "default": ""png""}
+],
+"returns": {"type": "str", "description": "Standardized path for the visualization"},
+"example": "get_visualization_path('/path/to/output', 'SXM-12345', 'component_distribution')"
+},
+{
+"name": "verify_image_file",
+"signature": "verify_image_file(image_path: str, description: str = "visualization") -> bool",
+"description": "Verify that an image file is valid and not corrupted",
+"parameters": [
+{"name": "image_path", "type": "str", "description": "Path to image file"},
+{"name": "description", "type": "str", "description": "Description for logging", "default": ""visualization""}
+],
+"returns": {"type": "bool", "description": "True if valid, False otherwise"},
+"example": "verify_image_file('/path/to/output/supporting_images/SXM-12345_component_distribution.png')"
+},
+{
+"name": "generate_placeholder",
+"signature": "generate_placeholder(output_dir: str, test_id: str, message: str = "Visualization not available") -> Optional[str]",
+"description": "Generate a placeholder image with an error message when visualization fails",
+"parameters": [
+{"name": "output_dir", "type": "str", "description": "Output directory"},
+{"name": "test_id", "type": "str", "description": "Test ID"},
+{"name": "message", "type": "str", "description": "Message to display in the placeholder", "default": ""Visualization not available""}
+],
+"returns": {"type": "Optional[str]", "description": "Path to placeholder file or None"},
+"example": "generate_placeholder('/path/to/output', 'SXM-12345', 'No component data available')"
+},
+{
+"name": "get_preferred_format",
+"signature": "get_preferred_format(default_format: str = "png") -> str",
+"description": "Get the preferred image format based on available backends",
+"parameters": [
+{"name": "default_format", "type": "str", "description": "Default format to use if no preference", "default": ""png""}
+],
+"returns": {"type": "str", "description": "String representing the preferred format ('png', 'svg', etc.)"},
+"example": "format = get_preferred_format()"
+},
+{
+"name": "calculate_figure_size",
+"signature": "calculate_figure_size(graph_size: int) -> Tuple[float, float]",
+"description": "Calculate appropriate figure size based on graph complexity",
+"parameters": [
+{"name": "graph_size", "type": "int", "description": "Number of nodes in the graph"}
+],
+"returns": {"type": "Tuple[float, float]", "description": "Tuple of (width, height) in inches"},
+"example": "width, height = calculate_figure_size(15)"
+},
+{
+"name": "setup_graph_visualization",
+"signature": "setup_graph_visualization(graph_size: int) -> Tuple[Any, int, int]",
+"description": "Set up a figure for graph visualization with appropriate size",
+"parameters": [
+{"name": "graph_size", "type": "int", "description": "Number of nodes in the graph"}
+],
+"returns": {"type": "Tuple[Any, int, int]", "description": "Tuple of (figure, width, height) in pixels"},
+"example": "fig, width_px, height_px = setup_graph_visualization(10)"
+}
+],
+"features": [
+{"name": "ENABLE_VISUALIZATION_PLACEHOLDERS", "type": "boolean", "default": false, "description": "Feature flag for enabling placeholder generation when visualizations fail"}
+],
+"dependencies": [
+{"module": "os", "purpose": "Path manipulation and directory operations"},
+{"module": "sys", "purpose": "System-specific parameters and functions"},
+{"module": "logging", "purpose": "Error and warning logging"},
+{"module": "warnings", "purpose": "Warning control"},
+{"module": "traceback", "purpose": "Stack trace information for error context"},
+{"module": "datetime", "purpose": "Date and time handling"},
+{"module": "utils.path_utils", "purpose": "Path utilities", "optional": true},
+{"module": "matplotlib", "purpose": "Visualization library", "optional": true},
+{"module": "PIL", "purpose": "Python Imaging Library for image verification", "optional": true},
+{"module": "config", "purpose": "Feature flags configuration", "optional": true}
+],
+"behaviors": [
+{"name": "Fallback mechanisms", "description": "Implements fallbacks for all optional dependencies"},
+{"name": "Memory management", "description": "Ensures proper cleanup of matplotlib resources even in error paths"},
+{"name": "Thread safety", "description": "Uses Agg backend to ensure thread safety in headless environments"}
+]
+}
+],
+"processingFlows": [
+{
+"name": "Report Generation Pipeline",
+"description": "The complete process flow from log analysis to report generation",
+"steps": [
+{"number": 1, "name": "Log file analysis", "responsibility": "Analyze log files and extract errors"},
+{"number": 2, "name": "Component attribution", "responsibility": "Determine responsible components for each error"},
+{"number": 3, "name": "Error clustering", "responsibility": "Group related errors into clusters"},
+{"number": 4, "name": "Root cause identification", "responsibility": "Identify primary issue components"},
+{"number": 5, "name": "Directory structure setup", "module": "utils.path_utils", "function": "setup_output_directories", "responsibility": "Create standardized output directory structure"},
+{"number": 6, "name": "Data file generation", "module": "reports.json_report", "responsibility": "Generate JSON data files", "outputs": ["json/SXM-####_log_analysis.json"]},
+{"number": 7, "name": "Visualization generation", "module": "reports.visualization", "responsibility": "Generate component visualizations", "outputs": ["supporting_images/SXM-####_component_distribution.png", "supporting_images/SXM-####_component_errors.png"]},
+{"number": 8, "name": "Report generation", "module": "reports.report_generator", "responsibility": "Generate HTML, Excel, and/or DOCX reports", "outputs": ["SXM-####_component_report.html", "SXM-####_log_analysis.xlsx"]},
+{"number": 9, "name": "Directory validation", "module": "utils.path_validator", "function": "validate_file_structure", "responsibility": "Validate output directory structure"},
+{"number": 10, "name": "Structure cleanup", "module": "utils.path_validator", "function": "fix_directory_structure", "responsibility": "Fix any directory structure issues"},
+{"number": 11, "name": "HTML reference correction", "module": "utils.path_validator", "function": "fix_html_references", "responsibility": "Ensure HTML references are correct"}
+]
+},
+{
+"name": "Component Verification Flow",
+"description": "Process for verifying component information preservation",
+"steps": [
+{"number": 1, "name": "Data processing", "responsibility": "Process data with component information"},
+{"number": 2, "name": "Pre-processing snapshot", "module": "utils.component_verification", "function": "trace_component_changes", "responsibility": "Create snapshot of component fields before processing"},
+{"number": 3, "name": "Data transformation", "responsibility": "Apply transformations to the data"},
+{"number": 4, "name": "Post-processing snapshot", "module": "utils.component_verification", "function": "trace_component_changes", "responsibility": "Create snapshot of component fields after processing"},
+{"number": 5, "name": "Change detection", "module": "utils.component_verification", "function": "audit_component_changes", "responsibility": "Compare snapshots to detect changes"},
+{"number": 6, "name": "Preservation verification", "module": "utils.component_verification", "function": "verify_component_preservation", "responsibility": "Verify component information was preserved"},
+{"number": 7, "name": "Diagnostic generation", "module": "utils.component_verification", "function": "generate_component_diagnostic", "responsibility": "Generate diagnostic information about component fields"}
+]
+},
+{
+"name": "Visualization Generation Flow",
+"description": "Process for generating component visualizations",
+"steps": [
+{"number": 1, "name": "Data validation", "module": "utils.visualization_utils", "function": "verify_visualization_data", "responsibility": "Verify data is valid for visualization"},
+{"number": 2, "name": "Path generation", "module": "utils.visualization_utils", "function": "get_visualization_path", "responsibility": "Generate standardized path for visualization"},
+{"number": 3, "name": "Matplotlib configuration", "module": "utils.visualization_utils", "function": "configure_matplotlib_backend", "responsibility": "Configure matplotlib for thread safety"},
+{"number": 4, "name": "Figure setup", "module": "utils.visualization_utils", "function": "setup_graph_visualization", "responsibility": "Set up figure with appropriate size"},
+{"number": 5, "name": "Visualization rendering", "responsibility": "Generate the visualization"},
+{"number": 6, "name": "Figure saving", "module": "utils.visualization_utils", "function": "save_figure_with_cleanup", "responsibility": "Save figure with proper cleanup"},
+{"number": 7, "name": "Image verification", "module": "utils.visualization_utils", "function": "verify_image_file", "responsibility": "Verify generated image is valid"}
+]
+},
+{
+"name": "Directory Structure Validation Flow",
+"description": "Process for validating and fixing directory structure",
+"steps": [
+{"number": 1, "name": "Directory setup", "module": "utils.path_utils", "function": "setup_output_directories", "responsibility": "Create standard directory structure"},
+{"number": 2, "name": "Nested directory cleanup", "module": "utils.path_utils", "function": "cleanup_nested_directories", "responsibility": "Clean up nested directories"},
+{"number": 3, "name": "Structure validation", "module": "utils.path_validator", "function": "validate_file_structure", "responsibility": "Validate file structure"},
+{"number": 4, "name": "HTML reference checking", "module": "utils.path_validator", "function": "check_html_references", "responsibility": "Check HTML references"},
+{"number": 5, "name": "Structure fixing", "module": "utils.path_validator", "function": "fix_directory_structure", "responsibility": "Fix directory structure issues"},
+{"number": 6, "name": "HTML reference correction", "module": "utils.path_validator", "function": "fix_html_references", "responsibility": "Fix HTML references"}
+]
+}
+],
+"integrationPoints": [
+{
+"name": "Report Generation Integration",
+"description": "Integration with report generation system",
+"codeExamples": [
+{
+"description": "Setting up directories for report generation",
+"code": "from utils.path_utils import setup_output_directories, cleanup_nested_directories\n\n# Set up standard directory structure\ndirectories = setup_output_directories('/path/to/output', 'SXM-12345')\n\n# Access specific directories\nbase_dir = directories['base']\njson_dir = directories['json']\nimages_dir = directories['images']\ndebug_dir = directories['debug']\n\n# Clean up any existing nested directories\ncleanup_results = cleanup_nested_directories(base_dir)"
+},
+{
+"description": "Generating standardized file paths",
+"code": "from utils.path_utils import get_output_path, OutputType, get_standardized_filename\n\n# Generate JSON file path\njson_filename = get_standardized_filename('SXM-12345', 'log_analysis', 'json')\njson_path = get_output_path('/path/to/output', 'SXM-12345', json_filename, OutputType.JSON_DATA)\n\n# Generate visualization file path\nviz_filename = get_standardized_filename('SXM-12345', 'component_distribution', 'png')\nviz_path = get_output_path('/path/to/output', 'SXM-12345', viz_filename, OutputType.VISUALIZATION)"
+},
+{
+"description": "Validating component information preservation in JSON files",
+"code": "from utils.component_verification import verify_component_preservation_in_file\n\n# Verify component information is preserved during file operations\nsource_path = '/path/to/output/json/SXM-12345_log_analysis.json'\ntarget_path = '/path/to/backup/SXM-12345_log_analysis.json'\n\n# Copy the file using standard methods\nimport shutil\nshutil.copy2(source_path, target_path)\n\n# Verify component information was preserved\nif not verify_component_preservation_in_file(source_path, target_path):\n    logging.error(f"Component information was lost when copying {source_path} to {target_path}")"
+},
+{
+"description": "Generating and validating visualizations",
+"code": "from utils.visualization_utils import verify_visualization_data, get_visualization_path, configure_matplotlib_backend, save_figure_with_cleanup, verify_image_file\n\n# Verify data is valid for visualization\nis_valid, message = verify_visualization_data(component_data, 'component_summary')\nif not is_valid:\n    logging.error(message)\n    return None\n\n# Configure matplotlib\nplt = configure_matplotlib_backend()\nif not plt:\n    logging.error("Matplotlib not available")\n    return None\n\n# Generate visualization path\nviz_path = get_visualization_path('/path/to/output', 'SXM-12345', 'component_distribution')\n\n# Create visualization\nfig, ax = plt.subplots(figsize=(10, 8))\n# ... create visualization ...\n\n# Save with cleanup\nsaved_path = save_figure_with_cleanup(fig, viz_path, dpi=150)\nif not saved_path:\n    logging.error("Failed to save visualization")\n    return None\n\n# Verify image file\nif not verify_image_file(saved_path):\n    logging.error("Generated image is invalid")\n    return None\n\nreturn saved_path"
+},
+{
+"description": "Validating and fixing directory structure after report generation",
+"code": "from utils.path_validator import validate_file_structure, fix_directory_structure, print_validation_results\n\n# After generating all reports, validate the directory structure\nissues = validate_file_structure('/path/to/output', 'SXM-12345')\n\n# Check if there are issues\nhas_issues = any(len(issue_list) > 0 for issue_list in issues.values())\nif has_issues:\n    # Fix the issues\n    fixes = fix_directory_structure('/path/to/output', 'SXM-12345')\n    \n    # Log the fixes\n    if fixes['fixed_files']:\n        logging.info(f"Fixed {len(fixes['fixed_files'])} directory structure issues")\n    \n    # Print validation results\n    print_validation_results('/path/to/output', 'SXM-12345')"
+}
+]
+}
+],
+"criticalMechanisms": [
+{
+"name": "Component Information Preservation",
+"description": "Mechanisms to ensure component information is preserved throughout processing",
+"details": [
+"Component information must be preserved during file operations and data transformations",
+"Unknown component values can be replaced with specific values (enhancement), but specific values must not be lost",
+"Component fields are tracked through all nested data structures",
+"Verification functions provide detailed logging of preservation failures",
+"Diagnostic tools help track down component information loss"
+],
+"codeExamples": [
+{
+"description": "Tracing component changes during processing",
+"code": "from utils.component_verification import trace_component_changes, audit_component_changes\n\n# Before processing\nbefore_snapshot = trace_component_changes(data, 'before_processing', 'after_processing')\n\n# Apply transformations\nprocessed_data = transform_data(data)\n\n# After processing\nafter_snapshot = trace_component_changes(processed_data, 'before_processing', 'after_processing')\n\n# Audit changes\nchanges = audit_component_changes(before_snapshot, after_snapshot)\nif changes['detected']:\n    logging.warning(f"Component changes detected: {changes['changes']}")"
+}
+]
+},
+{
+"name": "Directory Structure Management",
+"description": "Mechanisms to maintain consistent directory structure",
+"details": [
+"Standardized directory structure with fixed subdirectories (json/, supporting_images/, debug/)",
+"Path sanitization to prevent nested directory creation",
+"Cleanup of existing nested directories",
+"Validation and fixing of directory structure",
+"HTML reference correction to ensure proper image paths"
+],
+"codeExamples": [
+{
+"description": "Sanitizing directory paths to prevent nesting",
+"code": "from utils.path_utils import sanitize_base_directory\n\n# Check if a path already contains a known subdirectory\nbase_dir = '/path/to/output/json'\nsanitized_dir = sanitize_base_directory(base_dir)\n# Returns '/path/to/output'\n\n# Use the sanitized path for file operations\njson_dir = os.path.join(sanitized_dir, 'json')\nimages_dir = os.path.join(sanitized_dir, 'supporting_images')"
+}
+]
+},
+{
+"name": "Visualization Resource Management",
+"description": "Mechanisms for proper visualization resource management",
+"details": [
+"Thread-safe matplotlib configuration with Agg backend",
+"Guaranteed cleanup of matplotlib resources, even in error paths",
+"Fallback mechanisms for all optional dependencies",
+"Image file verification to ensure valid outputs",
+"Placeholder generation for missing or invalid data"
+],
+"codeExamples": [
+{
+"description": "Safe figure creation and cleanup",
+"code": "from utils.visualization_utils import configure_matplotlib_backend, save_figure_with_cleanup\n\n# Configure matplotlib safely\nplt = configure_matplotlib_backend()\nif not plt:\n    return None\n\ntry:\n    # Create figure\n    fig, ax = plt.subplots(figsize=(10, 8))\n    \n    # ... create visualization ...\n    \n    # Save with guaranteed cleanup\n    return save_figure_with_cleanup(fig, '/path/to/output/visualization.png')\nexcept Exception as e:\n    logging.error(f"Error creating visualization: {str(e)}")\n    # No need to manually close the figure - save_figure_with_cleanup handles it\n    return None"
+}
+]
+},
+{
+"name": "Error Handling Patterns",
+"description": "Consistent error handling patterns throughout the system",
+"details": [
+"Detailed logging with context information",
+"Fallback mechanisms for optional dependencies",
+"Graceful degradation when features are unavailable",
+"Automatic cleanup of resources in error paths",
+"Comprehensive validation before operations"
+],
+"codeExamples": [
+{
+"description": "Robust error handling with fallbacks",
+"code": "# Try to import path utilities with fallbacks\ntry:\n    from utils.path_utils import get_output_path, OutputType\n    HAS_PATH_UTILS = True\nexcept ImportError:\n    HAS_PATH_UTILS = False\n    logging.warning("Path utilities not available, using internal fallbacks")\n\ndef get_visualization_path(output_dir, test_id, visualization_type, extension="png"):\n    """Get standardized path for a visualization file with fallbacks."""\n    if HAS_PATH_UTILS:\n        # Use path utilities if available\n        return get_output_path(\n            output_dir,\n            test_id,\n            get_standardized_filename(test_id, visualization_type, extension),\n            OutputType.VISUALIZATION\n        )\n    else:\n        # Basic fallback implementation\n        if test_id and not test_id.startswith("SXM-"):\n            test_id = f"SXM-{test_id}"\n        \n        # Add supporting_images subdirectory\n        viz_dir = os.path.join(output_dir, "supporting_images")\n        \n        # Create directory\n        os.makedirs(viz_dir, exist_ok=True)\n        \n        # Create filename and path\n        filename = f"{test_id}_{visualization_type}.{extension}"\n        return os.path.join(viz_dir, filename)"
+}
+]
+}
+],
+"visualizationSystem": {
+"description": "The visualization system generates standardized visualizations for component analysis",
+"types": [
+{"name": "component_distribution", "description": "Distribution of errors by component", "path": "supporting_images/SXM-####_component_distribution.png"},
+{"name": "component_errors", "description": "Standardized name for component distribution visualization", "path": "supporting_images/SXM-####_component_errors.png", "notes": "Preferred over component_distribution.png, but both maintained for backwards compatibility"},
+{"name": "cluster_timeline", "description": "Timeline of error clusters", "path": "supporting_images/SXM-####_cluster_timeline.png"},
+{"name": "error_graph", "description": "Graph of error relationships", "path": "supporting_images/SXM-####_error_graph.png"},
+{"name": "step_timeline", "description": "Timeline of processing steps", "path": "supporting_images/SXM-####_step_timeline.png"},
+{"name": "visualization_placeholder", "description": "Placeholder for failed visualizations", "path": "supporting_images/SXM-####_visualization_placeholder.png"}
+],
+"generationMechanisms": {
+"baseMechanism": "Matplotlib-based visualization with guaranteed resource cleanup",
+"threadSafety": "Uses Agg backend for thread safety in headless environments",
+"dataValidation": "Validates input data before visualization generation",
+"placeholderGeneration": "Generates placeholders for missing or invalid data when enabled",
+"fallbackStrategies": [
+"Simplified visualizations for complex data",
+"Text-based placeholders when visualization libraries are unavailable",
+"Default sizes for different visualization types"
+]
+},
+"configurationOptions": [
+{"name": "ENABLE_VISUALIZATION_PLACEHOLDERS", "type": "boolean", "default": false, "description": "Enable placeholder generation for failed visualizations"},
+{"name": "DPI", "type": "integer", "default": 100, "description": "Resolution in dots per inch for saved visualizations"},
+{"name": "FORMAT", "type": "string", "default": "png", "description": "Output format for visualizations (png, svg, etc.)"}
+],
+"usageExamples": [
+{
+"description": "Complete visualization generation example",
+"code": "from utils.visualization_utils import verify_visualization_data, get_visualization_path, configure_matplotlib_backend, save_figure_with_cleanup, verify_image_file, handle_empty_data\n\ndef generate_component_visualization(component_data, output_dir, test_id):\n    """Generate component distribution visualization."""\n    # Validate data\n    is_valid, message = verify_visualization_data(component_data, 'component_summary')\n    if not is_valid:\n        return handle_empty_data(output_dir, test_id, 'component_distribution', message)\n    \n    # Configure matplotlib\n    plt = configure_matplotlib_backend()\n    if not plt:\n        return handle_empty_data(output_dir, test_id, 'component_distribution', 'Matplotlib not available')\n    \n    # Generate path\n    # First for component_errors.png (preferred)\n    viz_path = get_visualization_path(output_dir, test_id, 'component_errors')\n    alt_path = get_visualization_path(output_dir, test_id, 'component_distribution')\n    \n    try:\n        # Create figure\n        fig, ax = plt.subplots(figsize=(10, 8))\n        \n        # Extract data for visualization\n        components = [item['component'] for item in component_data if 'component' in item]\n        counts = [item.get('error_count', 1) for item in component_data if 'component' in item]\n        \n        # Create visualization\n        ax.bar(components, counts)\n        ax.set_title(f'Component Error Distribution - {test_id}')\n        ax.set_xlabel('Component')\n        ax.set_ylabel('Error Count')\n        plt.xticks(rotation=45, ha='right')\n        plt.tight_layout()\n        \n        # Save primary visualization\n        primary_path = save_figure_with_cleanup(fig, viz_path)\n        \n        # Also save with alternative name for backward compatibility\n        if primary_path:\n            import shutil\n            shutil.copy2(primary_path, alt_path)\n        \n        # Verify image\n        if not verify_image_file(primary_path):\n            return handle_empty_data(output_dir, test_id, 'component_distribution', 'Generated image is invalid')\n        \n        return primary_path\n    except Exception as e:\n        logging.error(f"Error generating component visualization: {str(e)}")\n        return handle_empty_data(output_dir, test_id, 'component_distribution', f'Error: {str(e)}')"
+}
+]
+},
+"directoryStructure": {
+"source": {
+"description": "Source code organization",
+"structure": {
+"utils/": {
+"description": "Utility modules",
+"contents": {
+"init.py": "Package initialization",
+"path_utils.py": "Path handling utilities",
+"path_validator.py": "Path validation utilities",
+"component_verification.py": "Component information validation",
+"visualization_utils.py": "Visualization utilities"
+}
+},
+"reports/": {
+"description": "Report generation modules",
+"contents": {
+"init.py": "Package initialization",
+"base.py": "Base report classes and constants",
+"json_report.py": "JSON report generation",
+"excel_report.py": "Excel report generation",
+"html_report.py": "HTML report generation",
+"docx_report.py": "DOCX report generation",
+"report_manager.py": "Report generation coordination"
+}
+},
+"visualizations/": {
+"description": "Visualization generation modules",
+"contents": {
+"init.py": "Package initialization",
+"component_visualizations.py": "Component visualization generators",
+"cluster_visualizations.py": "Cluster visualization generators",
+"timeline_visualizations.py": "Timeline visualization generators"
+}
+},
+"analyzer/": {
+"description": "Log analysis and processing modules",
+"contents": {
+"init.py": "Package initialization",
+"log_parser.py": "Log file parsing",
+"error_extractor.py": "Error extraction",
+"component_analyzer.py": "Component analysis",
+"clustering.py": "Error clustering"
+}
+},
+"config.py": "Configuration settings",
+"main.py": "Main entry point"
+}
+},
+"output": {
+"description": "Standardized output directory structure",
+"structure": {
+"<base_dir>/": {
+"description": "Base output directory",
+"contents": {
+"SXM-####_bug_report.docx": "Primary DOCX report",
+"SXM-####_log_analysis.xlsx": "Primary Excel report",
+"SXM-####_component_report.html": "Primary HTML report",
+"json/": {
+"description": "JSON data subdirectory",
+"contents": {
+"SXM-####_log_analysis.json": "Log analysis data in JSON format",
+"SXM-####_component_analysis.json": "Component analysis data in JSON format"
+}
+},
+"supporting_images/": {
+"description": "Visualizations subdirectory",
+"contents": {
+"SXM-####_component_errors.png": "Component distribution visualization (standard name)",
+"SXM-####_component_distribution.png": "Component distribution visualization (legacy name)",
+"SXM-####_cluster_timeline.png": "Cluster timeline visualization",
+"SXM-####_error_graph.png": "Error relationship graph visualization"
+}
+},
+"debug/": {
+"description": "Debug information subdirectory",
+"contents": {
+"SXM-####_processing_log.txt": "Processing log messages",
+"SXM-####component_diagnostic.json": "Component diagnostic information"
+}
+}
+}
+}
+},
+"namingConventions": [
+{"pattern": "SXM-####", "description": "All files are prefixed with the test ID in SXM-#### format"},
+{"pattern": "_log_analysis.json", "description": "Log analysis data files"},
+{"pattern": "_component_report.html", "description": "Component report HTML files"},
+{"pattern": "_component_errors.png", "description": "Standard name for component visualization"},
+{"pattern": "*_component_distribution.png", "description": "Legacy name for component visualization"}
+]
+}
+},
+"componentRelationships": {
+"dependencies": [
+{"from": "path_validator", "to": "path_utils", "type": "uses", "description": "Uses path utilities for standardized path handling"},
+{"from": "path_validator", "to": "component_verification", "type": "uses", "optional": true, "description": "Uses component verification to ensure component information is preserved"},
+{"from": "visualization_utils", "to": "path_utils", "type": "uses", "optional": true, "description": "Uses path utilities for standardized path handling"},
+{"from": "reports.report_manager", "to": "path_utils", "type": "uses", "description": "Uses path utilities for directory setup"},
+{"from": "reports.report_manager", "to": "path_validator", "type": "uses", "description": "Uses path validator for structure validation"},
+{"from": "reports.json_report", "to": "component_verification", "type": "uses", "optional": true, "description": "Uses component verification to ensure component information is preserved"},
+{"from": "visualizations.component_visualizations", "to": "visualization_utils", "type": "uses", "description": "Uses visualization utilities for standardized visualization generation"}
+],
+"dataFlow": [
+{"from": "analyzer.log_parser", "to": "analyzer.error_extractor", "data": "Parsed log entries", "description": "Provides parsed log entries for error extraction"},
+{"from": "analyzer.error_extractor", "to": "analyzer.component_analyzer", "data": "Extracted errors", "description": "Provides extracted errors for component analysis"},
+{"from": "analyzer.component_analyzer", "to": "analyzer.clustering", "data": "Component-attributed errors", "description": "Provides component-attributed errors for clustering"},
+{"from": "analyzer.clustering", "to": "reports.json_report", "data": "Clustered errors", "description": "Provides clustered errors for JSON report generation"},
+{"from": "reports.json_report", "to": "visualizations.component_visualizations", "data": "Component analysis data", "description": "Provides component analysis data for visualization"},
+{"from": "visualizations.component_visualizations", "to": "reports.html_report", "data": "Visualization paths", "description": "Provides visualization paths for HTML report generation"}
+],
+"hierarchies": [
+{"parent": "reports.report_manager", "children": ["reports.json_report", "reports.excel_report", "reports.html_report", "reports.docx_report"], "description": "Report manager coordinates different report generators"},
+{"parent": "visualizations.component_visualizations", "children": ["visualization_utils"], "description": "Component visualizations use visualization utilities"}
+]
+},
+"dependencies": {
+"required": [
+{"name": "os", "purpose": "Path manipulation and directory operations"},
+{"name": "logging", "purpose": "Error and warning logging"},
+{"name": "json", "purpose": "JSON serialization/deserialization"}
+],
+"optional": [
+{"name": "matplotlib", "purpose": "Visualization generation", "fallback": "Placeholders and text-based reports without visualizations"},
+{"name": "PIL", "purpose": "Image verification", "fallback": "Basic file existence checks"},
+{"name": "traceback", "purpose": "Detailed error information", "fallback": "Basic error messages"}
+],
+"internal": [
+{"name": "utils.path_utils", "purpose": "Standardized path handling"},
+{"name": "utils.path_validator", "purpose": "Directory structure validation"},
+{"name": "utils.component_verification", "purpose": "Component information preservation"},
+{"name": "utils.visualization_utils", "purpose": "Visualization utilities"},
+{"name": "config", "purpose": "Feature flags and configuration", "optional": true}
+]
+},
+"bestPractices": [
+{
+"category": "Path Handling",
+"practices": [
+{"practice": "Always use path utilities for file paths", "rationale": "Ensures consistent path handling and prevents nested directories"},
+{"practice": "Sanitize directory paths before use", "rationale": "Prevents nested directory creation"},
+{"practice": "Use OutputType enum when generating paths", "rationale": "Ensures proper file placement"},
+{"practice": "Use standardized filenames with test ID prefixes", "rationale": "Maintains consistent naming conventions"},
+{"practice": "Use path references for HTML images", "rationale": "Ensures correct visualization paths"}
+]
+},
+{
+"category": "Component Information",
+"practices": [
+{"practice": "Verify component preservation during file operations", "rationale": "Prevents loss of component information"},
+{"practice": "Use trace_component_changes to track changes", "rationale": "Helps identify where component information is lost"},
+{"practice": "Generate component diagnostics for troubleshooting", "rationale": "Provides detailed information about component fields"},
+{"practice": "Preserve all component fields in nested structures", "rationale": "Ensures component information is maintained throughout data transformations"}
+]
+},
+{
+"category": "Visualization",
+"practices": [
+{"practice": "Configure matplotlib with Agg backend", "rationale": "Ensures thread safety in headless environments"},
+{"practice": "Always use save_figure_with_cleanup", "rationale": "Guarantees resource cleanup even in error paths"},
+{"practice": "Verify visualization data before generation", "rationale": "Prevents errors from invalid input data"},
+{"practice": "Verify generated image files", "rationale": "Ensures visualizations are valid and usable"},
+{"practice": "Handle empty data gracefully", "rationale": "Provides appropriate fallbacks for missing data"}
+]
+},
+{
+"category": "Error Handling",
+"practices": [
+{"practice": "Implement fallbacks for optional dependencies", "rationale": "Ensures graceful degradation when features are unavailable"},
+{"practice": "Use detailed logging with context information", "rationale": "Facilitates troubleshooting"},
+{"practice": "Clean up resources in finally blocks", "rationale": "Prevents resource leaks in error paths"},
+{"practice": "Validate inputs before operations", "rationale": "Prevents errors from invalid inputs"},
+{"practice": "Use optional dependency flags", "rationale": "Allows code to adapt to available features"}
+]
+}
+],
+"commonIssues": [
+{
+"issue": "Nested directories",
+"description": "Directories nested within expected subdirectories (e.g., json/json/)",
+"detection": "validate_file_structure function",
+"resolution": "cleanup_nested_directories and fix_directory_structure functions",
+"prevention": "Use sanitize_base_directory before directory operations"
+},
+{
+"issue": "Misplaced files",
+"description": "Files placed in incorrect directories (e.g., JSON files in supporting_images/)",
+"detection": "validate_file_structure function",
+"resolution": "fix_directory_structure function",
+"prevention": "Use get_output_path with appropriate OutputType"
+},
+{
+"issue": "Missing supporting_images/ prefix in HTML",
+"description": "HTML references to images without the supporting_images/ directory prefix",
+"detection": "check_html_references function",
+"resolution": "fix_html_references function",
+"prevention": "Use get_path_reference for HTML references"
+},
+{
+"issue": "Component information loss",
+"description": "Loss of component attribution during file operations or data transformations",
+"detection": "verify_component_preservation function",
+"resolution": "Use trace_component_changes and audit_component_changes to identify where information is lost",
+"prevention": "Verify component preservation during file operations"
+},
+{
+"issue": "Resource leaks in visualization generation",
+"description": "Matplotlib resources not properly cleaned up, leading to memory leaks",
+"detection": "Manual inspection or memory profiling",
+"resolution": "Use save_figure_with_cleanup function",
+"prevention": "Configure matplotlib with Agg backend and use save_figure_with_cleanup for all figure operations"
+},
+{
+"issue": "Hidden visualizations in HTML reports",
+"description": "Visualizations with display:none style in HTML reports",
+"detection": "check_html_references function",
+"resolution": "fix_html_references function",
+"prevention": "Avoid adding display:none styles to visualizations or their containers"
+}
+],
+"troubleshootingGuide": {
+"componentInformationLoss": {
+"description": "Diagnosing component information loss",
+"steps": [
+{"step": 1, "action": "Generate component diagnostic", "command": "diagnostic = generate_component_diagnostic(json_path)", "expected_output": "Dictionary with component field counts and samples"},
+{"step": 2, "action": "Check problematic fields", "command": "problematic_fields = diagnostic['summary']['problematic_fields']", "expected_output": "List of inconsistent component fields"},
+{"step": 3, "action": "Analyze samples", "command": "samples = diagnostic['samples']", "expected_output": "Dictionary with samples of component fields at different paths"},
+{"step": 4, "action": "Use trace_component_changes", "command": "trace_component_changes(obj, 'before_op', 'after_op')", "expected_output": "Snapshot of component fields before operation"},
+{"step": 5, "action": "Compare snapshots", "command": "audit_component_changes(before_snapshot, after_snapshot)", "expected_output": "Dictionary with detected changes"}
+]
+},
+"directoryStructureIssues": {
+"description": "Diagnosing directory structure issues",
+"steps": [
+{"step": 1, "action": "Print validation results", "command": "print_validation_results(base_dir, test_id)", "expected_output": "Human-readable validation results"},
+{"step": 2, "action": "Check for specific issues", "command": "issues = validate_file_structure(base_dir, test_id)", "expected_output": "Dictionary of issues by category"},
+{"step": 3, "action": "Check for nested directories", "command": "nested_dirs = issues['nested_directories']", "expected_output": "List of nested directories"},
+{"step": 4, "action": "Check for misplaced files", "command": "misplaced_files = issues['json_dir_images'] + issues['images_dir_json']", "expected_output": "List of misplaced files"},
+{"step": 5, "action": "Fix directory structure", "command": "fixes = fix_directory_structure(base_dir, test_id)", "expected_output": "Dictionary of fixes made"}
+]
+},
+"visualizationIssues": {
+"description": "Diagnosing visualization issues",
+"steps": [
+{"step": 1, "action": "Verify visualization data", "command": "is_valid, message = verify_visualization_data(data, data_type)", "expected_output": "Validation status and message"},
+{"step": 2, "action": "Check matplotlib availability", "command": "plt = configure_matplotlib_backend()", "expected_output": "Matplotlib pyplot module or None"},
+{"step": 3, "action": "Verify image file", "command": "is_valid = verify_image_file(image_path)", "expected_output": "Boolean indicating if image is valid"},
+{"step": 4, "action": "Check HTML references", "command": "issues = check_html_references(html_file)", "expected_output": "Dictionary of reference issues"},
+{"step": 5, "action": "Fix HTML references", "command": "fixes = fix_html_references(html_path, base_dir)", "expected_output": "List of fixes made"}
+]
+}
+},
+"securityConsiderations": {
+"fileOperations": {
+"risks": [
+"Path traversal vulnerabilities",
+"Unauthorized file access",
+"Directory traversal attacks"
+],
+"mitigations": [
+"Path sanitization and normalization",
+"Restricting operations to specific directories",
+"Input validation for file paths"
+]
+},
+"resourceManagement": {
+"risks": [
+"Resource exhaustion from matplotlib memory leaks",
+"Denial of service from processing large files"
+],
+"mitigations": [
+"Guaranteed resource cleanup in finally blocks",
+"Using save_figure_with_cleanup for all figure operations",
+"Implementing proper resource limits and timeouts"
+]
+}
+},
+"implementationNotes": {
+"pathUtilities": {
+"description": "Path utilities implementation details",
+"notes": [
+"Normalization uses os.path.normpath for consistent path separators",
+"Sanitization uses checks against known subdirectories",
+"Directory creation is optional and controlled by create_dirs parameter",
+"Path references handle different reference types with appropriate transformations"
+]
+},
+"componentVerification": {
+"description": "Component verification implementation details",
+"notes": [
+"Traverses nested structures recursively to check all component fields",
+"Ignores transitions from 'unknown' to specific values (considered enhancement)",
+"Logs detailed paths to problematic fields for easier debugging",
+"Can handle dictionaries, lists, and primitive values"
+]
+},
+"visualizationUtilities": {
+"description": "Visualization utilities implementation details",
+"notes": [
+"Uses Agg backend for thread safety and headless operation",
+"Implements fallbacks for all optional dependencies",
+"Automatically adjusts figure sizes based on graph complexity",
+"Provides placeholder generation capability controlled by feature flag"
+]
+}
+},
+"glossary": {
+"terms": [
+{"term": "Component", "definition": "A logical unit of the system that can be responsible for errors"},
+{"term": "Component Attribution", "definition": "The process of determining which component is responsible for an error"},
+{"term": "Component Fields", "definition": "Fields in data structures that store component information (e.g., component, component_source)"},
+{"term": "Visualization", "definition": "A graphical representation of data, typically as an image file"},
+{"term": "OutputType", "definition": "Enumeration defining the types of output files and their destinations"},
+{"term": "Primary Issue Component", "definition": "The component identified as the primary cause of a set of errors"},
+{"term": "Supporting Images", "definition": "Visualization images that support the main reports"},
+{"term": "Test ID", "definition": "Identifier for a test run in SXM-#### format"}
+]
+},
+"maintenanceAndUpdateInstructions": {
+"description": "Instructions for maintaining and updating the system",
+"instructions": [
+{
+"task": "Adding a new visualization type",
+"steps": [
+"Add the visualization type to the verification logic in verify_visualization_data",
+"Create a new function in the appropriate visualization module",
+"Use get_visualization_path to generate standardized path",
+"Use save_figure_with_cleanup for proper resource management",
+"Update documentation and HTML templates to reference the new visualization"
+]
+},
+{
+"task": "Adding a new component field",
+"steps": [
+"Add the field to COMPONENT_FIELDS in component_verification.py",
+"Update the component information tracing logic if needed",
+"Update diagnostic generation to include the new field",
+"Test component preservation with the new field"
+]
+},
+{
+"task": "Changing directory structure",
+"steps": [
+"Update OutputType enum in path_utils.py",
+"Update get_output_path logic for the new structure",
+"Update setup_output_directories to create new directories",
+"Update cleanup_nested_directories to handle new directories",
+"Update validation logic in path_validator.py"
+]
+}
+]
+}
+}"},
+{"practice": "Handle empty data gracefully", "rationale": "Provides appropriate fallbacks for missing data"}
+]
+},
+{
+"category": "Error Handling",
+"practices": [
+{"practice": "Implement fallbacks for optional dependencies", "rationale": "Ensures graceful degradation when features are unavailable"},
+{"practice": "Use detailed logging with context information", "rationale": "Facilitates troubleshooting"},
+{"practice": "Clean up resources in finally blocks", "rationale": "Prevents resource leaks in error paths"},
+{"practice": "Validate inputs before operations", "rationale": "Prevents errors from invalid inputs"},
+{"practice": "Use optional dependency flags", "rationale": "Allows code to adapt to available features"}
+]
+}
+],
+"commonIssues": [
+{
+"issue": "Nested directories",
+"description": "Directories nested within expected subdirectories (e.g., json/json/)",
+"detection": "validate_file_structure function",
+"resolution": "cleanup_nested_directories and fix_directory_structure functions",
+"prevention": "Use sanitize_base_directory before directory operations"
+},
+{
+"issue": "Misplaced files",
+"description": "Files placed in incorrect directories (e.g., JSON files in supporting_images/)",
+"detection": "validate_file_structure function",
+"resolution": "fix_directory_structure function",
+"prevention": "Use get_output_path with appropriate OutputType"
+},
+{
+"issue": "Missing supporting_images/ prefix in HTML",
+"description": "HTML references to images without the supporting_images/ directory prefix",
+"detection": "check_html_references function",
+"resolution": "fix_html_references function",
+"prevention": "Use get_path_reference for HTML references"
+},
+{
+"issue": "Component information loss",
+"description": "Loss of component attribution during file operations or data transformations",
+"detection": "verify_component_preservation function",
+"resolution": "Use trace_component_changes and audit_component_changes to identify where information is lost",
+"prevention": "Verify component preservation during file operations"
+},
+{
+"issue": "Resource leaks in visualization generation",
+"description": "Matplotlib resources not properly cleaned up, leading to memory leaks",
+"detection": "Manual inspection or memory profiling",
+"resolution": "Use save_figure_with_cleanup function",
+"prevention": "Configure matplotlib with Agg backend and use save_figure_with_cleanup for all figure operations"
+},
+{
+"issue": "Hidden visualizations in HTML reports",
+"description": "Visualizations with display:none style in HTML reports",
+"detection": "check_html_references function",
+"resolution": "fix_html_references function",
+"prevention": "Avoid adding display:none styles to visualizations or their containers"
+}
+],
+"troubleshootingGuide": {
+"componentInformationLoss": {
+"description": "Diagnosing component information loss",
+"steps": [
+{"step": 1, "action": "Generate component diagnostic", "command": "diagnostic = generate_component_diagnostic(json_path)", "expected_output": "Dictionary with component field counts and samples"},
+{"step": 2, "action": "Check problematic fields", "command": "problematic_fields = diagnostic['summary']['problematic_fields']", "expected_output": "List of inconsistent component fields"},
+{"step": 3, "action": "Analyze samples", "command": "samples = diagnostic['samples']", "expected_output": "Dictionary with samples of component fields at different paths"},
+{"step": 4, "action": "Use trace_component_changes", "command": "trace_component_changes(obj, 'before_op', 'after_op')", "expected_output": "Snapshot of component fields before operation"},
+{"step": 5, "action": "Compare snapshots", "command": "audit_component_changes(before_snapshot, after_snapshot)", "expected_output": "Dictionary with detected changes"}
+]
+},
+"directoryStructureIssues": {
+"description": "Diagnosing directory structure issues",
+"steps": [
+{"step": 1, "action": "Print validation results", "command": "print_validation_results(base_dir, test_id)", "expected_output": "Human-readable validation results"},
+{"step": 2, "action": "Check for specific issues", "command": "issues = validate_file_structure(base_dir, test_id)", "expected_output": "Dictionary of issues by category"},
+{"step": 3, "action": "Check for nested directories", "command": "nested_dirs = issues['nested_directories']", "expected_output": "List of nested directories"},
+{"step": 4, "action": "Check for misplaced files", "command": "misplaced_files = issues['json_dir_images'] + issues['images_dir_json']", "expected_output": "List of misplaced files"},
+{"step": 5, "action": "Fix directory structure", "command": "fixes = fix_directory_structure(base_dir, test_id)", "expected_output": "Dictionary of fixes made"}
+]
+},
+"visualizationIssues": {
+"description": "Diagnosing visualization issues",
+"steps": [
+{"step": 1, "action": "Verify visualization data", "command": "is_valid, message = verify_visualization_data(data, data_type)", "expected_output": "Validation status and message"},
+{"step": 2, "action": "Check matplotlib availability", "command": "plt = configure_matplotlib_backend()", "expected_output": "Matplotlib pyplot module or None"},
+{"step": 3, "action": "Verify image file", "command": "is_valid = verify_image_file(image_path)", "expected_output": "Boolean indicating if image is valid"},
+{"step": 4, "action": "Check HTML references", "command": "issues = check_html_references(html_file)", "expected_output": "Dictionary of reference issues"},
+{"step": 5, "action": "Fix HTML references", "command": "fixes = fix_html_references(html_path, base_dir)", "expected_output": "List of fixes made"}
+]
+}
+},
+"securityConsiderations": {
+"fileOperations": {
+"risks": [
+"Path traversal vulnerabilities",
+"Unauthorized file access",
+"Directory traversal attacks"
+],
+"mitigations": [
+"Path sanitization and normalization",
+"Restricting operations to specific directories",
+"Input validation for file paths"
+]
+},
+"resourceManagement": {
+"risks": [
+"Resource exhaustion from matplotlib memory leaks",
+"Denial of service from processing large files"
+],
+"mitigations": [
+"Guaranteed resource cleanup in finally blocks",
+"Using save_figure_with_cleanup for all figure operations",
+"Implementing proper resource limits and timeouts"
+]
+}
+},
+"implementationNotes": {
+"pathUtilities": {
+"description": "Path utilities implementation details",
+"notes": [
+"Normalization uses os.path.normpath for consistent path separators",
+"Sanitization uses checks against known subdirectories",
+"Directory creation is optional and controlled by create_dirs parameter",
+"Path references handle different reference types with appropriate transformations"
+]
+},
+"componentVerification": {
+"description": "Component verification implementation details",
+"notes": [
+"Traverses nested structures recursively to check all component fields",
+"Ignores transitions from 'unknown' to specific values (considered enhancement)",
+"Logs detailed paths to problematic fields for easier debugging",
+"Can handle dictionaries, lists, and primitive values"
+]
+},
+"visualizationUtilities": {
+"description": "Visualization utilities implementation details",
+"notes": [
+"Uses Agg backend for thread safety and headless operation",
+"Implements fallbacks for all optional dependencies",
+"Automatically adjusts figure sizes based on graph complexity",
+"Provides placeholder generation capability controlled by feature flag"
+]
+}
+},
+"glossary": {
+"terms": [
+{"term": "Component", "definition": "A logical unit of the system that can be responsible for errors"},
+{"term": "Component Attribution", "definition": "The process of determining which component is responsible for an error"},
+{"term": "Component Fields", "definition": "Fields in data structures that store component information (e.g., component, component_source)"},
+{"term": "Visualization", "definition": "A graphical representation of data, typically as an image file"},
+{"term": "OutputType", "definition": "Enumeration defining the types of output files and their destinations"},
+{"term": "Primary Issue Component", "definition": "The component identified as the primary cause of a set of errors"},
+{"term": "Supporting Images", "definition": "Visualization images that support the main reports"},
+{"term": "Test ID", "definition": "Identifier for a test run in SXM-#### format"}
+]
+},
+"maintenanceAndUpdateInstructions": {
+"description": "Instructions for maintaining and updating the system",
+"instructions": [
+{
+"task": "Adding a new visualization type",
+"steps": [
+"Add the visualization type to the verification logic in verify_visualization_data",
+"Create a new function in the appropriate visualization module",
+"Use get_visualization_path to generate standardized path",
+"Use save_figure_with_cleanup for proper resource management",
+"Update documentation and HTML templates to reference the new visualization"
+]
+},
+{
+"task": "Adding a new component field",
+"steps": [
+"Add the field to COMPONENT_FIELDS in component_verification.py",
+"Update the component information tracing logic if needed",
+"Update diagnostic generation to include the new field",
+"Test component preservation with the new field"
+]
+},
+{
+"task": "Changing directory structure",
+"steps": [
+"Update OutputType enum in path_utils.py",
+"Update get_output_path logic for the new structure",
+"Update setup_output_directories to create new directories",
+"Update cleanup_nested_directories to handle new directories",
+"Update validation logic in path_validator.py"
+]
+}
+]
+}
+}
