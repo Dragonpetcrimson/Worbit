@@ -352,7 +352,18 @@ def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
         html_fixes = fix_html_references(html_file, base_dir)
         if html_fixes:
             issues["fixed_files"].extend(html_fixes)
-    
+
+    total_moved = (
+        len(issues.get("fixed_files", []))
+        + cleanup_results.get("json_dirs_fixed", 0)
+        + cleanup_results.get("images_dirs_fixed", 0)
+        + cleanup_results.get("debug_dirs_fixed", 0)
+    )
+    if total_moved > 0 or cleanup_results.get("dirs_removed", 0) > 0:
+        logging.info(
+            f"Directory cleanup moved {total_moved} files and removed {cleanup_results.get('dirs_removed', 0)} directories"
+        )
+
     return issues
 
 def fix_html_references(html_path: str, base_dir: str) -> List[str]:

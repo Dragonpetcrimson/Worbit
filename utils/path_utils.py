@@ -240,7 +240,8 @@ def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
     results = {
         "json_dirs_fixed": 0,
         "images_dirs_fixed": 0,
-        "debug_dirs_fixed": 0
+        "debug_dirs_fixed": 0,
+        "dirs_removed": 0,
     }
     
     if not os.path.exists(base_dir):
@@ -249,52 +250,72 @@ def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
     # Check for nested json directory
     nested_json = os.path.join(base_dir, "json", "json")
     if os.path.exists(nested_json):
-        # Copy files to the parent directory
         for filename in os.listdir(nested_json):
             source_path = os.path.join(nested_json, filename)
             if os.path.isfile(source_path):
                 target_path = os.path.join(base_dir, "json", filename)
                 try:
                     if not os.path.exists(target_path):
-                        shutil.copy2(source_path, target_path)
-                        results["json_dirs_fixed"] += 1
+                        shutil.move(source_path, target_path)
+                    else:
+                        os.remove(source_path)
+                    results["json_dirs_fixed"] += 1
                 except Exception as e:
                     logging.error(f"Error fixing nested json file: {str(e)}")
+        try:
+            shutil.rmtree(nested_json)
+            results["dirs_removed"] += 1
+        except Exception as e:
+            logging.error(f"Error removing nested json directory: {str(e)}")
     
     # Check for nested supporting_images directory
     nested_images = os.path.join(base_dir, "supporting_images", "supporting_images")
     if os.path.exists(nested_images):
-        # Copy files to the parent directory
         for filename in os.listdir(nested_images):
             source_path = os.path.join(nested_images, filename)
             if os.path.isfile(source_path):
                 target_path = os.path.join(base_dir, "supporting_images", filename)
                 try:
                     if not os.path.exists(target_path):
-                        shutil.copy2(source_path, target_path)
-                        results["images_dirs_fixed"] += 1
+                        shutil.move(source_path, target_path)
+                    else:
+                        os.remove(source_path)
+                    results["images_dirs_fixed"] += 1
                 except Exception as e:
                     logging.error(f"Error fixing nested image file: {str(e)}")
+        try:
+            shutil.rmtree(nested_images)
+            results["dirs_removed"] += 1
+        except Exception as e:
+            logging.error(f"Error removing nested supporting_images directory: {str(e)}")
     
     # Check for nested debug directory
     nested_debug = os.path.join(base_dir, "debug", "debug")
     if os.path.exists(nested_debug):
-        # Copy files to the parent directory
         for filename in os.listdir(nested_debug):
             source_path = os.path.join(nested_debug, filename)
             if os.path.isfile(source_path):
                 target_path = os.path.join(base_dir, "debug", filename)
                 try:
                     if not os.path.exists(target_path):
-                        shutil.copy2(source_path, target_path)
-                        results["debug_dirs_fixed"] += 1
+                        shutil.move(source_path, target_path)
+                    else:
+                        os.remove(source_path)
+                    results["debug_dirs_fixed"] += 1
                 except Exception as e:
                     logging.error(f"Error fixing nested debug file: {str(e)}")
+        try:
+            shutil.rmtree(nested_debug)
+            results["dirs_removed"] += 1
+        except Exception as e:
+            logging.error(f"Error removing nested debug directory: {str(e)}")
     
     # Log results
-    total_fixed = sum(results.values())
-    if total_fixed > 0:
-        logging.info(f"Fixed {total_fixed} files in nested directories")
+    total_fixed = results["json_dirs_fixed"] + results["images_dirs_fixed"] + results["debug_dirs_fixed"]
+    if total_fixed > 0 or results["dirs_removed"] > 0:
+        logging.info(
+            f"Moved {total_fixed} files and removed {results['dirs_removed']} nested directories"
+        )
         
     return results
 
