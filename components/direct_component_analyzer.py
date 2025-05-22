@@ -352,12 +352,15 @@ class ComponentAnalyzer:
         if logging.getLogger().isEnabledFor(logging.DEBUG) and errors:
             error_before = copy.deepcopy(errors[0])
         
-        # Add root cause info to first error (for Excel output)
-        errors[0]['root_cause_component'] = self._primary_issue_component
-        
-        # Get component from registry
+        # Add root cause info to first error without overriding existing values
+        first_error = errors[0]
+        if 'root_cause_component' not in first_error:
+            first_error['root_cause_component'] = self._primary_issue_component
+
+        # Get component from registry for description
         component = self.registry.get_component(self._primary_issue_component)
-        errors[0]['root_cause_description'] = component.description
+        if 'root_cause_description' not in first_error:
+            first_error['root_cause_description'] = component.description
         
         # Use related_to from registry if available
         related_components = []

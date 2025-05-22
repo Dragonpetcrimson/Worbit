@@ -22,5 +22,8 @@ from components.component_utils import (
     COMPONENT_FIELDS
 )
 
+# Expose main pipeline helper so tests can import directly from the package
+from components.direct_component_analyzer import assign_components_and_relationships
+
 # Version information
 __version__ = '1.0.0'

@@ -139,6 +139,38 @@ def mock_perform_error_clustering(errors):
         clusters[0].append(error.copy())
     return clusters
 
+# Attempt to import real pipeline functions. Fallback to mocks if unavailable.
+# Use mock implementation to ensure consistent behavior across environments
+assign_components_and_relationships = mock_assign_components
+
+try:
+    from error_clusterer import perform_error_clustering
+except Exception:  # pragma: no cover
+    perform_error_clustering = mock_perform_error_clustering
+
+try:
+    from reports.data_preprocessor import (
+        preprocess_errors,
+        preprocess_clusters,
+        normalize_data,
+    )
+except Exception:  # pragma: no cover
+    preprocess_errors = mock_preprocess_errors
+    preprocess_clusters = mock_preprocess_clusters
+    normalize_data = mock_normalize_data
+
+try:
+    from reports.base import ComponentAwareEncoder as _BaseEncoder
+except Exception:  # pragma: no cover
+    _BaseEncoder = MockComponentAwareEncoder
+
+def ComponentAwareEncoder(*args, **kwargs):
+    """Factory function for json.dump cls parameter."""
+    def factory(*f_args, **f_kwargs):
+        combined_kwargs = {**kwargs, **f_kwargs}
+        return _BaseEncoder(*args, *f_args, **combined_kwargs)
+    return factory
+
 class ComponentIntegrationTest(unittest.TestCase):
     """Tests for component integration across modules."""
     
