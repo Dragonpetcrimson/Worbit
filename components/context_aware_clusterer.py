@@ -11,6 +11,28 @@ from datetime import datetime, timedelta
 import networkx as nx
 import json
 
+# Import path utilities with fallback definitions
+try:
+    from utils.path_utils import (
+        get_output_path,
+        OutputType,
+        get_standardized_filename,
+        sanitize_base_directory,
+    )
+except ImportError:  # pragma: no cover - fallback for standalone use
+    def get_output_path(base_dir, test_id, filename, output_type=None):
+        return os.path.join(base_dir, filename)
+
+    def get_standardized_filename(test_id, file_type, extension):
+        return f"{test_id}_{file_type}.{extension}"
+
+    def sanitize_base_directory(base_dir, expected_subdir=None):
+        return base_dir
+
+    class OutputType:
+        JSON_DATA = "json"
+        VISUALIZATION = "visualization"
+
 class ContextAwareClusterer:
     """
     Enhanced error clustering that takes into account component relationships,
