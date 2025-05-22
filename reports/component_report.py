@@ -78,7 +78,7 @@ def generate_component_report(
         Path to the generated HTML report
     """
     # Verify directory structure before generating report
-from utils.path_validator import fix_directory_structure, check_html_references
+    from utils.path_validator import fix_directory_structure, check_html_references
     fix_directory_structure(output_dir, test_id)
     
     # Sanitize output directory to prevent nesting
