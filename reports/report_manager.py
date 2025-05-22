@@ -584,9 +584,17 @@ class ReportManager:
                     if "analysis_files" not in component_analysis:
                         component_analysis["analysis_files"] = {}
                     
+                    sanitized_base = sanitize_base_directory(self.base_dir, "json")
                     for viz_type, viz_path in visualization_paths.items():
                         if viz_path and os.path.exists(viz_path):
-                            component_analysis["analysis_files"][viz_type] = viz_path
+                            sanitized_path = get_output_path(
+                                sanitized_base,
+                                self.config.test_id,
+                                os.path.basename(viz_path),
+                                OutputType.JSON_DATA,
+                                create_dirs=False,
+                            )
+                            component_analysis["analysis_files"][viz_type] = sanitized_path
             
             # Create report data object with processed data
             report_data = ReportData(

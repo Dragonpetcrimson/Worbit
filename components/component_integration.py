@@ -155,7 +155,8 @@ class ComponentIntegration:
             log_entries = self.analyzer.enrich_log_entries_with_components(log_entries)
             errors = self.analyzer.enrich_log_entries_with_components(errors)
             
-            # Set the JSON directory
+            # Sanitize output directory and ensure json path exists
+            output_dir = sanitize_base_directory(output_dir, "json")
             json_dir = os.path.join(output_dir, "json")
             os.makedirs(json_dir, exist_ok=True)
             
@@ -259,7 +260,7 @@ class ComponentIntegration:
             results["causality_paths"] = causality_paths
             
             # Export error graph
-            error_graph_path = self.clusterer.export_error_graph(json_dir, test_id)
+            error_graph_path = self.clusterer.export_error_graph(output_dir, test_id)
             if error_graph_path:
                 results["analysis_files"]["error_graph"] = error_graph_path
             
