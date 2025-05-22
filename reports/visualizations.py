@@ -24,7 +24,7 @@ try:
         handle_empty_data,
         save_figure_with_cleanup,
         configure_matplotlib_backend,
-        generate_placeholder,
+        generate_placeholder as util_generate_placeholder,
         get_visualization_path,
         verify_image_file
     )
@@ -407,7 +407,7 @@ def generate_placeholder(output_dir, test_id, message="Visualization not availab
         return None
         
     if HAS_VISUALIZATION_UTILS:
-        return generate_placeholder(output_dir, test_id, message)
+        return util_generate_placeholder(output_dir, test_id, message)
     else:
         return _generate_placeholder_internal(output_dir, test_id, message)
 
