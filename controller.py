@@ -215,7 +215,7 @@ def extract_background_and_scenario(feature_file):
         logging.error(f"Error extracting background/scenario from {feature_file}: {str(e)}")
         return "", ""
 
-def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors=None, error_clusters=None, component_analysis=None):
+def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors=None, error_clusters=None, component_analysis=None, enable_step_report=None):
     """
     Run the Gherkin log correlation and generate step-aware report with cluster visualization.
     Returns a tuple of (report_path, step_to_logs).
@@ -232,6 +232,11 @@ def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors
         logging.warning("Skipping Gherkin correlation - no log files provided")
         return None, None
         
+    # Determine if step report generation is enabled
+    if enable_step_report is None:
+        env_flag = os.getenv("ENABLE_STEP_REPORT")
+        enable_step_report = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
+
     try:
         # Create output directories using the new utility function
         output_paths = setup_output_directories(output_dir, test_id)
@@ -254,15 +259,17 @@ def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors
         
         # Enhanced cluster visualization handling with fallback
         try:
-            report_path = generate_step_report(
-                feature_file=feature_file, 
-                logs_dir=os.path.dirname(log_files[0]) if log_files else "Unknown",
-                step_to_logs=step_to_logs,
-                output_dir=output_paths["base"],
-                test_id=output_paths["test_id"],
-                clusters=error_clusters,  # Always pass clusters, fallback happens within step-aware report
-                component_analysis=component_analysis
-            )
+            report_path = None
+            if enable_step_report:
+                report_path = generate_step_report(
+                    feature_file=feature_file,
+                    logs_dir=os.path.dirname(log_files[0]) if log_files else "Unknown",
+                    step_to_logs=step_to_logs,
+                    output_dir=output_paths["base"],
+                    test_id=output_paths["test_id"],
+                    clusters=error_clusters,
+                    component_analysis=component_analysis
+                )
             
             logging.info(f"Generated step-aware HTML report: {report_path}")
             
@@ -798,17 +805,22 @@ def run_pipeline(test_id: str, gpt_model: str = None, enable_ocr: bool = None, t
     
     # Generate component report with enhanced error handling
     try:
-        component_report_path = generate_with_fallback(
-            generate_component_report,
-            output_paths["base"],
-            output_paths["test_id"],
-            component_analysis_results,
-            primary_issue_component=primary_issue_component
-        )
-        if component_report_path:
-            logging.info(f"Generated component report: {component_report_path}")
+        enable_component_html = str(os.getenv("ENABLE_COMPONENT_HTML", "True")).lower() in ("true", "1", "yes")
+        component_report_path = None
+        if enable_component_html:
+            component_report_path = generate_with_fallback(
+                generate_component_report,
+                output_paths["base"],
+                output_paths["test_id"],
+                component_analysis_results,
+                primary_issue_component=primary_issue_component
+            )
+            if component_report_path:
+                logging.info(f"Generated component report: {component_report_path}")
+            else:
+                logging.warning("Component report generation returned None")
         else:
-            logging.warning("Component report generation returned None")
+            logging.info("Component HTML report generation disabled via configuration")
     except Exception as e:
         logging.warning(f"Failed to generate component report: {str(e)}")
         component_report_path = None

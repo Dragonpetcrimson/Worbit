@@ -265,6 +265,8 @@ ENABLE_COMPONENT_DISTRIBUTION = True
 ENABLE_ERROR_PROPAGATION = True
 ENABLE_STEP_REPORT_IMAGES = True
 ENABLE_COMPONENT_REPORT_IMAGES = True
+ENABLE_STEP_REPORT = True        # Generate step-aware HTML report
+ENABLE_COMPONENT_HTML = True    # Generate component analysis HTML report
 ```
 
 ---
