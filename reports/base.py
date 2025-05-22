@@ -566,7 +566,9 @@ class ReportConfig:
                 enable_markdown: bool = True,
                 enable_json: bool = True,
                 enable_docx: bool = True,
-                enable_component_report: bool = True):
+                enable_component_report: bool = True,
+                enable_step_report: bool = True,
+                enable_component_html: bool = True):
         """
         Initialize report configuration.
         
@@ -578,7 +580,9 @@ class ReportConfig:
             enable_markdown: Whether to generate Markdown reports
             enable_json: Whether to generate JSON reports
             enable_docx: Whether to generate DOCX reports
-            enable_component_report: Whether to generate component reports
+            enable_component_report: Whether to generate component visualizations
+            enable_step_report: Whether to generate the step-aware HTML report
+            enable_component_html: Whether to generate the component analysis HTML report
         """
         self.output_dir = output_dir
         self.test_id = test_id
@@ -589,6 +593,8 @@ class ReportConfig:
         self.enable_json = enable_json
         self.enable_docx = enable_docx
         self.enable_component_report = enable_component_report
+        self.enable_step_report = enable_step_report
+        self.enable_component_html = enable_component_html
         
         # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)

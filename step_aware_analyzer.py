@@ -807,13 +807,14 @@ def generate_step_report(
             return report_path
 
 def run_step_aware_analysis(
-    test_id: str, 
-    feature_file: str, 
-    logs_dir: str, 
+    test_id: str,
+    feature_file: str,
+    logs_dir: str,
     output_dir: str,
     clusters: Optional[Dict[int, List[Dict]]] = None,
     errors: Optional[List[Dict]] = None,
-    component_analysis: Optional[Dict[str, Any]] = None
+    component_analysis: Optional[Dict[str, Any]] = None,
+    enable_step_report: Optional[bool] = None
 ) -> Optional[str]:
     """
     Run a step-aware analysis and generate HTML report.
@@ -830,6 +831,11 @@ def run_step_aware_analysis(
     Returns:
         Path to the generated report or None if analysis failed
     """
+    # Determine if report generation is enabled
+    if enable_step_report is None:
+        env_flag = os.getenv("ENABLE_STEP_REPORT")
+        enable_step_report = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
+
     # Input validation
     if not test_id:
         logging.error("No test ID provided")
@@ -898,17 +904,18 @@ def run_step_aware_analysis(
             except Exception as e:
                 logging.warning(f"Error enriching logs with error info: {str(e)}")
         
-        # Generate HTML report
-        report_path = generate_step_report(
-            feature_file=feature_file,
-            logs_dir=logs_dir,
-            step_to_logs=step_to_logs,
-            output_dir=output_dir,
-            test_id=test_id,
-            clusters=clusters,
-            component_analysis=component_analysis
-        )
-        
+        report_path = None
+        if enable_step_report:
+            report_path = generate_step_report(
+                feature_file=feature_file,
+                logs_dir=logs_dir,
+                step_to_logs=step_to_logs,
+                output_dir=output_dir,
+                test_id=test_id,
+                clusters=clusters,
+                component_analysis=component_analysis
+            )
+
         return report_path
     except Exception as e:
         logging.error(f"Error in step-aware analysis: {str(e)}")

@@ -521,7 +521,7 @@ class ReportManager:
             self._verify_component_consistency(normalized_errors, self.config.primary_issue_component)
             
             # STEP 9: Generate component report (using path utilities)
-            if self.config.enable_component_report:
+            if self.config.enable_component_report and self.config.enable_component_html:
                 component_report_filename = get_standardized_filename(self.config.test_id, "component_report", "html")
                 component_report_path = get_output_path(
                     self.base_dir,

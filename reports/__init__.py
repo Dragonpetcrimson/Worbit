@@ -3,6 +3,7 @@ reports/__init__.py - Package initialization and main entry point for report gen
 """
 
 import sys
+import os
 import logging
 import copy
 from datetime import datetime
@@ -55,7 +56,9 @@ def write_reports(
     component_analysis: dict = None,
     primary_issue_component: str = "unknown",
     component_report_path: str = None,
-    component_diagnostic: dict = None
+    component_diagnostic: dict = None,
+    enable_step_report: Optional[bool] = None,
+    enable_component_html: Optional[bool] = None
 ) -> dict:
     """
     Write comprehensive reports with enhanced component information preservation.
@@ -96,6 +99,15 @@ def write_reports(
     logging.info(f"Component distribution (sample): {component_distribution}")
     logging.info(f"Primary issue component: {primary_issue_component}")
     
+    # Determine optional feature flags
+    if enable_step_report is None:
+        env_flag = os.getenv("ENABLE_STEP_REPORT")
+        enable_step_report = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
+
+    if enable_component_html is None:
+        env_flag = os.getenv("ENABLE_COMPONENT_HTML")
+        enable_component_html = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
+
     # Create config
     config = ReportConfig(
         output_dir=output_dir,
@@ -105,7 +117,9 @@ def write_reports(
         enable_markdown=True,
         enable_json=True,
         enable_docx=True,
-        enable_component_report=True
+        enable_component_report=True,
+        enable_step_report=enable_step_report,
+        enable_component_html=enable_component_html
     )
     
     # Create data container
