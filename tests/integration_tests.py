@@ -1090,9 +1090,11 @@ class TestStepAwareAnalyzer(unittest.TestCase):
         # Explicitly specify UTF-8 encoding to avoid decoding errors
         with open(report_path, "r", encoding="utf-8") as f:
             html_content = f.read()
-            
+
         # Verify that image path uses supporting_images prefix
         self.assertIn('src="supporting_images/timeline.png"', html_content)
+        # Ensure a real timeline image was referenced
+        self.assertNotIn('visualization_placeholder', html_content)
         
         # Verify that step logs are included
         self.assertIn("Step 1", html_content)
@@ -1150,9 +1152,11 @@ class TestStepAwareAnalyzer(unittest.TestCase):
             # Explicitly specify UTF-8 encoding to avoid decoding errors
             with open(report_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
-                
+
             # Verify that image path uses supporting_images prefix
             self.assertIn('src="supporting_images/cluster_timeline.png"', html_content)
+            # Ensure no placeholder image is referenced
+            self.assertNotIn('visualization_placeholder', html_content)
             
             # Verify that component analysis is included
             self.assertIn("Root Cause Component", html_content)
@@ -1279,8 +1283,9 @@ class TestStepAwareAnalyzer(unittest.TestCase):
         with open(report_path, "r", encoding="utf-8") as f:
             html_content = f.read()
             
-        # Verify error message is included
-        self.assertIn("Timeline Visualization Unavailable", html_content)
+        # Verify error notice is included and no placeholder image is referenced
+        self.assertIn("Timeline could not be generated", html_content)
+        self.assertNotIn('visualization_placeholder', html_content)
 
 
 @TestRegistry.register(category='integration', importance=2)

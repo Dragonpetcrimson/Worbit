@@ -9,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from gherkin_log_correlator import GherkinParser, LogEntry, correlate_logs_with_steps
 
 # Import timeline generators directly from reports.visualizations
-from reports.visualizations import generate_timeline_image, generate_cluster_timeline_image, generate_visualization_placeholder
+from reports.visualizations import generate_timeline_image, generate_cluster_timeline_image
 from utils.path_validator import check_html_references
 
 # Import Config for feature flags - if it exists
@@ -344,18 +344,10 @@ def generate_step_report(
         if not enable_images:
             logging.info("Timeline images are disabled via configuration")
     
-    # IMPLEMENTATION CHANGE (Module 2): Add fallback if timeline generation failed
+
+    # If timeline generation failed entirely, leave the image path empty.
     if not timeline_image_path:
-        try:
-            timeline_image_path = generate_visualization_placeholder(
-                output_dir,
-                test_id,
-                "Timeline visualization failed: insufficient step data",
-            )
-            logging.info(f"Generated placeholder image: {timeline_image_path}")
-        except Exception as e:
-            logging.error(f"Error generating placeholder: {str(e)}")
-            traceback.print_exc()
+        logging.warning("Timeline could not be generated")
     
     # Get relative path to the image for HTML embedding
     # Use consistent supporting_images/ prefix for HTML references

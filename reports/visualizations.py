@@ -541,17 +541,32 @@ def generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_di
     
     # Acquire lock to prevent concurrent generation of the same visualization
     with _visualization_locks["cluster_timeline"]:
+        # Configure matplotlib
+        configure_matplotlib()
+
+        # Get path for visualization
+        image_path = get_viz_path(output_dir, test_id, "cluster_timeline")
+
         # Validate input data
         if not step_to_logs or not step_dict or not clusters:
             logging.warning("Missing required data for cluster timeline visualization")
-            return handle_empty_data(output_dir, test_id, "cluster_timeline", 
-                                   "Insufficient data for cluster timeline visualization")
-    
-        # Configure matplotlib
-        configure_matplotlib()
-        
-        # Get path for visualization
-        image_path = get_viz_path(output_dir, test_id, "cluster_timeline")
+            try:
+                fig = plt.figure(figsize=(8, 6))
+                plt.text(
+                    0.5,
+                    0.5,
+                    "Insufficient data for cluster timeline visualization",
+                    ha="center",
+                    va="center",
+                    fontsize=12,
+                    wrap=True,
+                )
+                plt.axis("off")
+                image_path = save_figure(fig, image_path)
+                return image_path
+            except Exception as e:
+                logging.error(f"Error creating fallback cluster timeline: {str(e)}")
+                return None
         
         # Get path for debug log
         if HAS_PATH_UTILS:
