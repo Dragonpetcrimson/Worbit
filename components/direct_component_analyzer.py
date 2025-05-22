@@ -130,7 +130,21 @@ def identify_component_from_filename(filename: str) -> Tuple[str, str]:
     Returns:
         Tuple of (component, source)
     """
-    return identify_component_from_file(filename)
+    if not filename:
+        return 'unknown', 'default'
+
+    name = os.path.basename(str(filename)).lower()
+
+    # Special cases
+    if 'app_debug.log' in name:
+        return 'soa', 'filename_special'
+    if '.har' in name or '.chlsj' in name:
+        return 'ip_traffic', 'filename_special'
+    if 'charles_proxy' in name:
+        return 'charles', 'filename_special'
+
+    component, _ = identify_component_from_file(name)
+    return component, 'filename'
 
 def trace_component_changes(error_before, error_after, operation_name="unknown"):
     """
@@ -391,6 +405,10 @@ class ComponentAnalyzer:
             errors[0]['parent_component'] = parent
         if children:
             errors[0]['child_components'] = ', '.join(children)
+
+        # Propagate primary_issue_component to all errors
+        for err in errors:
+            err['primary_issue_component'] = self._primary_issue_component
             
         # Trace any component changes if in debug mode
         if error_before is not None:

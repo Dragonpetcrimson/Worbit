@@ -490,6 +490,13 @@ class ComponentVisualizer:
         
         # Special color for root cause component
         self.root_cause_color = "#d81b60"  # Magenta/red
+
+        # Mapping of severities to colors for heatmaps/metrics
+        self.severity_colors = {
+            "High": "#d9534f",
+            "Medium": "#f0ad4e",
+            "Low": "#5bc0de"
+        }
     
     def _configure_matplotlib_backend(self):
         """Configure matplotlib to work in any environment."""
@@ -683,8 +690,8 @@ class ComponentVisualizer:
             if component.get("id") == component_id:
                 return component.get("name", component_id.upper())
         
-        # Return uppercase ID as fallback
-        return component_id.upper()
+        # Return the ID itself if not found in schema
+        return component_id
     
     def _get_color_for_component(self, component_id: str) -> str:
         """
@@ -1106,18 +1113,54 @@ class ComponentVisualizer:
                 if HAS_MATPLOTLIB:
                     plt.close('all')
 
-    def generate_error_propagation_diagram(self, output_dir: str, test_id: str, error_graph=None) -> str:
+    def generate_error_propagation_diagram(self, output_dir: str, *args, **kwargs) -> str:
         """
         Generate a visualization of error propagation paths.
-        
+
+        This method supports both the legacy signature
+        ``generate_error_propagation_diagram(output_dir, component_errors,
+        root_component, propagation_paths, test_id)`` and the newer
+        ``generate_error_propagation_diagram(output_dir, test_id, error_graph)``
+        form. The arguments are inspected at runtime to determine which
+        behaviour to use.
+
         Args:
             output_dir: Directory to save the visualization
-            test_id: Test ID for the filename
-            error_graph: Error graph (NetworkX DiGraph or dictionary)
-            
+            *args: Positional arguments (see above)
+            **kwargs: Optional keyword arguments
+
         Returns:
             Path to the generated visualization file
         """
+        # Determine call style
+        error_graph = None
+        test_id = None
+        if args and isinstance(args[0], dict):
+            # Legacy style
+            component_errors = args[0]
+            root_component = args[1] if len(args) > 1 else None
+            propagation_paths = args[2] if len(args) > 2 else []
+            test_id = args[3] if len(args) > 3 else kwargs.get('test_id')
+
+            if HAS_NETWORKX:
+                G = nx.DiGraph()
+                for comp, count in component_errors.items():
+                    G.add_node(comp, component=comp, text=f"{count} errors")
+                for path in propagation_paths:
+                    for src, dst in zip(path[:-1], path[1:]):
+                        G.add_edge(src, dst)
+                if root_component and G.has_node(root_component):
+                    G.nodes[root_component]['is_root_cause'] = True
+                error_graph = G
+        else:
+            # New style: (test_id, error_graph)
+            if args:
+                test_id = args[0]
+                if len(args) > 1:
+                    error_graph = args[1]
+            test_id = kwargs.get('test_id', test_id)
+            error_graph = kwargs.get('error_graph', error_graph)
+
         # Check if error propagation visualization is enabled
         if not _is_feature_enabled('ENABLE_ERROR_PROPAGATION', False):
             logging.info(f"Error propagation visualization is disabled by feature flag")

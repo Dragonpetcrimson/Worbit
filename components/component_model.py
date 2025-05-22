@@ -200,27 +200,27 @@ class ComponentRegistry:
     def identify_component_from_filename(self, filename):
         """Identify component based on filename patterns."""
         if not filename:
-            return self.get_component('unknown').id  # Return component ID instead of component object
+            return self.get_component('unknown')
             
         filename = filename.lower()
         
         # Special cases first
         if 'app_debug.log' in filename:
-            return 'soa'  # Return component ID directly
+            return self.get_component('soa')
         elif '.har' in filename or '.chlsj' in filename:
-            return 'ip_traffic'  # Return component ID directly
+            return self.get_component('ip_traffic')
             
         # Check pattern matches from schema
         for component_id, component in self._components.items():
             log_sources = getattr(component, '_properties', {}).get('log_sources', [])
             for pattern in log_sources:
                 if self._matches_pattern(filename, pattern):
-                    return component_id  # Return component ID instead of component object
+                    return self.get_component(component_id)
         
         # Fallback to base filename
         base_name = os.path.basename(filename)
         component_id = os.path.splitext(base_name)[0]
-        return component_id  # Return component ID directly
+        return self.get_component(component_id)
     
     def _matches_pattern(self, text, pattern):
         """Check if text matches a pattern, handling wildcards."""
@@ -245,7 +245,7 @@ class ComponentRegistry:
     def identify_primary_component(self, component_counts):
         """Identify primary component based on error counts."""
         if not component_counts:
-            return self.get_component('unknown').id  # Return component ID instead of component object
+            return self.get_component('unknown')
             
         # Filter out unknown component for primary selection
         filtered_counts = {k: v for k, v in component_counts.items() 
@@ -261,14 +261,13 @@ class ComponentRegistry:
         # Select primary component - prefer non-unknown components
         if filtered_counts:
             primary_id = max(filtered_counts.items(), key=lambda x: x[1])[0]
-            return primary_id  # Return component ID directly
+            return self.get_component(primary_id)
             
         # Last resort - use the most frequent component
         if component_counts:
             primary_id = max(component_counts.items(), key=lambda x: x[1])[0]
-            return primary_id  # Return component ID directly
-            
-        return 'unknown'  # Return component ID directly
+            return self.get_component(primary_id)
+        return self.get_component('unknown')
 
 
 # Factory functions for component creation
@@ -277,14 +276,16 @@ def create_component_info(component_id, source='default', **kwargs):
     registry = get_component_registry()
     base_component = registry.get_component(component_id)
     
-    # Combine base component info with provided kwargs
+    extra = {k: v for k, v in kwargs.items()
+             if k not in {'name', 'description', 'component_type', 'component_source'}}
+
     return ComponentInfo(
         component_id=component_id,
         name=kwargs.get('name', base_component.name),
         description=kwargs.get('description', base_component.description),
         component_type=kwargs.get('component_type', base_component.type),
         component_source=source,
-        **kwargs
+        **extra
     )
 
 # Singleton registry instance
