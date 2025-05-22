@@ -52,6 +52,12 @@ def verify_image_file(path):
     """Simple fallback for image verification."""
     return os.path.exists(path) and os.path.getsize(path) > 0
 
+# Import placeholder generator for fallback images
+try:
+    from reports.visualizations import generate_visualization_placeholder
+except Exception:
+    generate_visualization_placeholder = None
+
 # Jinja2 environment for HTML templates
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
 env = Environment(
@@ -133,12 +139,29 @@ def generate_component_report(
     
     # Generate the component visualization
     visualization_path = generate_component_visualization(
-        output_dir=output_dir, 
-        test_id=test_id, 
+        output_dir=output_dir,
+        test_id=test_id,
         error_analysis=error_analysis,
         clusters_data=clusters_data,
         primary_issue_component=primary_issue_component
     )
+
+    # If visualization failed, create a placeholder image
+    if not visualization_path and generate_visualization_placeholder:
+        try:
+            visualization_path = generate_visualization_placeholder(
+                output_dir,
+                test_id,
+                "Component distribution visualization not available"
+            )
+            if visualization_path:
+                logging.info(
+                    f"Generated placeholder component visualization at {visualization_path}"
+                )
+        except Exception as e:
+            logging.error(
+                f"Error generating component visualization placeholder: {str(e)}"
+            )
     
     # Standardize visualization references in HTML
     viz_files = {}
@@ -161,13 +184,37 @@ def generate_component_report(
                 # For non-image files, keep as is
                 viz_files[key] = file_path
     
-    # Add the newly generated visualization to the references
+    # Add the newly generated visualization or placeholder to the references
     if visualization_path and os.path.exists(visualization_path):
         base_filename = os.path.basename(visualization_path)
         # Store under both keys for backward compatibility
         viz_files["component_errors"] = f"supporting_images/{base_filename}"
         viz_files["component_distribution"] = f"supporting_images/{base_filename}"
-        logging.info(f"Added component visualization to HTML references: supporting_images/{base_filename}")
+        logging.info(
+            f"Added component visualization to HTML references: supporting_images/{base_filename}"
+        )
+
+    # Determine paths for component and relationship visualizations
+    component_viz_path = viz_files.get("component_errors") or viz_files.get("component_distribution")
+
+    relationships_viz_path = viz_files.get("component_diagram") or viz_files.get("component_relationships")
+
+    # If relationship visualization is missing, create a placeholder
+    if not relationships_viz_path and generate_visualization_placeholder:
+        try:
+            rel_placeholder = generate_visualization_placeholder(
+                output_dir,
+                test_id,
+                "Component relationship visualization not available",
+            )
+            if rel_placeholder and os.path.exists(rel_placeholder):
+                rel_base = os.path.basename(rel_placeholder)
+                relationships_viz_path = f"supporting_images/{rel_base}"
+                viz_files["component_diagram"] = relationships_viz_path
+        except Exception as e:
+            logging.error(
+                f"Error generating component relationship placeholder: {str(e)}"
+            )
     
     # Build context for template
     context = {
@@ -175,8 +222,8 @@ def generate_component_report(
         "test_id": test_id,
         "timestamp": analysis_results.get("timestamp", datetime.now().isoformat()),
         "metrics": analysis_results.get("metrics", {}),
-        "component_viz": viz_files.get("component_errors") or viz_files.get("component_distribution"),
-        "relationships_viz": viz_files.get("component_diagram") or viz_files.get("component_relationships"),
+        "component_viz": component_viz_path,
+        "relationships_viz": relationships_viz_path,
     }
 
     template = env.get_template("component_report.html.j2")
