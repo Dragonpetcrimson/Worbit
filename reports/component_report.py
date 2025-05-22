@@ -78,7 +78,7 @@ def generate_component_report(
         Path to the generated HTML report
     """
     # Verify directory structure before generating report
-    from utils.path_validator import fix_directory_structure
+from utils.path_validator import fix_directory_structure, check_html_references
     fix_directory_structure(output_dir, test_id)
     
     # Sanitize output directory to prevent nesting
@@ -187,9 +187,21 @@ def generate_component_report(
     with open(report_path, 'w', encoding='utf-8') as f:
         f.write(html)
     
+    # Validate HTML references
+    try:
+        html_issues = check_html_references(report_path)
+        total_issues = sum(len(v) for v in html_issues.values())
+        if total_issues > 0:
+            logging.warning(f"HTML reference issues found in {report_path}:")
+            for issue_type, issues in html_issues.items():
+                for issue in issues:
+                    logging.warning(f"  {issue_type}: {issue}")
+    except Exception as e:
+        logging.error(f"Failed to validate HTML references: {e}")
+
     # Log what we've done
     logging.info(f"Generated component report at {report_path}")
-    
+
     return report_path
 
 

@@ -10,6 +10,7 @@ from gherkin_log_correlator import GherkinParser, LogEntry, correlate_logs_with_
 
 # Import timeline generators directly from reports.visualizations
 from reports.visualizations import generate_timeline_image, generate_cluster_timeline_image, generate_visualization_placeholder
+from utils.path_validator import check_html_references
 
 # Import Config for feature flags - if it exists
 try:
@@ -369,6 +370,7 @@ def generate_step_report(
         image_relative_path = image_relative_path.replace(os.sep, "/")
     
     # Check for component analysis report
+codex/add-jinja2-templates-and-update-reports
     component_report_file = f"{test_id}_component_report.html"
     component_report_path = os.path.join(output_dir, component_report_file)
     component_report_available = os.path.exists(component_report_path)
@@ -471,6 +473,337 @@ def generate_step_report(
         except Exception:
             return report_path
 
+=======
+    component_report_file = f"{test_id}_component_report.html"
+    component_report_path = os.path.join(output_dir, component_report_file)
+    component_report_available = os.path.exists(component_report_path)
+    
+    # Prepare HTML
+    try:
+        html = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Step-Aware Log Analysis for {test_id}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; }}
+                .container {{ max-width: 1200px; margin: 0 auto; }}
+                h1, h2, h3 {{ color: #444; }}
+                h1 {{ border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+                .summary {{ background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+                .step {{ border: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px; overflow: hidden; }}
+                .step-header {{ padding: 10px 15px; background-color: #f5f5f5; }}
+                .step-body {{ padding: 15px; }}
+                .stats {{ background-color: #f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 3px; }}
+                .log-entry {{ padding: 5px; margin: 5px 0; border-left: 3px solid #ccc; }}
+                .format-distribution {{ margin: 10px 0; }}
+                .format {{ display: inline-block; margin-right: 10px; padding: 3px 8px; background-color: #eee; border-radius: 3px; }}
+                .timestamp {{ color: #888; font-size: 0.9em; }}
+                .toggle-logs {{ cursor: pointer; color: blue; text-decoration: underline; }}
+                .logs-container {{ display: none; max-height: 400px; overflow-y: auto; }}
+                .timeline-image {{ 
+                    margin: 20px 0; 
+                    border: 1px solid #ddd; 
+                    border-radius: 5px; 
+                    max-width: 100%;
+                    height: auto;
+                }}
+                .timeline-container {{
+                    text-align: center;
+                    margin-bottom: 30px;
+                }}
+                .error-message {{
+                    background-color: #fff0f0;
+                    border-left: 3px solid #ff5555;
+                    padding: 10px;
+                    margin: 10px 0;
+                    color: #444;
+                }}
+                .timeline-info {{
+                    background-color: #f8f9fa;
+                    border-left: 3px solid #6c757d;
+                    padding: 15px;
+                    margin: 15px 0;
+                    border-radius: 5px;
+                    text-align: center;
+                }}
+                .report-link {{
+                    background-color: #f0f7ff;
+                    border-left: 3px solid #3498db;
+                    padding: 15px;
+                    margin: 15px 0;
+                    border-radius: 5px;
+                }}
+                .report-link a {{
+                    color: #3498db;
+                    font-weight: bold;
+                    text-decoration: none;
+                }}
+                .report-link a:hover {{
+                    text-decoration: underline;
+                }}
+                .component-info {{
+                    background-color: #f0fff0;
+                    border-left: 3px solid #2ecc71;
+                    padding: 15px;
+                    margin: 15px 0;
+                    border-radius: 5px;
+                }}
+                .feature-disabled-notice {{
+                    background-color: #f8f9fa;
+                    border-left: 3px solid #6c757d;
+                    padding: 15px;
+                    margin: 15px 0;
+                    border-radius: 5px;
+                }}
+                .feature-disabled-notice h3 {{
+                    color: #495057;
+                    margin-top: 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Step-Aware Log Analysis for {test_id}</h1>
+                
+                <div class="summary">
+                    <p><strong>Feature File:</strong> {os.path.basename(feature_file)}</p>
+                    <p><strong>Log Directory:</strong> {logs_dir}</p>
+                    <p><strong>Total Steps:</strong> {len(steps) if 'steps' in locals() else 'Unknown'}</p>
+                    <p><strong>Steps with Logs:</strong> {len(step_to_logs)}</p>
+                    <p><strong>Total Log Entries:</strong> {total_logs}</p>
+                    <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    <p><em>This report shows log entries correlated with each Gherkin test step.</em></p>
+                </div>
+        """
+        
+        # Add component report link if available
+        if component_report_available:
+            html += f"""
+                <div class="report-link">
+                    <h3>📊 Component Analysis Available</h3>
+                    <p><a href="{component_report_file}" target="_blank">View Component Analysis Report</a></p>
+                    <p><em>This report shows component relationships, error propagation analysis, and root cause identification.</em></p>
+                </div>
+            """
+        
+        # IMPLEMENTATION CHANGE (Module 3): Use unconditional embedding for timeline
+        if image_relative_path:
+            html += f"""
+                <div id="timeline-section" class="timeline-container">
+                    <h2>Test Execution Timeline</h2>
+                    <img src="{image_relative_path}" alt="Execution timeline" class="timeline-image"/>
+                    <p><em>Error points are color-coded by severity.</em></p>
+                </div>
+            """
+        else:
+            html += f"""
+                <div id="timeline-section" class="error-message">
+                    <p><strong>Timeline Image Unavailable</strong></p>
+                    <p>No timeline image could be generated for this report.</p>
+                </div>
+            """
+        
+        # Add component information if available
+        if component_analysis and component_analysis.get("metrics", {}).get("root_cause_component"):
+            root_cause = component_analysis.get("metrics", {}).get("root_cause_component", "Unknown")
+            affected_count = len(component_analysis.get("metrics", {}).get("components_with_issues", []))
+            
+            html += f"""
+                <div class="component-info">
+                    <h3>🔍 Component Analysis</h3>
+                    <p><strong>Root Cause Component:</strong> {root_cause.upper()}</p>
+                    <p><strong>Affected Components:</strong> {affected_count}</p>
+                    <p><em>For detailed component relationship analysis, view the Component Analysis Report linked above.</em></p>
+                </div>
+            """
+            
+        html += """
+                <h2>Step-by-Step Analysis</h2>
+        """
+        
+        # Add step details
+        found_steps = False
+        for step_num, logs in sorted(step_to_logs.items()):
+            found_steps = True
+            step = step_dict.get(step_num)
+            if isinstance(step, dict):
+                step_text = step.get("step_name", f"Step {step_num} (Unknown)")
+            else:
+                step_text = f"{step.keyword} {step.text}" if step else f"Step {step_num} (Unknown)"
+            
+            # Get format distribution
+            formats = {}
+            for log in logs:
+                format_name = getattr(log, 'format_name', 'unknown')
+                formats[format_name] = formats.get(format_name, 0) + 1
+            
+            # Get timestamp range if available
+            timestamp_range = "Unknown"
+            timestamps = [log.timestamp for log in logs if hasattr(log, 'timestamp') and log.timestamp]
+            timestamps = [validate_timestamp(ts) for ts in timestamps]
+            timestamps = [ts for ts in timestamps if ts]  # Filter out None values
+            
+            if timestamps:
+                first_ts = min(timestamps)
+                last_ts = max(timestamps)
+                duration = (last_ts - first_ts).total_seconds()
+                timestamp_range = f"{first_ts.strftime('%H:%M:%S.%f')[:-3]} to {last_ts.strftime('%H:%M:%S.%f')[:-3]} ({duration:.2f}s)"
+            
+            # Count errors by component if available
+            component_counts = {}
+            for log in logs:
+                if hasattr(log, 'is_error') and log.is_error and hasattr(log, 'component'):
+                    component = log.component
+                    component_counts[component] = component_counts.get(component, 0) + 1
+            
+            html += f"""
+                <div class="step">
+                    <div class="step-header">
+                        <h3>Step {step_num}: {step_text}</h3>
+                    </div>
+                    <div class="step-body">
+                        <div class="stats">
+                            <p><strong>Log Entries:</strong> {len(logs)}</p>
+                            <p><strong>Time Range:</strong> {timestamp_range}</p>
+            """
+            
+            # Add component error information if available
+            if component_counts:
+                html += "<p><strong>Errors by Component:</strong> "
+                for comp, count in sorted(component_counts.items()):
+                    html += f'<span class="format">{comp.upper()}: {count}</span> '
+                html += "</p>"
+                
+            html += """
+                        </div>
+                        
+                        <div class="format-distribution">
+                            <strong>Format Distribution:</strong><br>
+            """
+            
+            # Add format distribution
+            for format_name, count in sorted(formats.items()):
+                percentage = (count / len(logs)) * 100 if logs else 0
+                html += f'<span class="format">{format_name}: {count} ({percentage:.1f}%)</span> '
+            
+            html += """
+                        </div>
+                        
+                        <p><span class="toggle-logs" onclick="toggleLogs(this)">Show Log Samples</span></p>
+                        <div class="logs-container">
+            """
+            
+            # Add sample logs (first 5)
+            for i, log in enumerate(logs[:5]):
+                log_timestamp = getattr(log, 'timestamp', None)
+                timestamp_str = validate_timestamp(log_timestamp)
+                timestamp_str = timestamp_str.isoformat() if timestamp_str else 'No timestamp'
+                
+                # Add component info if available
+                component_info = ""
+                if hasattr(log, 'component'):
+                    component_info = f" [Component: <strong>{log.component.upper()}</strong>]"
+                
+                is_error = hasattr(log, 'is_error') and log.is_error
+                error_style = f'style="border-left-color: #ff5555;"' if is_error else ''
+                
+                html += f"""
+                            <div class="log-entry" {error_style}>
+                                <div class="timestamp">{log.file}:{log.line_number} | {timestamp_str}{component_info}</div>
+                                <div>{log.text}</div>
+                            </div>
+                """
+            
+            # If more than 5 logs, show a count
+            if len(logs) > 5:
+                html += f"""
+                            <div class="log-entry">
+                                <em>...and {len(logs) - 5} more logs...</em>
+                            </div>
+                """
+            
+            html += """
+                        </div>
+                    </div>
+                </div>
+            """
+        
+        # Add a message if no steps were found
+        if not found_steps:
+            html += """
+                <div id="timeline-section" class="error-message">
+                    <p><strong>No Steps Found</strong></p>
+                    <p>No test steps with associated logs were found. This might indicate a problem with log parsing or step correlation.</p>
+                </div>
+            """
+        
+        # Add simple JavaScript for toggle
+        html += """
+            </div>
+            <script>
+                // Toggle logs visibility
+                function toggleLogs(element) {
+                    var container = element.parentNode.nextElementSibling;
+                    if (container.style.display === "none" || container.style.display === "") {
+                        container.style.display = "block";
+                        element.textContent = "Hide Log Samples";
+                    } else {
+                        container.style.display = "none";
+                        element.textContent = "Show Log Samples";
+                    }
+                }
+            </script>
+        </body>
+        </html>
+        """
+        
+        # Write HTML to file
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        try:
+            html_issues = check_html_references(report_path)
+            total_issues = sum(len(v) for v in html_issues.values())
+            if total_issues > 0:
+                logging.warning(f"HTML reference issues detected in step report {report_path}:")
+                for issue_type, issues in html_issues.items():
+                    for issue in issues:
+                        logging.warning(f"  {issue_type}: {issue}")
+        except Exception as e:
+            logging.error(f"Failed to validate HTML references: {e}")
+
+        logging.info(f"Generated step-aware HTML report with {timeline_type} timeline image: {report_path}")
+        return report_path
+    
+    except Exception as e:
+        error_msg = f"Error generating HTML report: {str(e)}"
+        logging.error(error_msg)
+        traceback.print_exc()
+        
+        # Create a simple error report so we at least return something
+        try:
+            error_report_path = os.path.join(output_dir, f"{test_id}_error_report.html")
+            with open(error_report_path, 'w', encoding='utf-8') as f:
+                f.write(f"""
+                <!DOCTYPE html>
+                <html>
+                <head><title>Error Report for {test_id}</title></head>
+                <body>
+                    <h1>Error Generating Report for {test_id}</h1>
+                    <p>An error occurred while generating the step-aware report:</p>
+                    <pre>{str(e)}</pre>
+                    <p>Please check the logs for more details.</p>
+                </body>
+                </html>
+                """)
+            return error_report_path
+        except:
+            # If we can't even write the error report, just return the path that would have been
+            return report_path
+ main
 
 def run_step_aware_analysis(
     test_id: str, 
