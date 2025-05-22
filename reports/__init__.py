@@ -141,11 +141,13 @@ def write_reports(
     # Generate reports
     results = manager.generate_reports(data)
     
-    # Verify and fix directory structure
+    # Verify and fix directory structure after all reports are generated
     issues = fix_directory_structure(output_dir, test_id)
-    
-    # Log issues and fixes
+
+    # Log summary of any files moved or directories removed
     if issues.get("fixed_files"):
-        logging.info(f"Fixed {len(issues.get('fixed_files', []))} files with directory structure issues")
-    
+        logging.info(
+            f"Fixed {len(issues.get('fixed_files', []))} files with directory structure issues"
+        )
+
     return results
