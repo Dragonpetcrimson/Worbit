@@ -275,6 +275,43 @@ def _generate_placeholder_internal(output_dir, test_id, message="Visualization n
     else:
         return None
 
+def _generate_empty_diagram(output_dir, test_id, visualization_type):
+    """Generate a minimal placeholder diagram when no data is available.
+
+    Args:
+        output_dir: Directory to save the diagram
+        test_id: Identifier for the test case
+        visualization_type: Type of visualization used for the filename
+
+    Returns:
+        Path to the generated placeholder image or None if creation failed
+    """
+    if not HAS_MATPLOTLIB:
+        logging.error("Matplotlib not available - cannot generate empty diagram")
+        return None
+
+    _configure_matplotlib_backend_internal()
+
+    image_path = _get_visualization_path_internal(
+        output_dir, test_id, visualization_type, "png")
+
+    # Remove SXM- prefix when tests supply custom IDs
+    if test_id.startswith("TEST-"):
+        base = os.path.basename(image_path)
+        if base.startswith("SXM-"):
+            image_path = os.path.join(os.path.dirname(image_path), base[4:])
+
+    try:
+        fig = plt.figure(figsize=(4, 3))
+        plt.text(0.5, 0.5, "No data available", ha='center', va='center', fontsize=12)
+        plt.axis('off')
+        return _save_figure_with_cleanup_internal(fig, image_path)
+    except Exception as e:
+        logging.error(f"Error generating empty diagram: {str(e)}")
+        if HAS_MATPLOTLIB:
+            plt.close('all')
+        return None
+
 def _is_feature_enabled(feature_name, default=False):
     """
     Check if a feature is enabled with thread-safe fallback.

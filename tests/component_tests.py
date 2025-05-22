@@ -1087,7 +1087,11 @@ class TestComponentVisualizer(unittest.TestCase):
         # Include the filename parameter that was missing
         test_id = "TEST-EMPTY-123"
         dirs = setup_test_output_directories(test_id)
-        empty_path = self.visualizer._generate_empty_diagram(dirs["images"], test_id, "empty_diagram.png")
+        empty_path = self.visualizer._generate_empty_diagram(dirs["images"], test_id, "empty_diagram")
+
+        # Expect standardized filename without duplicate extension
+        expected_name = f"{test_id}_empty_diagram.png"
+        self.assertEqual(os.path.basename(empty_path), expected_name)
         
         # Verify the empty diagram was created
         self.assertIsNotNone(empty_path)
