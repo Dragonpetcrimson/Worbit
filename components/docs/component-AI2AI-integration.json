@@ -1,0 +1,447 @@
+      },
+      "testDataGeneration": {
+        "description": "Generating test data for component testing",
+        "code": "def generate_component_test_data(num_errors=10, components=['soa', 'mimosa', 'android']):\n    \"\"\"Generate test data for component testing.\"\"\"\n    import random\n    from datetime import datetime, timedelta\n    \n    # Create sample errors\n    errors = []\n    \n    # Start timestamp\n    timestamp = datetime.now() - timedelta(minutes=num_errors)\n    \n    # Error templates by component\n    templates = {\n        'soa': [\n            \"Exception in com.siriusxm.app.{}\",\n            \"Failed to load {} data\",\n            \"SOA error: {}\"\n        ],\n        'mimosa': [\n            \"Failed to generate test signal {}\",\n            \"Mimosa error in {}\",\n            \"Test configuration issue: {}\"\n        ],\n        'android': [\n            \"Android system error: {}\",\n            \"Activity {} crashed\",\n            \"Service {} failed to start\"\n        ]\n    }\n    \n    # File templates by component\n    files = {\n        'soa': ['app_debug.log', 'soa_app.log', 'siriusxm.log'],\n        'mimosa': ['mimosa.log', 'test_signals.log', 'mimosa_config.log'],\n        'android': ['android_system.log', 'logcat.log', 'android_debug.log']\n    }\n    \n    # Generate errors\n    for i in range(num_errors):\n        # Select component with weighted distribution\n        component = random.choices(components, weights=[0.5, 0.3, 0.2], k=1)[0]\n        \n        # Select template and file\n        template = random.choice(templates.get(component, templates['soa']))\n        file = random.choice(files.get(component, files['soa']))\n        \n        # Generate error text\n        objects = ['channel', 'playlist', 'audio', 'stream', 'connection', 'database']\n        error_text = template.format(random.choice(objects))\n        \n        # Create error\n        error = {\n            'text': error_text,\n            'file': file,\n            'timestamp': timestamp.isoformat(),\n            'severity': random.choice(['ERROR', 'WARN', 'FATAL'])\n        }\n        \n        # Advance timestamp\n        timestamp += timedelta(seconds=random.randint(10, 60))\n        \n        errors.append(error)\n    \n    return errors"
+      }
+    },
+    "commonIntegrationScenarios": {
+      "description": "Common scenarios for integrating with the component system",
+      "scenarios": [
+        {
+          "name": "Basic Error Analysis",
+          "description": "Basic integration for error analysis with component identification",
+          "code": "from direct_component_analyzer import assign_components_and_relationships\n\ndef analyze_logs(log_files):\n    \"\"\"Analyze logs with component identification.\"\"\"\n    # Parse logs to extract errors\n    errors = parse_logs(log_files)\n    \n    # Assign components to errors\n    errors_with_components, component_summary, primary_issue_component = \\\n        assign_components_and_relationships(errors)\n    \n    # Generate simple report\n    print(f\"Analysis Results:\")\n    print(f\"Total errors: {len(errors_with_components)}\")\n    print(f\"Primary issue component: {primary_issue_component}\")\n    print(f\"\\nComponent distribution:\")\n    for component, count in sorted(component_summary.items(), key=lambda x: x[1], reverse=True):\n        print(f\"  {component}: {count} errors\")\n    \n    # Return results\n    return {\n        'errors': errors_with_components,\n        'component_summary': component_summary,\n        'primary_issue_component': primary_issue_component\n    }",
+          "useCase": "Quick error analysis with minimal dependencies",
+          "requirements": [
+            "direct_component_analyzer module",
+            "Log parsing function"
+          ]
+        },
+        {
+          "name": "Advanced Component Analysis",
+          "description": "Advanced integration with component analysis and visualization",
+          "code": "from components.component_analyzer import ComponentAnalyzer\nfrom components.component_visualizer import ComponentVisualizer\n\ndef advanced_component_analysis(log_files, output_dir, test_id):\n    \"\"\"Analyze logs with advanced component analysis and visualization.\"\"\"\n    # Parse logs to extract errors\n    errors = parse_logs(log_files)\n    \n    # Initialize component analyzer\n    analyzer = ComponentAnalyzer(\"path/to/component_schema.json\")\n    \n    # Enrich errors with component information\n    enriched_errors = analyzer.enrich_log_entries_with_components(errors)\n    \n    # Analyze component failures\n    analysis = analyzer.analyze_component_failures(enriched_errors)\n    \n    # Generate component visualizations\n    visualizer = ComponentVisualizer(\"path/to/component_schema.json\")\n    \n    # Generate relationship diagram\n    relationship_diagram = visualizer.generate_component_relationship_diagram(\n        output_dir, test_id\n    )\n    \n    # Generate error distribution visualization\n    error_distribution = visualizer.generate_component_error_distribution(\n        output_dir, test_id, analysis.get('component_summary')\n    )\n    \n    # Return results\n    return {\n        'errors': enriched_errors,\n        'analysis': analysis,\n        'primary_issue_component': analysis.get('primary_issue_component'),\n        'visualizations': {\n            'relationship_diagram': relationship_diagram,\n            'error_distribution': error_distribution\n        }\n    }",
+          "useCase": "Detailed component analysis with visualizations",
+          "requirements": [
+            "components.component_analyzer module",
+            "components.component_visualizer module",
+            "Component schema JSON file"
+          ]
+        },
+        {
+          "name": "Automated Report Generation",
+          "description": "Integration with automated report generation",
+          "code": "from components.component_integration import ComponentIntegration\nfrom reports.report_manager import ReportManager\nfrom reports.base import ReportConfig, ReportData\n\ndef generate_component_reports(log_files, output_dir, test_id):\n    \"\"\"Generate comprehensive component reports from logs.\"\"\"\n    # Parse logs to extract errors and all entries\n    errors = parse_logs(log_files)\n    all_entries = parse_all_entries(log_files)\n    \n    # Initialize component integration\n    integration = ComponentIntegration(\"path/to/component_schema.json\")\n    \n    # Analyze logs\n    integration_results = integration.analyze_logs(\n        all_entries, errors, output_dir, test_id\n    )\n    \n    # Get primary issue component\n    primary_component = integration_results.get('primary_issue_component', 'unknown')\n    \n    # Configure report manager\n    config = ReportConfig(\n        output_dir=output_dir,\n        test_id=test_id,\n        primary_issue_component=primary_component,\n        enable_excel=True,\n        enable_docx=True,\n        enable_component_report=True\n    )\n    \n    # Create report manager\n    manager = ReportManager(config)\n    \n    # Prepare report data\n    report_data = ReportData(\n        errors=errors,\n        summary=integration_results.get('summary', ''),\n        clusters=integration_results.get('clusters', {}),\n        component_analysis=integration_results.get('component_analysis')\n    )\n    \n    # Generate reports\n    report_results = manager.generate_reports(report_data)\n    \n    # Return combined results\n    return {\n        'integration_results': integration_results,\n        'report_results': report_results,\n        'primary_issue_component': primary_component\n    }",
+          "useCase": "Comprehensive error analysis with formatted reports",
+          "requirements": [
+            "components.component_integration module",
+            "reports.report_manager module",
+            "Component schema JSON file"
+          ]
+        },
+        {
+          "name": "CI/CD Integration",
+          "description": "Integration with CI/CD pipelines",
+          "code": "def component_analysis_pipeline(args):\n    \"\"\"Component analysis pipeline for CI/CD integration.\"\"\"\n    import argparse\n    import os\n    import json\n    \n    # Parse arguments if not provided\n    if not args:\n        parser = argparse.ArgumentParser(\n            description=\"Component analysis for CI/CD integration\"\n        )\n        parser.add_argument(\n            '--log-dir', required=True, help=\"Directory containing log files\"\n        )\n        parser.add_argument(\n            '--output-dir', required=True, help=\"Directory for analysis output\"\n        )\n        parser.add_argument(\n            '--test-id', required=True, help=\"Test identifier\"\n        )\n        parser.add_argument(\n            '--schema-path', default=None, help=\"Path to component schema\"\n        )\n        parser.add_argument(\n            '--report-formats', default=\"json\", \n            help=\"Comma-separated list of report formats (json,html,excel,docx)\"\n        )\n        parser.add_argument(\n            '--fail-threshold', type=int, default=10,\n            help=\"Error count threshold for failure\"\n        )\n        args = parser.parse_args()\n    \n    # Ensure output directory exists\n    os.makedirs(args.output_dir, exist_ok=True)\n    \n    # Find log files\n    log_files = []\n    for root, _, files in os.walk(args.log_dir):\n        for file in files:\n            if file.endswith('.log') or file.endswith('.txt'):\n                log_files.append(os.path.join(root, file))\n    \n    if not log_files:\n        print(f\"No log files found in {args.log_dir}\")\n        return 1\n    \n    # Parse logs and assign components\n    errors = parse_logs(log_files)\n    \n    # Basic component identification\n    from direct_component_analyzer import assign_components_and_relationships\n    errors_with_components, component_summary, primary_issue_component = \\\n        assign_components_and_relationships(errors)\n    \n    # Generate JSON output\n    results = {\n        'test_id': args.test_id,\n        'errors_count': len(errors_with_components),\n        'primary_issue_component': primary_issue_component,\n        'component_summary': component_summary\n    }\n    \n    # Save JSON results\n    json_path = os.path.join(args.output_dir, f\"{args.test_id}_analysis.json\")\n    with open(json_path, 'w', encoding='utf-8') as f:\n        json.dump(results, f, indent=2)\n        \n    print(f\"Analysis results saved to {json_path}\")\n    \n    # Generate additional reports if requested\n    report_formats = args.report_formats.split(',')\n    \n    # Advanced reports\n    if set(report_formats) - {'json'}:\n        try:\n            from components.component_integration import ComponentIntegration\n            from reports.report_manager import ReportManager\n            from reports.base import ReportConfig, ReportData\n            \n            # Configure report manager\n            config = ReportConfig(\n                output_dir=args.output_dir,\n                test_id=args.test_id,\n                primary_issue_component=primary_issue_component,\n                enable_excel='excel' in report_formats,\n                enable_html='html' in report_formats,\n                enable_docx='docx' in report_formats,\n                enable_component_report=True\n            )\n            \n            # Create report manager\n            manager = ReportManager(config)\n            \n            # Prepare report data\n            report_data = ReportData(\n                errors=errors_with_components,\n                summary=f\"Analysis of {len(errors_with_components)} errors. Primary component: {primary_issue_component}\",\n                clusters={},  # No clustering in simple mode\n                component_analysis={\n                    'primary_issue_component': primary_issue_component,\n                    'component_error_counts': component_summary\n                }\n            )\n            \n            # Generate reports\n            report_results = manager.generate_reports(report_data)\n            \n            # Add report paths to results\n            results['report_paths'] = report_results\n            \n            print(f\"Additional reports generated:\")            \n            for format_name, path in report_results.items():\n                print(f\"  {format_name}: {path}\")\n                \n        except ImportError as e:\n            print(f\"Warning: Could not generate additional reports: {str(e)}\")\n    \n    # Determine exit code based on error count\n    if len(errors_with_components) > args.fail_threshold:\n        print(f\"Error count {len(errors_with_components)} exceeds threshold {args.fail_threshold}\")\n        return 1\n    \n    return 0\n\n# For command-line usage\nif __name__ == \"__main__\":\n    import sys\n    sys.exit(component_analysis_pipeline(None))",
+          "useCase": "Automated analysis in CI/CD pipelines",
+          "requirements": [
+            "direct_component_analyzer module",
+            "Log parsing function",
+            "Optional: components.component_integration module",
+            "Optional: reports.report_manager module"
+          ]
+        },
+        {
+          "name": "Component Monitoring Integration",
+          "description": "Integration with monitoring systems",
+          "code": "def component_health_monitor(log_files, history_file=None):\n    \"\"\"Monitor component health by analyzing logs over time.\"\"\"\n    import json\n    from datetime import datetime\n    \n    # Parse logs\n    errors = parse_logs(log_files)\n    \n    # Assign components\n    from direct_component_analyzer import assign_components_and_relationships\n    errors_with_components, component_counts, primary_issue_component = \\\n        assign_components_and_relationships(errors)\n    \n    # Current analysis\n    current_analysis = {\n        'timestamp': datetime.now().isoformat(),\n        'error_count': len(errors_with_components),\n        'component_counts': component_counts,\n        'primary_issue_component': primary_issue_component\n    }\n    \n    # Load history if available\n    history = []\n    if history_file and os.path.exists(history_file):\n        try:\n            with open(history_file, 'r', encoding='utf-8') as f:\n                history = json.load(f)\n        except json.JSONDecodeError:\n            print(f\"Warning: Could not load history from {history_file}\")\n    \n    # Add current analysis to history\n    history.append(current_analysis)\n    \n    # Keep only the last 10 entries\n    if len(history) > 10:\n        history = history[-10:]\n    \n    # Save updated history\n    if history_file:\n        with open(history_file, 'w', encoding='utf-8') as f:\n            json.dump(history, f, indent=2)\n    \n    # Analyze trends\n    trends = analyze_component_trends(history)\n    \n    # Generate health metrics\n    health_metrics = calculate_component_health(component_counts, trends)\n    \n    # Return current status and trends\n    return {\n        'current': current_analysis,\n        'trends': trends,\n        'health_metrics': health_metrics\n    }\n\ndef analyze_component_trends(history):\n    \"\"\"Analyze component error trends over time.\"\"\"\n    if not history or len(history) < 2:\n        return {'insufficient_data': True}\n    \n    # Get component list\n    all_components = set()\n    for entry in history:\n        all_components.update(entry.get('component_counts', {}).keys())\n    \n    # Calculate trends\n    trends = {}\n    for component in all_components:\n        # Get counts over time\n        counts = [entry.get('component_counts', {}).get(component, 0) for entry in history]\n        \n        # Calculate change\n        if len(counts) >= 2:\n            change = counts[-1] - counts[0]\n            percentage_change = (change / max(counts[0], 1)) * 100\n        else:\n            change = 0\n            percentage_change = 0\n        \n        # Determine trend direction\n        if percentage_change > 10:\n            trend = 'increasing'\n        elif percentage_change < -10:\n            trend = 'decreasing'\n        else:\n            trend = 'stable'\n            \n        trends[component] = {\n            'counts': counts,\n            'change': change,\n            'percentage_change': percentage_change,\n            'trend': trend\n        }\n    \n    return trends\n\ndef calculate_component_health(component_counts, trends):\n    \"\"\"Calculate component health metrics.\"\"\"\n    health_metrics = {}\n    \n    for component, count in component_counts.items():\n        # Basic health score - more errors = worse health\n        base_score = 100 - min(count, 100)  # 0-100 errors scales to 100-0 score\n        \n        # Adjust for trend\n        trend_adjustment = 0\n        if component in trends and 'trend' in trends[component]:\n            if trends[component]['trend'] == 'increasing':\n                trend_adjustment = -10  # Penalize increasing errors\n            elif trends[component]['trend'] == 'decreasing':\n                trend_adjustment = 10   # Reward decreasing errors\n        \n        # Calculate final health score\n        health_score = max(0, min(100, base_score + trend_adjustment))\n        \n        # Determine health status\n        if health_score >= 80:\n            status = 'healthy'\n        elif health_score >= 50:\n            status = 'warning'\n        else:\n            status = 'critical'\n            \n        health_metrics[component] = {\n            'health_score': health_score,\n            'status': status,\n            'error_count': count\n        }\n    \n    return health_metrics",
+          "useCase": "Continuous component health monitoring",
+          "requirements": [
+            "direct_component_analyzer module",
+            "Log parsing function",
+            "Storage for historical data"
+          ]
+        }
+      ]
+    },
+    "bestPractices": {
+      "description": "Best practices for integrating with the component system",
+      "guidelines": [
+        {
+          "title": "Use Standardized Path Utilities",
+          "explanation": "Always use the standardized path utilities for file operations",
+          "correctExample": "from utils.path_utils import get_output_path, OutputType, get_standardized_filename\n\n# Get standardized path for a file\noutput_path = get_output_path(\n    output_dir,\n    test_id,\n    get_standardized_filename(test_id, \"component_analysis\", \"json\"),\n    OutputType.JSON_DATA\n)",
+          "incorrectExample": "# Don't construct paths manually\noutput_path = os.path.join(output_dir, \"json\", f\"{test_id}_component_analysis.json\")"
+        },
+        {
+          "title": "Preserve Component Information",
+          "explanation": "Always preserve component information during processing and serialization",
+          "correctExample": "from reports.base import ComponentAwareEncoder\n\n# Save with component-preserving encoder\nwith open(output_path, 'w', encoding='utf-8') as f:\n    json.dump(data, f, cls=lambda *args, **kwargs: ComponentAwareEncoder(\n        *args, primary_issue_component=primary_component, **kwargs\n    ), indent=2)",
+          "incorrectExample": "# Don't use standard encoder for component data\nwith open(output_path, 'w', encoding='utf-8') as f:\n    json.dump(data, f, indent=2)  # Component info may be lost"
+        },
+        {
+          "title": "Handle Missing Components",
+          "explanation": "Always handle cases where component information might be missing",
+          "correctExample": "# Handle potential missing component information\ncomponent = error.get('component', 'unknown')\ncomponent_source = error.get('component_source', 'default')",
+          "incorrectExample": "# Don't assume component info exists\ncomponent = error['component']  # Will fail if component is missing"
+        },
+        {
+          "title": "Use Deep Copies for Processing",
+          "explanation": "Always use deep copies when processing data to avoid modifying originals",
+          "correctExample": "import copy\n\n# Create a deep copy before processing\nprocessed_data = copy.deepcopy(original_data)\n\n# Process the copy\n# ...",
+          "incorrectExample": "# Don't modify original data directly\noriginal_data['processed'] = True  # Modifies the original"
+        },
+        {
+          "title": "Implement Fallbacks",
+          "explanation": "Always implement fallbacks for optional dependencies",
+          "correctExample": "try:\n    from components.component_integration import ComponentIntegration\n    has_integration = True\nexcept ImportError:\n    has_integration = False\n    \n# Use feature if available\nif has_integration:\n    # Use ComponentIntegration\nelse:\n    # Fall back to simpler approach",
+          "incorrectExample": "# Don't assume optional dependencies exist\nfrom components.component_integration import ComponentIntegration  # May fail"
+        },
+        {
+          "title": "Standardize Component Field Names",
+          "explanation": "Always use standardized component field names",
+          "correctExample": "# Use standard field names\nCOMPONENT_FIELDS = {\n    'component',\n    'component_source',\n    'primary_issue_component',\n    'root_cause_component'\n}\n\n# Check for component field\nif 'component' in error and error['component'] != 'unknown':\n    # ...",
+          "incorrectExample": "# Don't use non-standard field names\nif 'componentName' in error:  # Non-standard field name\n    # ..."
+        },
+        {
+          "title": "Normalize Component IDs",
+          "explanation": "Always normalize component IDs to lowercase",
+          "correctExample": "# Normalize component ID\ncomponent_id = component_id.lower()\n\n# Case-insensitive comparison\nif component_id == 'soa':\n    # ...",
+          "incorrectExample": "# Don't rely on case-sensitive comparisons\nif component_id == 'SOA':  # Will fail for 'soa' or 'Soa'"
+        },
+        {
+          "title": "Handle Empty or None Values",
+          "explanation": "Always handle empty or None values gracefully",
+          "correctExample": "# Handle potential None or empty values\ndef process_errors(errors):\n    if not errors:\n        return []\n        \n    # Process errors\n    # ...",
+          "incorrectExample": "# Don't assume non-empty input\ndef process_errors(errors):\n    for error in errors:  # Will fail if errors is None\n        # ..."
+        },
+        {
+          "title": "Add Proper Error Handling",
+          "explanation": "Always add proper error handling for component operations",
+          "correctExample": "try:\n    # Try to generate component visualization\n    diagram_path = visualizer.generate_component_relationship_diagram(\n        output_dir, test_id\n    )\nexcept Exception as e:\n    # Handle failure gracefully\n    logging.error(f\"Failed to generate component diagram: {str(e)}\")\n    diagram_path = None",
+          "incorrectExample": "# Don't let exceptions propagate\ndiagram_path = visualizer.generate_component_relationship_diagram(\n    output_dir, test_id\n)  # Unhandled exception will crash the program"
+        },
+        {
+          "title": "Test With Realistic Data",
+          "explanation": "Always test component functionality with realistic data",
+          "correctExample": "def test_component_analysis():\n    # Create realistic test data\n    errors = [\n        {'text': 'Error in app player', 'file': 'app_debug.log'},\n        {'text': 'Failed to load channel', 'file': 'app_debug.log'},\n        {'text': 'Test signal error', 'file': 'mimosa.log'}\n    ]\n    \n    # Test component identification\n    # ...",
+          "incorrectExample": "def test_component_analysis():\n    # Don't use oversimplified test data\n    errors = [\n        {'text': 'Test', 'file': 'test.log'}  # Not realistic\n    ]\n    # ..."
+        }
+      ]
+    }
+  }
+}{
+  "enhancedIntegration": {
+    "description": "Comprehensive guide to integrating with the Orbit Analyzer's component system, including practical code examples, patterns, and best practices",
+    "gettingStarted": {
+      "description": "Essential imports and basic usage patterns for component system integration",
+      "requiredImports": [
+        {
+          "module": "direct_component_analyzer",
+          "imports": ["identify_component_from_filename", "assign_components_and_relationships"],
+          "purpose": "Basic component identification"
+        },
+        {
+          "module": "components.component_analyzer",
+          "imports": ["ComponentAnalyzer"],
+          "purpose": "Enhanced component analysis"
+        },
+        {
+          "module": "components.component_integration",
+          "imports": ["ComponentIntegration"],
+          "purpose": "Full component integration"
+        },
+        {
+          "module": "reports.base",
+          "imports": ["ComponentAwareEncoder"],
+          "purpose": "Component-preserving serialization"
+        },
+        {
+          "module": "json_utils",
+          "imports": ["serialize_to_json"],
+          "purpose": "Simplified serialization utilities"
+        }
+      ],
+      "basicIdentificationExample": {
+        "description": "Simple example of using component identification",
+        "code": "# Identify a component from a filename\ncomponent, source = identify_component_from_filename(\"app_debug.log\")\nprint(f\"File 'app_debug.log' is from component: {component} (source: {source})\")\n\n# Process a list of errors\nerrors = [\n    {\"text\": \"Error message 1\", \"file\": \"app_debug.log\"},\n    {\"text\": \"Error message 2\", \"file\": \"mimosa.log\"}\n]\n\n# Assign components and get relationships\nenriched_errors, component_summary, primary_issue_component = assign_components_and_relationships(errors)\n\nprint(f\"Primary issue component: {primary_issue_component}\")\nprint(f\"Component summary: {component_summary}\")"
+      },
+      "enhancedAnalysisExample": {
+        "description": "Example of using the enhanced component analyzer",
+        "code": "# Initialize component integration\nintegration = ComponentIntegration(\"path/to/component_schema.json\")\n\n# Analyze logs\nresults = integration.analyze_logs(\n    log_entries,  # All log entries\n    errors,       # Error entries\n    \"output_dir\", # Output directory\n    \"SXM-123456\"  # Test ID\n)\n\n# Get enhanced report data\nreport_data = integration.get_enhanced_report_data(results)\n\n# Get analysis file paths\ncomponent_diagram = results[\"analysis_files\"].get(\"component_diagram\")\nerror_propagation = results[\"analysis_files\"].get(\"error_propagation\")\n\nprint(f\"Component diagram: {component_diagram}\")\nprint(f\"Root cause component: {report_data['component_analysis']['root_cause'].get('id', 'unknown')}\")"
+      }
+    },
+    "integrationPatterns": {
+      "description": "Common patterns for integrating with the component system",
+      "patterns": [
+        {
+          "name": "Direct Component Usage",
+          "description": "The simplest integration pattern using direct component functions",
+          "code": "def analyze_test_logs(logs, test_id):\n    \"\"\"Analyze test logs with component identification.\"\"\"\n    # Parse logs to extract errors\n    errors = parse_logs(logs)\n    \n    # Assign components to errors\n    errors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)\n    \n    # Use component information\n    print(f\"Identified {len(errors_with_components)} errors from {len(component_summary)} components\")\n    print(f\"Primary issue component: {primary_issue_component}\")\n    \n    return {\n        \"errors\": errors_with_components,\n        \"component_summary\": component_summary,\n        \"primary_issue_component\": primary_issue_component\n    }",
+          "advantages": [
+            "Simple and straightforward",
+            "Minimal dependencies",
+            "Efficient for basic needs"
+          ],
+          "limitations": [
+            "Limited to basic component identification",
+            "No advanced analysis capabilities",
+            "No visualization generation"
+          ],
+          "useCases": [
+            "Quick component identification",
+            "Simple scripts and tools",
+            "Performance-critical applications"
+          ]
+        },
+        {
+          "name": "Component Integration Usage",
+          "description": "More advanced integration using the ComponentIntegration class",
+          "code": "def analyze_with_component_integration(logs, output_dir, test_id):\n    \"\"\"Analyze logs with full component integration.\"\"\"\n    # Parse logs to extract errors and all log entries\n    errors = parse_logs(logs)\n    log_entries = parse_log_entries(logs)\n    \n    # Create component integration\n    try:\n        from components.component_integration import ComponentIntegration\n        integration = ComponentIntegration(\"path/to/component_schema.json\")\n        \n        # Run analysis\n        results = integration.analyze_logs(\n            log_entries,\n            errors,\n            output_dir,\n            test_id\n        )\n        \n        return {\n            \"errors\": errors,\n            \"component_analysis\": results,\n            \"component_report\": results[\"analysis_files\"].get(\"component_analysis\")\n        }\n    except ImportError:\n        # Fall back to basic component identification\n        return analyze_test_logs(logs, test_id)",
+          "advantages": [
+            "Comprehensive analysis capabilities",
+            "Visualization generation",
+            "Root cause analysis"
+          ],
+          "limitations": [
+            "More dependencies",
+            "Potentially slower performance",
+            "Requires component schema"
+          ],
+          "useCases": [
+            "Detailed error analysis",
+            "Report generation",
+            "Visual component relationship mapping"
+          ]
+        },
+        {
+          "name": "Component-Aware Processing",
+          "description": "Processing that maintains component context and information",
+          "code": "def process_with_component_awareness(errors):\n    \"\"\"Process errors while preserving component information.\"\"\"\n    # Make a deep copy to avoid modifying originals\n    processed_errors = copy.deepcopy(errors)\n    \n    # Group by component for processing\n    errors_by_component = defaultdict(list)\n    for error in processed_errors:\n        component = error.get('component', 'unknown')\n        errors_by_component[component].append(error)\n    \n    # Process each component's errors differently\n    for component, component_errors in errors_by_component.items():\n        if component == 'soa':\n            # Special processing for SOA errors\n            for error in component_errors:\n                error['processed'] = 'soa_specialized'\n        elif component == 'mimosa':\n            # Special processing for Mimosa errors\n            for error in component_errors:\n                error['processed'] = 'mimosa_specialized'\n        else:\n            # Default processing\n            for error in component_errors:\n                error['processed'] = 'default'\n    \n    return processed_errors",
+          "advantages": [
+            "Component-specific processing logic",
+            "Preserves component context",
+            "Allows specialized handling by component"
+          ],
+          "limitations": [
+            "More complex implementation",
+            "Requires component identification first",
+            "May be overspecialized"
+          ],
+          "useCases": [
+            "Component-specific error handling",
+            "Customized processing by component type",
+            "Advanced error analysis"
+          ]
+        },
+        {
+          "name": "Modular Component Framework",
+          "description": "Extensible framework for component-based processing",
+          "code": "class ComponentProcessor:\n    \"\"\"Base class for component-specific processors.\"\"\"\n    def __init__(self, component_id):\n        self.component_id = component_id\n        \n    def can_process(self, error):\n        \"\"\"Check if this processor can handle the error.\"\"\"\n        return error.get('component') == self.component_id\n        \n    def process(self, error):\n        \"\"\"Process a single error.\"\"\"\n        raise NotImplementedError(\"Subclasses must implement this method\")\n\n# Example implementation for SOA\nclass SoaProcessor(ComponentProcessor):\n    def __init__(self):\n        super().__init__(\"soa\")\n        \n    def process(self, error):\n        # SOA-specific processing\n        error['processed'] = 'soa_specialized'\n        return error\n\n# Registry of processors\nprocessor_registry = {\n    \"soa\": SoaProcessor(),\n    # Add more processors here\n}\n\ndef process_errors_with_registry(errors):\n    \"\"\"Process errors using registered processors.\"\"\"\n    processed = copy.deepcopy(errors)\n    \n    for error in processed:\n        component = error.get('component', 'unknown')\n        if component in processor_registry:\n            error = processor_registry[component].process(error)\n        else:\n            # Default processing\n            error['processed'] = 'default'\n            \n    return processed",
+          "advantages": [
+            "Highly extensible",
+            "Clean separation of concerns",
+            "Easy to add new component processors"
+          ],
+          "limitations": [
+            "Most complex implementation",
+            "Overhead from abstractions",
+            "Requires careful design"
+          ],
+          "useCases": [
+            "Large-scale systems",
+            "Applications with many component types",
+            "Systems requiring frequent component additions"
+          ]
+        }
+      ]
+    },
+    "customComponentFunctionality": {
+      "description": "How to add custom functionality to the component system",
+      "examples": [
+        {
+          "name": "Custom Component Analyzer",
+          "description": "Creating a custom component analyzer with specialized functionality",
+          "code": "class CustomComponentAnalyzer:\n    \"\"\"Custom component analyzer with specialized functionality.\"\"\"\n    \n    def __init__(self, component_schema_path: str):\n        \"\"\"Initialize with component schema.\"\"\"\n        # Use existing component analyzer\n        self.base_analyzer = ComponentAnalyzer(component_schema_path)\n        \n    def analyze_errors(self, errors: List[Dict]) -> Dict[str, Any]:\n        \"\"\"Analyze errors with custom logic.\"\"\"\n        # First use base analyzer for component identification\n        enriched_errors = self.base_analyzer.enrich_log_entries_with_components(errors)\n        \n        # Add custom analysis\n        custom_results = self._perform_custom_analysis(enriched_errors)\n        \n        # Combine results\n        return {\n            \"errors\": enriched_errors,\n            \"base_analysis\": self.base_analyzer.analyze_component_failures(enriched_errors),\n            \"custom_analysis\": custom_results\n        }\n        \n    def _perform_custom_analysis(self, errors: List[Dict]) -> Dict[str, Any]:\n        \"\"\"Perform custom analysis logic.\"\"\"\n        # Example: Track error frequency over time\n        component_time_series = defaultdict(lambda: defaultdict(int))\n        \n        # Group errors by timestamp (hour) and component\n        for error in errors:\n            component = error.get('component', 'unknown')\n            timestamp = error.get('timestamp')\n            \n            if timestamp:\n                try:\n                    dt = datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp\n                    hour_key = dt.strftime(\"%Y-%m-%d %H:00\")\n                    component_time_series[component][hour_key] += 1\n                except (ValueError, TypeError):\n                    pass\n        \n        return {\n            \"component_time_series\": {k: dict(v) for k, v in component_time_series.items()}\n        }",
+          "implementationNotes": [
+            "Builds on existing ComponentAnalyzer",
+            "Adds specialized functionality while preserving core behavior",
+            "Easily extensible for specific analysis needs"
+          ]
+        },
+        {
+          "name": "Custom Component Visualization",
+          "description": "Adding a custom visualization method to the component visualizer",
+          "code": "def add_custom_component_visualization(component_visualizer):\n    \"\"\"Add a custom visualization method to a component visualizer.\"\"\"\n    \n    def generate_component_time_series(self, output_dir: str, \n                                     component_time_series: Dict[str, Dict[str, int]],\n                                     test_id: str = \"Unknown\") -> str:\n        \"\"\"\n        Generate a time series visualization of component errors.\n        \n        Args:\n            output_dir: Directory to save the visualization\n            component_time_series: Dict mapping components to time series data\n            test_id: Test ID for the filename\n            \n        Returns:\n            Path to the generated image\n        \"\"\"\n        # Use path utilities for consistent file placement\n        from utils.path_utils import (\n            get_output_path,\n            OutputType,\n            get_standardized_filename\n        )\n        image_path = get_output_path(\n            output_dir, \n            test_id, \n            get_standardized_filename(test_id, \"component_time_series\", \"png\"),\n            OutputType.VISUALIZATION\n        )\n        \n        # Ensure the directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Create the visualization\n        import matplotlib.pyplot as plt\n        import matplotlib.dates as mdates\n        from datetime import datetime\n        \n        plt.figure(figsize=(12, 8))\n        \n        # Process each component\n        for component, time_data in component_time_series.items():\n            if component == 'unknown' or not time_data:\n                continue\n                \n            # Convert to x, y data\n            dates = []\n            counts = []\n            for date_str, count in sorted(time_data.items()):\n                try:\n                    date_obj = datetime.strptime(date_str, \"%Y-%m-%d %H:00\")\n                    dates.append(date_obj)\n                    counts.append(count)\n                except ValueError:\n                    continue\n                    \n            if dates and counts:\n                # Get component color\n                component_type = self._get_component_type(component)\n                color = self.component_colors.get(component_type, \"#aaaaaa\")\n                \n                # Plot the data\n                plt.plot(dates, counts, marker='o', linestyle='-', \n                         label=self._get_component_name(component), color=color)\n        \n        # Format plot\n        plt.title(f\"Component Error Time Series - {test_id}\")\n        plt.xlabel(\"Time\")\n        plt.ylabel(\"Error Count\")\n        plt.legend()\n        plt.grid(True, alpha=0.3)\n        \n        # Format the x-axis to show hours\n        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))\n        plt.gcf().autofmt_xdate()\n        \n        # Save the visualization\n        plt.tight_layout()\n        plt.savefig(image_path, bbox_inches='tight')\n        plt.close()\n        \n        return image_path\n    \n    # Add the method to the visualizer\n    import types\n    component_visualizer.generate_component_time_series = types.MethodType(\n        generate_component_time_series, component_visualizer\n    )\n    \n    # Add helper method if needed\n    def _get_component_type(self, component_id: str) -> str:\n        \"\"\"Get component type for consistent coloring.\"\"\"\n        for component in self.component_schema.get(\"components\", []):\n            if component.get(\"id\") == component_id:\n                return component.get(\"type\", \"unknown\")\n        return \"unknown\"\n    \n    component_visualizer._get_component_type = types.MethodType(\n        _get_component_type, component_visualizer\n    )\n    \n    return component_visualizer",
+          "implementationNotes": [
+            "Uses types.MethodType to dynamically add methods",
+            "Follows established visualization patterns",
+            "Maintains consistency with existing visualizations"
+          ]
+        },
+        {
+          "name": "Custom Component Identifier",
+          "description": "Implementing a custom component identification algorithm",
+          "code": "class CustomComponentIdentifier:\n    \"\"\"Custom component identification algorithm.\"\"\"\n    \n    def __init__(self, component_schema_path: str):\n        \"\"\"Initialize with component schema.\"\"\"\n        with open(component_schema_path, 'r') as f:\n            self.schema = json.load(f)\n            \n        # Prepare specialized patterns\n        self.specialized_patterns = self._prepare_specialized_patterns()\n        \n    def _prepare_specialized_patterns(self):\n        \"\"\"Prepare specialized patterns for component identification.\"\"\"\n        patterns = {}\n        \n        for component in self.schema.get('components', []):\n            component_id = component.get('id')\n            if not component_id:\n                continue\n                \n            # Combine error patterns with specialized weighting\n            component_patterns = []\n            for pattern in component.get('errorPatterns', []):\n                try:\n                    # Compile pattern for efficiency\n                    compiled = re.compile(pattern, re.IGNORECASE)\n                    component_patterns.append({\n                        'pattern': compiled,\n                        'weight': self._calculate_pattern_weight(pattern)\n                    })\n                except re.error:\n                    # Skip invalid patterns\n                    pass\n                    \n            patterns[component_id] = component_patterns\n            \n        return patterns\n        \n    def _calculate_pattern_weight(self, pattern):\n        \"\"\"Calculate pattern specificity weight.\"\"\"\n        # More specific patterns get higher weights\n        specificity = 1.0\n        \n        # Increase weight for patterns with specific terms\n        if '\\\\.' in pattern or '\\\\w+' in pattern:\n            specificity += 0.5\n            \n        # Decrease weight for very generic patterns\n        if pattern.count('.*?') > 2:\n            specificity -= 0.3\n            \n        return max(0.1, specificity)\n        \n    def identify_component(self, text: str) -> Tuple[str, float]:\n        \"\"\"Identify component with confidence score.\"\"\"\n        if not text:\n            return 'unknown', 0.0\n            \n        # Track components and scores\n        scores = defaultdict(float)\n        \n        # Check against all patterns\n        for component_id, patterns in self.specialized_patterns.items():\n            for pattern_info in patterns:\n                pattern = pattern_info['pattern']\n                weight = pattern_info['weight']\n                \n                if pattern.search(text):\n                    scores[component_id] += weight\n        \n        # Get highest scoring component\n        if scores:\n            best_component, score = max(scores.items(), key=lambda x: x[1])\n            confidence = min(score / 3.0, 1.0)  # Normalize to 0-1\n            return best_component, confidence\n            \n        return 'unknown', 0.0",
+          "implementationNotes": [
+            "Uses weighted pattern matching for better identification",
+            "Calculates confidence scores for identified components",
+            "Pre-compiles patterns for efficiency"
+          ]
+        },
+        {
+          "name": "Component Event Listener",
+          "description": "Implementing a listener for component-related events",
+          "code": "class ComponentEventListener:\n    \"\"\"Listener for component-related events.\"\"\"\n    \n    def __init__(self):\n        \"\"\"Initialize the listener.\"\"\"\n        self.handlers = defaultdict(list)\n        \n    def register_handler(self, event_type: str, handler: Callable):\n        \"\"\"Register a handler for a specific event type.\"\"\"\n        self.handlers[event_type].append(handler)\n        \n    def notify(self, event_type: str, component_id: str, data: Dict):\n        \"\"\"Notify handlers of an event.\"\"\"\n        if event_type not in self.handlers:\n            return\n            \n        event_data = {\n            'event_type': event_type,\n            'component_id': component_id,\n            'timestamp': datetime.now().isoformat(),\n            'data': data\n        }\n        \n        for handler in self.handlers[event_type]:\n            try:\n                handler(event_data)\n            except Exception as e:\n                logging.error(f\"Error in component event handler: {str(e)}\")\n\n# Example usage\nlistener = ComponentEventListener()\n\n# Register handlers\ndef component_identified_handler(event):\n    print(f\"Component identified: {event['component_id']}\")\n    # Custom logic here\n    \ndef component_error_handler(event):\n    error_count = len(event['data'].get('errors', []))\n    print(f\"Component {event['component_id']} has {error_count} errors\")\n    # Custom logic here\n    \nlistener.register_handler('component_identified', component_identified_handler)\nlistener.register_handler('component_error', component_error_handler)\n\n# Notify handlers\nlistener.notify(\n    'component_identified', \n    'soa', \n    {'source': 'filename', 'confidence': 0.9}\n)\n\nlistener.notify(\n    'component_error',\n    'soa',\n    {'errors': [{'text': 'Error 1'}, {'text': 'Error 2'}]}\n)",
+          "implementationNotes": [
+            "Implements observer pattern for component events",
+            "Allows decoupled handling of component-related events",
+            "Extensible for various event types"
+          ]
+        }
+      ]
+    },
+    "workingWithComponentData": {
+      "description": "Patterns and techniques for working with component data",
+      "dataHandlingPatterns": [
+        {
+          "name": "Component Preservation Pattern",
+          "description": "Pattern for preserving component information during processing",
+          "code": "def process_with_component_preservation(data):\n    \"\"\"Process data while preserving component information.\"\"\"\n    # Extract component fields before processing\n    component_fields = {}\n    for field in COMPONENT_FIELDS:\n        if field in data:\n            component_fields[field] = data[field]\n    \n    # Create a copy to avoid modifying original\n    processed_data = copy.deepcopy(data)\n    \n    # Apply your processing here\n    # ...\n    \n    # Ensure component fields are preserved\n    for field, value in component_fields.items():\n        if field not in processed_data:\n            processed_data[field] = value\n    \n    return processed_data",
+          "keyPrinciples": [
+            "Extract component fields before processing",
+            "Use deep copies to avoid modifying originals",
+            "Re-apply component fields after processing"
+          ]
+        },
+        {
+          "name": "Component-Aware Aggregation",
+          "description": "Pattern for aggregating data with component awareness",
+          "code": "def aggregate_errors_by_component(errors):\n    \"\"\"Aggregate errors by component.\"\"\"\n    # Group errors by component\n    by_component = defaultdict(list)\n    for error in errors:\n        component = error.get('component', 'unknown')\n        by_component[component].append(error)\n    \n    # Calculate statistics for each component\n    component_stats = {}\n    for component, component_errors in by_component.items():\n        # Count by severity\n        severity_counts = defaultdict(int)\n        for error in component_errors:\n            severity = error.get('severity', 'unknown')\n            severity_counts[severity] += 1\n        \n        # Calculate time range\n        timestamps = [e.get('timestamp') for e in component_errors if e.get('timestamp')]\n        time_range = None\n        if timestamps:\n            time_range = {\n                'first': min(timestamps),\n                'last': max(timestamps),\n                'duration': (max(timestamps) - min(timestamps)).total_seconds()\n            }\n        \n        # Store stats\n        component_stats[component] = {\n            'count': len(component_errors),\n            'severity_counts': dict(severity_counts),\n            'time_range': time_range\n        }\n    \n    return component_stats",
+          "keyPrinciples": [
+            "Group data by component first",
+            "Calculate component-specific metrics",
+            "Preserve component context in results"
+          ]
+        },
+        {
+          "name": "Component Relationship Analysis",
+          "description": "Pattern for analyzing relationships between components",
+          "code": "def analyze_component_relationships(errors, component_schema):\n    \"\"\"Analyze relationships between components in errors.\"\"\"\n    # Build graph from schema\n    G = nx.DiGraph()\n    \n    # Add nodes and edges from schema\n    for component in component_schema.get('components', []):\n        component_id = component.get('id')\n        if not component_id:\n            continue\n            \n        G.add_node(component_id, type=component.get('type', 'unknown'))\n        \n        # Add relationships\n        for related in component.get('sends_to', []):\n            G.add_edge(component_id, related, type='sends_to')\n            \n        for related in component.get('receives_from', []):\n            G.add_edge(related, component_id, type='receives_from')\n    \n    # Count errors by component\n    component_counts = defaultdict(int)\n    for error in errors:\n        component = error.get('component', 'unknown')\n        component_counts[component] += 1\n    \n    # Add error counts to nodes\n    for component, count in component_counts.items():\n        if component in G:\n            G.nodes[component]['error_count'] = count\n    \n    # Calculate error propagation probabilities\n    for u, v in G.edges():\n        u_count = G.nodes[u].get('error_count', 0)\n        v_count = G.nodes[v].get('error_count', 0)\n        \n        # Calculate conditional probability if both have errors\n        if u_count > 0 and v_count > 0:\n            G[u][v]['propagation_probability'] = v_count / u_count\n    \n    return G",
+          "keyPrinciples": [
+            "Build graph from component schema",
+            "Enhance with actual error data",
+            "Calculate relationship metrics"
+          ]
+        },
+        {
+          "name": "Component-Aware Serialization",
+          "description": "Pattern for serializing data with component preservation",
+          "code": "def save_with_component_preservation(data, path, primary_component=None):\n    \"\"\"Save data with component preservation.\"\"\"\n    from reports.base import ComponentAwareEncoder\n    \n    # Ensure directory exists\n    os.makedirs(os.path.dirname(path), exist_ok=True)\n    \n    # Save with component-aware encoder\n    with open(path, 'w', encoding='utf-8') as f:\n        json.dump(data, f, cls=lambda *args, **kwargs: ComponentAwareEncoder(\n            *args, primary_issue_component=primary_component, **kwargs\n        ), indent=2)\n    \n    return path",
+          "keyPrinciples": [
+            "Use ComponentAwareEncoder for serialization",
+            "Pass primary_issue_component explicitly",
+            "Handle directory creation and encoding"
+          ]
+        }
+      ],
+      "componentReportAccess": {
+        "description": "Patterns for accessing and working with component reports",
+        "code": "def extract_component_information(output_dir, test_id):\n    \"\"\"Extract component information from generated reports.\"\"\"\n    # Define paths\n    json_path = os.path.join(output_dir, 'json', f\"{test_id}_component_analysis.json\")\n    html_path = os.path.join(output_dir, f\"{test_id}_component_report.html\")\n    \n    # Extract from JSON (preferred)\n    if os.path.exists(json_path):\n        with open(json_path, 'r', encoding='utf-8') as f:\n            data = json.load(f)\n            \n        # Extract relevant information\n        primary_component = data.get('primary_issue_component')\n        component_counts = data.get('component_error_counts', {})\n        component_relationships = data.get('component_relationships', [])\n        \n        return {\n            'primary_component': primary_component,\n            'component_counts': component_counts,\n            'component_relationships': component_relationships,\n            'source': 'json'\n        }\n    \n    # Extract from HTML (fallback)\n    elif os.path.exists(html_path):\n        # This is more complex and less reliable\n        # Basic implementation to extract from HTML\n        with open(html_path, 'r', encoding='utf-8') as f:\n            html_content = f.read()\n            \n        # Extract primary component from HTML\n        primary_match = re.search(r'Primary Issue Component:\\s*<strong>(.*?)</strong>', html_content)\n        primary_component = primary_match.group(1) if primary_match else 'unknown'\n        \n        return {\n            'primary_component': primary_component,\n            'source': 'html'\n        }\n    \n    return {'primary_component': 'unknown', 'source': 'default'}",
+        "keyPrinciples": [
+          "Look for JSON data first (most structured)",
+          "Fall back to HTML parsing if necessary",
+          "Extract specific component information"
+        ]
+      },
+      "componentVisualizationAccess": {
+        "description": "Patterns for accessing and working with component visualizations",
+        "code": "def get_component_visualizations(output_dir, test_id):\n    \"\"\"Get paths to component visualizations.\"\"\"\n    # Define expected visualization paths\n    viz_dir = os.path.join(output_dir, 'supporting_images')\n    expected_visualizations = {\n        'component_errors': os.path.join(viz_dir, f\"{test_id}_component_errors.png\"),\n        'component_distribution': os.path.join(viz_dir, f\"{test_id}_component_distribution.png\"),\n        'component_relationships': os.path.join(viz_dir, f\"{test_id}_component_relationships.png\"),\n        'error_propagation': os.path.join(viz_dir, f\"{test_id}_error_propagation.png\")\n    }\n    \n    # Check which visualizations exist\n    available_visualizations = {}\n    for viz_type, path in expected_visualizations.items():\n        if os.path.exists(path):\n            available_visualizations[viz_type] = path\n    \n    return available_visualizations",
+        "keyPrinciples": [
+          "Look for standard visualization file names",
+          "Check for both current and legacy names",
+          "Return only paths that actually exist"
+        ]
+      }
+    },
+    "integratingWithReports": {
+      "description": "Techniques for integrating component information into reports",
+      "reportCustomization": {
+        "description": "Customizing reports with component information",
+        "code": "def customize_component_report(component_analysis, output_dir, test_id):\n    \"\"\"Customize component report with additional information.\"\"\"\n    # Path to the report HTML\n    report_path = os.path.join(output_dir, f\"{test_id}_component_report.html\")\n    \n    if not os.path.exists(report_path):\n        logging.warning(f\"Component report not found at {report_path}\")\n        return None\n    \n    # Read the HTML file\n    with open(report_path, 'r', encoding='utf-8') as f:\n        html_content = f.read()\n    \n    # Generate custom component summary\n    custom_summary = generate_component_summary(component_analysis)\n    \n    # Insert the custom summary into the HTML\n    if '<div id=\"component-summary\">' in html_content:\n        # Replace existing summary section\n        html_content = re.sub(\n            r'<div id=\"component-summary\">.*?</div>\\s*</div>',\n            f'<div id=\"component-summary\">{custom_summary}</div></div>',\n            html_content,\n            flags=re.DOTALL\n        )\n    else:\n        # Add after the title\n        html_content = html_content.replace(\n            '</h1>',\n            f'</h1>\\n<div class=\"component-summary-section\">\\n<h2>Component Summary</h2>\\n<div id=\"component-summary\">{custom_summary}</div>\\n</div>'\n        )\n    \n    # Write the updated HTML\n    updated_path = os.path.join(output_dir, f\"{test_id}_component_report_enhanced.html\")\n    with open(updated_path, 'w', encoding='utf-8') as f:\n        f.write(html_content)\n    \n    return updated_path\n\ndef generate_component_summary(component_analysis):\n    \"\"\"Generate custom component summary HTML.\"\"\"\n    if not component_analysis:\n        return \"<p>No component analysis available.</p>\"\n    \n    # Extract data\n    primary_component = component_analysis.get('primary_issue_component', 'unknown')\n    component_counts = component_analysis.get('component_error_counts', {})\n    \n    # Generate HTML\n    html = []\n    html.append(f\"<p><strong>Primary Issue Component:</strong> {primary_component}</p>\")\n    \n    # Add component counts table\n    if component_counts:\n        html.append(\"<table class='component-table'>\")\n        html.append(\"<tr><th>Component</th><th>Error Count</th></tr>\")\n        \n        for component, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True):\n            row_class = 'primary-component' if component == primary_component else ''\n            html.append(f\"<tr class='{row_class}'>\")\n            html.append(f\"<td>{component}</td><td>{count}</td>\")\n            html.append(\"</tr>\")\n            \n        html.append(\"</table>\")\n    else:\n        html.append(\"<p>No component error counts available.</p>\")\n    \n    return '\\n'.join(html)",
+        "keyPrinciples": [
+          "Read existing report files",
+          "Add or modify component information",
+          "Create enhanced versions without modifying originals"
+        ]
+      },
+      "customReporting": {
+        "description": "Creating custom reports focused on component information",
+        "code": "def generate_component_focused_report(component_analysis, errors, output_dir, test_id):\n    \"\"\"Generate a custom report focused on component information.\"\"\"\n    # Define the output path\n    report_path = os.path.join(output_dir, f\"{test_id}_component_focused_report.html\")\n    \n    # Extract component data\n    primary_component = component_analysis.get('primary_issue_component', 'unknown')\n    component_counts = component_analysis.get('component_error_counts', {})\n    \n    # Group errors by component\n    errors_by_component = defaultdict(list)\n    for error in errors:\n        component = error.get('component', 'unknown')\n        errors_by_component[component].append(error)\n    \n    # Generate HTML\n    html = []\n    html.append(\"<!DOCTYPE html>\")\n    html.append(\"<html>\")\n    html.append(\"<head>\")\n    html.append(f\"<title>Component-Focused Report - {test_id}</title>\")\n    html.append(\"<style>\")\n    html.append(\"body { font-family: Arial, sans-serif; margin: 20px; }\")\n    html.append(\"h1, h2, h3 { color: #333; }\")\n    html.append(\".primary-component { background-color: #ffeeee; }\")\n    html.append(\".component-section { margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; }\")\n    html.append(\".error-list { margin-left: 20px; }\")\n    html.append(\".error-item { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }\")\n    html.append(\"table { border-collapse: collapse; width: 100%; }\")\n    html.append(\"th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\")\n    html.append(\"th { background-color: #f2f2f2; }\")\n    html.append(\"</style>\")\n    html.append(\"</head>\")\n    html.append(\"<body>\")\n    \n    # Header\n    html.append(f\"<h1>Component-Focused Report - {test_id}</h1>\")\n    html.append(f\"<p><strong>Primary Issue Component:</strong> {primary_component}</p>\")\n    \n    # Component summary\n    html.append(\"<h2>Component Summary</h2>\")\n    html.append(\"<table>\")\n    html.append(\"<tr><th>Component</th><th>Error Count</th><th>Percentage</th></tr>\")\n    \n    total_errors = sum(component_counts.values())\n    for component, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True):\n        percentage = (count / total_errors) * 100 if total_errors > 0 else 0\n        row_class = 'primary-component' if component == primary_component else ''\n        html.append(f\"<tr class='{row_class}'>\")\n        html.append(f\"<td>{component}</td><td>{count}</td><td>{percentage:.1f}%</td>\")\n        html.append(\"</tr>\")\n        \n    html.append(\"</table>\")\n    \n    # Detailed component sections\n    html.append(\"<h2>Component Details</h2>\")\n    \n    # Primary component first\n    components_to_process = sorted(errors_by_component.keys())\n    if primary_component in components_to_process:\n        components_to_process.remove(primary_component)\n        components_to_process.insert(0, primary_component)\n    \n    for component in components_to_process:\n        component_errors = errors_by_component[component]\n        if not component_errors:\n            continue\n            \n        # Component section\n        section_class = 'primary-component' if component == primary_component else ''\n        html.append(f\"<div class='component-section {section_class}'>\")\n        html.append(f\"<h3>Component: {component}</h3>\")\n        html.append(f\"<p>Total Errors: {len(component_errors)}</p>\")\n        \n        # Error list\n        html.append(\"<div class='error-list'>\")\n        for i, error in enumerate(component_errors[:10]):  # Limit to 10 errors\n            html.append(\"<div class='error-item'>\")\n            html.append(f\"<p><strong>Error {i+1}:</strong> {error.get('text', 'No text')}\")\n            if 'file' in error:\n                html.append(f\" <em>(File: {error['file']})</em>\")\n            html.append(\"</p>\")\n            html.append(\"</div>\")\n            \n        if len(component_errors) > 10:\n            html.append(f\"<p>... and {len(component_errors) - 10} more errors</p>\")\n            \n        html.append(\"</div>\")\n        html.append(\"</div>\")\n    \n    # Footer\n    html.append(\"<div class='footer'>\")\n    html.append(f\"<p>Report generated at {datetime.now().isoformat()}</p>\")\n    html.append(\"</div>\")\n    \n    html.append(\"</body>\")\n    html.append(\"</html>\")\n    \n    # Write the HTML file\n    with open(report_path, 'w', encoding='utf-8') as f:\n        f.write('\\n'.join(html))\n    \n    return report_path",
+        "keyPrinciples": [
+          "Focus on component relationships and analysis",
+          "Group errors by component",
+          "Highlight primary issue component",
+          "Include visualization references"
+        ]
+      },
+      "reportEnhancement": {
+        "description": "Enhancing existing reports with component information",
+        "code": "def add_component_info_to_report(reports_dir, test_id, component_analysis):\n    \"\"\"Add component information to reports that don't have it.\"\"\"\n    # Find reports that might need enhancement\n    report_formats = {\n        'excel': os.path.join(reports_dir, f\"{test_id}_log_analysis.xlsx\"),\n        'docx': os.path.join(reports_dir, f\"{test_id}_bug_report.docx\"),\n        'html': os.path.join(reports_dir, f\"{test_id}_log_analysis.html\")\n    }\n    \n    enhanced_reports = {}\n    \n    # Extract component information\n    primary_component = component_analysis.get('primary_issue_component', 'unknown')\n    component_counts = component_analysis.get('component_error_counts', {})\n    \n    # Get visualization paths\n    vis_dir = os.path.join(reports_dir, 'supporting_images')\n    component_viz = os.path.join(vis_dir, f\"{test_id}_component_errors.png\")\n    \n    # Check each report format\n    if os.path.exists(report_formats['excel']):\n        # Add component info to Excel\n        try:\n            import pandas as pd\n            from openpyxl import load_workbook\n            \n            # Load workbook\n            wb = load_workbook(report_formats['excel'])\n            \n            # Check if component sheet exists\n            if 'Component Analysis' not in wb.sheetnames:\n                # Create component sheet\n                ws = wb.create_sheet('Component Analysis')\n                \n                # Add header\n                ws['A1'] = 'Component Analysis Summary'\n                ws['A3'] = 'Primary Issue Component:'\n                ws['B3'] = primary_component\n                \n                # Add component counts\n                ws['A5'] = 'Component'\n                ws['B5'] = 'Error Count'\n                \n                row = 6\n                for component, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True):\n                    ws[f'A{row}'] = component\n                    ws[f'B{row}'] = count\n                    row += 1\n                \n                # Add image if available\n                if os.path.exists(component_viz):\n                    # Can't add image directly with openpyxl easily\n                    # Just add a note\n                    ws['A{row+2}'] = 'Component visualization available at:'\n                    ws['A{row+3}'] = component_viz\n                \n                # Save the enhanced file\n                enhanced_excel = os.path.join(reports_dir, f\"{test_id}_log_analysis_enhanced.xlsx\")\n                wb.save(enhanced_excel)\n                enhanced_reports['excel'] = enhanced_excel\n                \n        except ImportError:\n            logging.warning(\"openpyxl or pandas not available for Excel enhancement\")\n    \n    # Add similar blocks for DOCX and HTML enhancement\n    # ...    \n    \n    return enhanced_reports",
+        "keyPrinciples": [
+          "Check for existing component info first",
+          "Add component information where missing",
+          "Create enhanced copies rather than modifying originals",
+          "Format appropriately for each report type"
+        ]
+      }
+    },
+    "testingComponentFunctionality": {
+      "description": "Approaches for testing component-related functionality",
+      "testingPatterns": [
+        {
+          "name": "Component Identification Testing",
+          "description": "Testing component identification functions",
+          "code": "def test_component_identification():\n    \"\"\"Test component identification functions.\"\"\"\n    # Test cases with expected results\n    test_cases = [\n        # filename, expected_component, expected_source\n        ('app_debug.log', 'soa', 'filename_special'),\n        ('mimosa.log', 'mimosa', 'filename'),\n        ('android_logs.txt', 'android', 'filename'),\n        ('unknown_file.xyz', 'unknown_file', 'filename')\n    ]\n    \n    for filename, expected_component, expected_source in test_cases:\n        # Test direct identification\n        component, source = identify_component_from_filename(filename)\n        assert component == expected_component, f\"Expected {expected_component}, got {component}\"\n        assert source == expected_source, f\"Expected {expected_source}, got {source}\"\n        \n        # Test with error object\n        error = {'file': filename, 'text': f\"Test error in {filename}\"}\n        assign_component_to_error(error)\n        assert error.get('component') == expected_component, f\"Error component: expected {expected_component}, got {error.get('component')}\"\n        assert error.get('component_source') == expected_source, f\"Error source: expected {expected_source}, got {error.get('component_source')}\"\n    \n    print(\"Component identification tests passed!\")",
+          "keyPrinciples": [
+            "Test with known file patterns",
+            "Verify both direct function calls and integration points",
+            "Check both component and component_source fields"
+          ]
+        },
+        {
+          "name": "Component Preservation Testing",
+          "description": "Testing component information preservation",
+          "code": "def test_component_preservation():\n    \"\"\"Test component information preservation.\"\"\"\n    # Create test data\n    original_data = {\n        'text': 'Test error',\n        'file': 'app_debug.log',\n        'component': 'soa',\n        'component_source': 'filename',\n        'primary_issue_component': 'soa'\n    }\n    \n    # Test serialization preservation\n    import tempfile\n    import json\n    from reports.base import ComponentAwareEncoder\n    \n    with tempfile.NamedTemporaryFile(delete=False) as temp:\n        temp_path = temp.name\n    \n    try:\n        # Save to JSON\n        with open(temp_path, 'w') as f:\n            json.dump(original_data, f, cls=lambda *args, **kwargs: ComponentAwareEncoder(\n                *args, primary_issue_component='soa', **kwargs\n            ))\n        \n        # Load from JSON\n        with open(temp_path, 'r') as f:\n            loaded_data = json.load(f)\n        \n        # Check component fields preserved\n        for field in ['component', 'component_source', 'primary_issue_component']:\n            assert loaded_data.get(field) == original_data.get(field), \\\n                f\"Field {field} not preserved: expected {original_data.get(field)}, got {loaded_data.get(field)}\"\n    \n    finally:\n        import os\n        os.unlink(temp_path)\n    \n    # Test processing preservation\n    def process_data(data):\n        # Simulate processing that might lose component info\n        result = {\n            'text': data.get('text', '') + \" (processed)\",\n            'processed': True\n        }\n        return result\n    \n    # Test without preservation\n    processed1 = process_data(original_data)\n    assert 'component' not in processed1, \"Component unexpectedly present without preservation\"\n    \n    # Test with preservation\n    def process_with_preservation(data):\n        # Extract component fields\n        component_fields = {}\n        for field in ['component', 'component_source', 'primary_issue_component']:\n            if field in data:\n                component_fields[field] = data[field]\n        \n        # Process data\n        result = process_data(data)\n        \n        # Restore component fields\n        for field, value in component_fields.items():\n            result[field] = value\n            \n        return result\n    \n    processed2 = process_with_preservation(original_data)\n    for field in ['component', 'component_source', 'primary_issue_component']:\n        assert processed2.get(field) == original_data.get(field), \\\n            f\"Field {field} not preserved: expected {original_data.get(field)}, got {processed2.get(field)}\"\n    \n    print(\"Component preservation tests passed!\")",
+          "keyPrinciples": [
+            "Test both serialization and processing preservation",
+            "Check all component fields are maintained",
+            "Compare with and without preservation techniques"
+          ]
+        },
+        {
+          "name": "Component Integration Testing",
+          "description": "Testing component integration functionality",
+          "code": "def test_component_integration():\n    \"\"\"Test component integration functionality.\"\"\"\n    try:\n        from components.component_integration import ComponentIntegration\n    except ImportError:\n        print(\"ComponentIntegration not available, skipping tests\")\n        return\n    \n    # Create test data\n    errors = [\n        {'text': 'Error in app', 'file': 'app_debug.log'},\n        {'text': 'Error in mimosa', 'file': 'mimosa.log'},\n        {'text': 'Another error in app', 'file': 'app_debug.log'}\n    ]\n    \n    # Create temporary directory for output\n    import tempfile\n    import shutil\n    \n    temp_dir = tempfile.mkdtemp()\n    try:\n        # Initialize integration\n        integration = ComponentIntegration()\n        \n        # Run analysis\n        results = integration.analyze_errors(errors, temp_dir, 'test-123')\n        \n        # Verify results\n        assert 'component_analysis' in results, \"Missing component_analysis in results\"\n        assert 'primary_issue_component' in results['component_analysis'], \"Missing primary_issue_component\"\n        assert results['component_analysis']['primary_issue_component'] == 'soa', \\\n            f\"Expected primary component 'soa', got {results['component_analysis']['primary_issue_component']}\"\n        \n        # Check component counts\n        if 'component_error_counts' in results['component_analysis']:\n            counts = results['component_analysis']['component_error_counts']\n            assert counts.get('soa', 0) == 2, f\"Expected 2 SOA errors, got {counts.get('soa', 0)}\"\n            assert counts.get('mimosa', 0) == 1, f\"Expected 1 mimosa error, got {counts.get('mimosa', 0)}\"\n        \n        # Check for output files\n        assert 'analysis_files' in results, \"Missing analysis_files in results\"\n        files = results['analysis_files']\n        \n        # Check for JSON output\n        if 'component_analysis' in files:\n            assert os.path.exists(files['component_analysis']), f\"File not found: {files['component_analysis']}\"\n        \n        # Check for visualizations\n        if 'component_diagram' in files:\n            assert os.path.exists(files['component_diagram']), f\"File not found: {files['component_diagram']}\"\n            \n        print(\"Component integration tests passed!\")\n        \n    finally:\n        # Clean up\n        shutil.rmtree(temp_dir)",
+          "keyPrinciples": [
+            "Test with realistic test data",
+            "Verify analysis results structure",
+            "Check for expected component identification",
+            "Verify output files are generated"
+          ]
+        },
+        {
+          "name": "End-to-End Component Testing",
+          "description": "Comprehensive end-to-end testing of component functionality",
+          "code": "def test_component_system_end_to_end():\n    \"\"\"Comprehensive end-to-end test of component functionality.\"\"\"\n    import tempfile\n    import shutil\n    import os\n    \n    # Create test log files\n    def create_test_logs(directory):\n        # Create app_debug.log\n        with open(os.path.join(directory, 'app_debug.log'), 'w') as f:\n            f.write(\"2023-06-08 12:34:56 ERROR: Exception in com.siriusxm.app.AudioPlayer\\n\")\n            f.write(\"2023-06-08 12:35:01 ERROR: Failed to load channel data\\n\")\n            f.write(\"2023-06-08 12:35:10 INFO: Retrying connection\\n\")\n        \n        # Create mimosa.log\n        with open(os.path.join(directory, 'mimosa.log'), 'w') as f:\n            f.write(\"2023-06-08 12:33:45 ERROR: Failed to generate test signal\\n\")\n            f.write(\"2023-06-08 12:34:30 INFO: Test signal sent\\n\")\n        \n        return {\n            'app_debug.log': os.path.join(directory, 'app_debug.log'),\n            'mimosa.log': os.path.join(directory, 'mimosa.log')\n        }\n    \n    # Create temporary directories\n    logs_dir = tempfile.mkdtemp(suffix=\"_logs\")\n    output_dir = tempfile.mkdtemp(suffix=\"_output\")\n    test_id = \"test-123\"\n    \n    try:\n        # Create test logs\n        log_files = create_test_logs(logs_dir)\n        \n        # Import controller function\n        try:\n            from controller import run_analysis\n        except ImportError:\n            print(\"Controller not available, using simplified test approach\")\n            # Run a simplified version of the analysis\n            from log_analyzer import LogAnalyzer\n            analyzer = LogAnalyzer()\n            all_logs, errors = analyzer.analyze_logs(list(log_files.values()))\n            \n            # Assign components\n            errors_with_components, component_summary, primary_issue_component = \\\n                assign_components_and_relationships(errors)\n            \n            # Verify results\n            assert primary_issue_component == 'soa', f\"Expected primary component 'soa', got {primary_issue_component}\"\n            assert 'soa' in component_summary, \"SOA missing from component summary\"\n            assert 'mimosa' in component_summary, \"mimosa missing from component summary\"\n            assert component_summary['soa'] >= 2, f\"Expected at least 2 SOA errors, got {component_summary.get('soa', 0)}\"\n            assert component_summary['mimosa'] >= 1, f\"Expected at least 1 mimosa error, got {component_summary.get('mimosa', 0)}\"\n            \n            print(\"Component system simplified test passed!\")\n            return\n        \n        # Run the full analysis\n        results = run_analysis(test_id, logs_dir, output_dir)\n        \n        # Verify results\n        assert 'reports' in results, \"Missing reports in results\"\n        reports = results['reports']\n        \n        # Check for component report\n        if 'component_report' in reports:\n            assert os.path.exists(reports['component_report']), f\"File not found: {reports['component_report']}\"\n        \n        # Check for visualizations\n        if 'visualizations' in results:\n            viz = results['visualizations']\n            if 'component_errors' in viz:\n                assert os.path.exists(viz['component_errors']), f\"File not found: {viz['component_errors']}\"\n        \n        # Check results for correct primary component\n        if 'primary_issue_component' in results:\n            assert results['primary_issue_component'] == 'soa', \\\n                f\"Expected primary component 'soa', got {results['primary_issue_component']}\"\n        \n        print(\"Component system end-to-end test passed!\")\n        \n    finally:\n        # Clean up\n        shutil.rmtree(logs_dir, ignore_errors=True)\n        shutil.rmtree(output_dir, ignore_errors=True)",
+          "keyPrinciples": [
+            "Create realistic test log files",
+            "Test the full analysis pipeline",
+            "Verify all expected outputs are generated",
+            "Check for correct component identification and analysis"
+          ]
+        }
+      ],
+      "mockingTechniques": {
+        "description": "Techniques for mocking components for testing",
+        "code": "class MockComponentAnalyzer:\n    \"\"\"Mock component analyzer for testing.\"\"\"\n    \n    def __init__(self, schema_path=None):\n        \"\"\"Initialize with optional schema path.\"\"\"\n        self.component_schema = {}\n        self.calls = {}\n        \n        # Load schema if provided\n        if schema_path and os.path.exists(schema_path):\n            with open(schema_path, 'r') as f:\n                self.component_schema = json.load(f)\n    \n    def enrich_log_entries_with_components(self, log_entries):\n        \"\"\"Mock enrichment function.\"\"\"\n        # Track call\n        self.calls['enrich_log_entries_with_components'] = {\n            'count': self.calls.get('enrich_log_entries_with_components', {}).get('count', 0) + 1,\n            'last_args': {'log_entries_count': len(log_entries) if log_entries else 0}\n        }\n        \n        # Create a copy to avoid modifying the original\n        enriched = copy.deepcopy(log_entries) if log_entries else []\n        \n        # Add component information\n        for entry in enriched:\n            # Already has component, skip\n            if 'component' in entry and entry['component'] != 'unknown':\n                continue\n                \n            # Simple mocked logic\n            if 'file' in entry:\n                if 'app_debug.log' in entry['file'].lower():\n                    entry['component'] = 'soa'\n                    entry['component_source'] = 'filename'\n                elif 'mimosa' in entry['file'].lower():\n                    entry['component'] = 'mimosa'\n                    entry['component_source'] = 'filename'\n                else:\n                    # Extract component from filename\n                    filename = os.path.basename(entry['file'])\n                    component_name = os.path.splitext(filename)[0]\n                    entry['component'] = component_name\n                    entry['component_source'] = 'filename'\n            else:\n                entry['component'] = 'unknown'\n                entry['component_source'] = 'default'\n                \n        return enriched\n        \n    def analyze_component_failures(self, errors):\n        \"\"\"Mock analysis function.\"\"\"\n        # Track call\n        self.calls['analyze_component_failures'] = {\n            'count': self.calls.get('analyze_component_failures', {}).get('count', 0) + 1,\n            'last_args': {'errors_count': len(errors) if errors else 0}\n        }\n        \n        # Count errors by component\n        component_counts = defaultdict(int)\n        for error in errors if errors else []:\n            component = error.get('component', 'unknown')\n            component_counts[component] += 1\n            \n        # Determine primary component\n        primary_component = max(component_counts.items(), key=lambda x: x[1])[0] if component_counts else 'unknown'\n        \n        # Build mock analysis results\n        return {\n            \"component_error_counts\": dict(component_counts),\n            \"primary_issue_component\": primary_component,\n            \"components_with_issues\": list(component_counts.keys())\n        }\n\n# Example usage\ndef test_with_mock_analyzer():\n    \"\"\"Test component integration with mock analyzer.\"\"\"\n    # Create mock analyzer\n    mock_analyzer = MockComponentAnalyzer()\n    \n    # Create test errors\n    errors = [\n        {'text': 'Error 1', 'file': 'app_debug.log'},\n        {'text': 'Error 2', 'file': 'mimosa.log'}\n    ]\n    \n    # Enrich errors\n    enriched = mock_analyzer.enrich_log_entries_with_components(errors)\n    \n    # Verify enrichment\n    assert enriched[0]['component'] == 'soa', f\"Expected 'soa', got {enriched[0]['component']}\"\n    assert enriched[1]['component'] == 'mimosa', f\"Expected 'mimosa', got {enriched[1]['component']}\"\n    \n    # Analyze components\n    analysis = mock_analyzer.analyze_component_failures(enriched)\n    \n    # Verify analysis\n    assert analysis['primary_issue_component'] == 'soa', \\\n        f\"Expected 'soa', got {analysis['primary_issue_component']}\"\n    assert set(analysis['components_with_issues']) == {'soa', 'mimosa'}, \\\n        f\"Expected components with issues {{'soa', 'mimosa'}}, got {analysis['components_with_issues']}\"\n    \n    # Check call tracking\n    assert mock_analyzer.calls['enrich_log_entries_with_components']['count'] == 1, \"enrich_log_entries_with_components should be called once\"\n    assert mock_analyzer.calls['analyze_component_failures']['count'] == 1, \"analyze_component_failures should be called once\"\n    \n    print(\"Test with mock analyzer passed!\")"

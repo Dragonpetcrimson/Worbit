@@ -1,0 +1,1242 @@
+        },
+        {
+          "name": "Root Cause vs. Symptom Classification",
+          "description": "Classify clusters as either root causes or symptoms based on multiple factors",
+          "implementation": "def _classify_root_vs_symptom(self, clusters, related_clusters, temporal_relationships):\n    # Start with initial clusters from temporal analysis\n    initial_clusters = set(temporal_relationships.get('initial_clusters', []))\n    \n    # Analyze severity distribution\n    severity_scores = {}\n    for cluster_id, errors in clusters.items():\n        high_count = sum(1 for e in errors if e.get('severity') == 'High')\n        medium_count = sum(1 for e in errors if e.get('severity') == 'Medium')\n        low_count = sum(1 for e in errors if e.get('severity') == 'Low')\n        \n        # Calculate weighted score\n        score = (high_count * 3) + (medium_count * 2) + low_count\n        severity_scores[cluster_id] = score\n    \n    # Combine temporal, relational, and severity information\n    root_cause_scores = {}\n    for cluster_id in clusters:\n        # Initialize score\n        score = 0\n        \n        # Higher score for initial clusters\n        if cluster_id in initial_clusters:\n            score += 3\n            \n        # Higher score for clusters with many related clusters\n        rel_cluster_count = len(related_clusters.get(cluster_id, set()))\n        score += min(rel_cluster_count, 3)  # Cap at 3 points\n        \n        # Higher score for more severe clusters\n        severity = severity_scores.get(cluster_id, 0)\n        normalized_severity = min(severity / 3, 3) if severity > 0 else 0\n        score += normalized_severity\n        \n        root_cause_scores[cluster_id] = score\n    \n    # Determine threshold for root cause classification\n    threshold = max(root_cause_scores.values()) * 0.7 if root_cause_scores else 0\n    \n    # Classify clusters\n    root_cause_clusters = [\n        c for c, score in root_cause_scores.items() \n        if score >= threshold\n    ]\n    \n    # Everything else is a symptom\n    symptom_clusters = [\n        c for c in clusters.keys() \n        if c not in root_cause_clusters\n    ]\n    \n    return {\n        'root_cause_clusters': root_cause_clusters,\n        'symptom_clusters': symptom_clusters,\n        'root_cause_scores': root_cause_scores\n    }"
+        },
+        {
+          "name": "Causality Weight Calculation",
+          "description": "Calculate likelihood of causality between errors based on multiple factors",
+          "implementation": "def _calculate_causality_weight(self, error1, error2, ts1, ts2, cluster1, cluster2):\n    # Start with base weight\n    weight = 0.5\n    \n    # Adjust based on time proximity (closer = higher weight)\n    time_diff = (ts2 - ts1).total_seconds()\n    if time_diff < 1:\n        weight += 0.3  # Very close in time\n    elif time_diff < 5:\n        weight += 0.2  # Fairly close\n    elif time_diff > 15:\n        weight -= 0.2  # Further apart\n        \n    # Adjust based on severity (high severity more likely to cause others)\n    sev1 = error1.get('severity', 'Medium')\n    sev2 = error2.get('severity', 'Medium')\n    \n    if sev1 == 'High' and sev2 != 'High':\n        weight += 0.2  # High severity error causing lower severity\n    elif sev1 != 'High' and sev2 == 'High':\n        weight -= 0.1  # Lower severity unlikely to cause high severity\n        \n    # Adjust based on component relationship\n    comp1 = error1.get('component', 'unknown')\n    comp2 = error2.get('component', 'unknown')\n    \n    if comp1 == comp2:\n        weight += 0.1  # Same component\n    elif self._are_components_related(comp1, comp2):\n        if self.component_graph.has_edge(comp1, comp2):\n            weight += 0.2  # Direct data flow relationship\n        else:\n            weight += 0.1  # Indirect relationship\n    else:\n        weight -= 0.2  # Unrelated components\n        \n    # Adjust based on cluster relationship\n    if cluster1 is not None and cluster2 is not None:\n        if cluster1 == cluster2:\n            weight += 0.1  # Same cluster\n            \n    # Ensure weight is between 0 and 1\n    return max(0.0, min(1.0, weight))"
+        }
+      ]
+    },
+    "errorHandlingPatterns": {
+      "description": "Error handling patterns to ensure robustness in component operations",
+      "mechanisms": [
+        {
+          "name": "Graceful Degradation in Visualization",
+          "description": "Gracefully handle visualization failures with fallbacks and placeholders",
+          "implementation": "def generate_component_relationship_diagram(self, output_dir, test_id):\n    try:\n        # Attempt to generate visualization\n        # ...\n        \n        return self._save_figure_with_cleanup(fig, image_path)\n        \n    except Exception as e:\n        logging.error(f\"Error generating component diagram: {str(e)}\")\n        traceback.print_exc()\n        \n        # Check if placeholders are enabled\n        if _is_placeholder_enabled():\n            # Create error visualization placeholder\n            fig = plt.figure(figsize=(8, 6))\n            plt.text(0.5, 0.5, f\"Error generating component diagram:\\n{str(e)}\", \n                    ha='center', va='center', fontsize=12)\n            plt.axis('off')\n            return self._save_figure_with_cleanup(fig, image_path)\n        \n        return None\n    finally:\n        # Ensure cleanup even on error\n        if HAS_MATPLOTLIB:\n            plt.close('all')"
+        },
+        {
+          "name": "Layout Algorithm Fallbacks",
+          "description": "Use multiple layout algorithms with fallbacks for visualization",
+          "implementation": "def _get_graph_layout(self, G):\n    # For very small graphs, spring layout is sufficient\n    if G.number_of_nodes() <= 3:\n        return nx.spring_layout(G, seed=42)\n    \n    # First attempt: Try pydot (part of NetworkX)\n    try:\n        import pydot\n        from networkx.drawing.nx_pydot import graphviz_layout\n        return graphviz_layout(G, prog='dot')\n    except Exception as e:\n        logging.debug(f\"Pydot layout failed, trying next option\")\n    \n    # Second attempt: Try spectral layout\n    try:\n        return nx.spectral_layout(G)\n    except Exception as e:\n        logging.debug(f\"Spectral layout failed, trying next option\")\n    \n    # Additional fallbacks...\n    \n    # Final fallback: Enhanced spring layout\n    return nx.spring_layout(G, k=0.3, iterations=100, seed=42)"
+        },
+        {
+          "name": "Component-level Feature Flags",
+          "description": "Use feature flags to control component functionality",
+          "implementation": "def _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config\n    try:\n        if HAS_CONFIG:\n            result = getattr(Config, feature_name, default)\n        else:\n            result = default\n    except Exception:\n        # If config can't be accessed, use default\n        result = default\n    \n    # Cache for future use\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+        },
+        {
+          "name": "Isolation in Thread-specific Tasks",
+          "description": "Isolate visualization operations in threads to prevent issues",
+          "implementation": "def generate_error_propagation_diagram():\n    # Use threading to handle errors without stopping pipeline\n    propagation_error = [None]\n    propagation_result = [None]\n    \n    def generate_propagation():\n        try:\n            # Get the error graph\n            error_graph = component_analysis.get(\"error_graph\")\n            \n            # Generate the visualization\n            propagation_result[0] = self.visualizer.generate_error_propagation_diagram(\n                output_dir, test_id, error_graph\n            )\n        except Exception as e:\n            propagation_error[0] = e\n    \n    # Run in thread to isolate potential tkinter issues\n    thread = threading.Thread(target=generate_propagation)\n    thread.daemon = True\n    thread.start()\n    thread.join(timeout=30)  # Wait up to 30 seconds\n    \n    # Check results\n    if propagation_error[0]:\n        logging.error(f\"Error in error propagation visualization: {str(propagation_error[0])}\")\n        traceback.print_exc()\n        raise propagation_error[0]\n    \n    if propagation_result[0]:\n        results[\"analysis_files\"][\"error_propagation\"] = propagation_result[0]"
+        }
+      ]
+    }
+  },
+  "visualizationSystem": {
+    "description": "Comprehensive visualization system for component relationships and error analysis",
+    "visualizationTypes": [
+      {
+        "name": "Component Relationship Diagram",
+        "description": "Visualization of component relationships as a directed graph",
+        "generationMechanism": "NetworkX-based graph drawing with enhanced layout algorithms",
+        "configurationOptions": [
+          {"name": "primary_issue_component", "description": "Component to highlight as primary issue"},
+          {"name": "component_colors", "description": "Color mapping for components"},
+          {"name": "root_cause_color", "description": "Special color for root cause component"}
+        ],
+        "exampleCode": "# Generate component relationship diagram\ndiagram_path = visualizer.generate_component_relationship_diagram(\n    output_dir, \n    test_id\n)"
+      },
+      {
+        "name": "Component Error Distribution",
+        "description": "Horizontal bar chart showing error counts by component",
+        "generationMechanism": "Matplotlib-based bar chart with component color coding",
+        "configurationOptions": [
+          {"name": "component_summary", "description": "Summary of components with error counts"},
+          {"name": "primary_component", "description": "Component to highlight as primary issue"}
+        ],
+        "exampleCode": "# Generate component error distribution\ndistribution_path = visualizer.generate_component_error_distribution(\n    output_dir, \n    test_id,\n    component_summary=[{'id': 'soa', 'error_count': 10}, {'id': 'mimosa', 'error_count': 5}],\n    primary_component='soa'\n)"
+      },
+      {
+        "name": "Error Propagation Diagram",
+        "description": "Visualization of error propagation paths between components",
+        "generationMechanism": "NetworkX-based directed graph with causality edges",
+        "configurationOptions": [
+          {"name": "error_graph", "description": "Graph of error relationships (NetworkX DiGraph or dictionary)"}
+        ],
+        "exampleCode": "# Generate error propagation diagram\npropagation_path = visualizer.generate_error_propagation_diagram(\n    output_dir, \n    test_id,\n    error_graph=causality_graph\n)"
+      }
+    ],
+    "layoutAlgorithms": [
+      {
+        "name": "Pydot/Graphviz Layout",
+        "description": "Primary layout algorithm using pydot integration",
+        "fallbackOrder": 1,
+        "advantages": ["Produces hierarchical layouts", "Good for tree-like structures", "Shows direction of relationships clearly"]
+      },
+      {
+        "name": "Spectral Layout",
+        "description": "Secondary layout based on spectral graph theory",
+        "fallbackOrder": 2,
+        "advantages": ["Works without external dependencies", "Good for component relationships", "Produces aesthetically pleasing layouts"]
+      },
+      {
+        "name": "Shell Layout",
+        "description": "Tertiary layout that positions nodes in concentric circles",
+        "fallbackOrder": 3,
+        "advantages": ["Good for visualizing different component types", "Clearly shows hierarchy", "Works with grouping"]
+      },
+      {
+        "name": "Enhanced Spring Layout",
+        "description": "Final fallback using force-directed layout",
+        "fallbackOrder": 4,
+        "advantages": ["Most reliable fallback", "Works in all environments", "Customized parameters for component visualization"]
+      }
+    ],
+    "threadSafetyConsiderations": [
+      {
+        "concern": "Matplotlib Backend Configuration",
+        "solution": "Force 'Agg' backend to prevent GUI-related thread issues"
+      },
+      {
+        "concern": "Figure Resource Management",
+        "solution": "Always close figures in finally blocks to prevent memory leaks"
+      },
+      {
+        "concern": "Concurrent Visualization Generation",
+        "solution": "Use locks specific to each visualization type to prevent concurrent generation"
+      },
+      {
+        "concern": "Feature Flag Access",
+        "solution": "Use thread-local storage for caching feature flags to prevent race conditions"
+      }
+    ]
+  },
+  "directoryStructure": {
+    "sourceCodeOrganization": {
+      "components": {
+        "description": "Core component system modules",
+        "files": [
+          {"name": "__init__.py", "purpose": "Package initialization"},
+          {"name": "component_model.py", "purpose": "Core component model and registry"},
+          {"name": "component_utils.py", "purpose": "Utilities for component operations"},
+          {"name": "direct_component_analyzer.py", "purpose": "Direct component identification"},
+          {"name": "component_analyzer.py", "purpose": "Component analysis functionality"},
+          {"name": "component_visualizer.py", "purpose": "Component visualization generation"},
+          {"name": "context_aware_clusterer.py", "purpose": "Enhanced error clustering"},
+          {"name": "component_integration.py", "purpose": "Integration layer"}
+        ]
+      },
+      "utils": {
+        "description": "Utility modules used by component system",
+        "files": [
+          {"name": "path_utils.py", "purpose": "Path and filename utilities"},
+          {"name": "json_utils.py", "purpose": "JSON serialization utilities"},
+          {"name": "visualization_utils.py", "purpose": "Visualization helper functions"}
+        ]
+      },
+      "reports": {
+        "description": "Report generation modules that use component system",
+        "files": [
+          {"name": "base.py", "purpose": "Base report classes and component-aware encoding"},
+          {"name": "json_generator.py", "purpose": "JSON report generation"},
+          {"name": "visualizations.py", "purpose": "Report visualizations integration"}
+        ]
+      }
+    },
+    "outputFileOrganization": {
+      "description": "Standard organization of output files generated by the component system",
+      "structure": [
+        {
+          "directory": "<output_dir>/",
+          "description": "Root output directory",
+          "contents": [
+            {"name": "<test_id>_component_report.html", "description": "HTML component report"},
+            {"name": "<test_id>_log_analysis.html", "description": "HTML log analysis report"}
+          ]
+        },
+        {
+          "directory": "<output_dir>/json/",
+          "description": "JSON data directory",
+          "contents": [
+            {"name": "<test_id>_component_analysis.json", "description": "Component analysis data"},
+            {"name": "<test_id>_error_graph.json", "description": "Error relationship graph"},
+            {"name": "<test_id>_enhanced_clusters.json", "description": "Enhanced clustering data"},
+            {"name": "<test_id>_log_analysis.json", "description": "Complete log analysis data"}
+          ]
+        },
+        {
+          "directory": "<output_dir>/supporting_images/",
+          "description": "Visualization images directory",
+          "contents": [
+            {"name": "<test_id>_component_relationships.png", "description": "Component relationship diagram"},
+            {"name": "<test_id>_component_distribution.png", "description": "Component error distribution chart"},
+            {"name": "<test_id>_component_errors.png", "description": "Legacy name for component error distribution"},
+            {"name": "<test_id>_error_propagation.png", "description": "Error propagation diagram"}
+          ]
+        }
+      ],
+      "fileGenerationMechanisms": [
+        {
+          "module": "component_visualizer.py",
+          "generates": [
+            "<test_id>_component_relationships.png",
+            "<test_id>_component_distribution.png", 
+            "<test_id>_component_errors.png",
+            "<test_id>_error_propagation.png"
+          ]
+        },
+        {
+          "module": "component_integration.py",
+          "generates": [
+            "<test_id>_component_analysis.json", 
+            "<test_id>_error_graph.json",
+            "<test_id>_enhanced_clusters.json"
+          ]
+        }
+      ],
+      "fileNamingConventions": {
+        "description": "Conventions for file naming",
+        "rules": [
+          {"pattern": "<test_id>_<file_type>.<extension>", "example": "SXM-12345_component_relationships.png"},
+          {"rule": "Test IDs are normalized to SXM-XXXXX format", "example": "test-123 → SXM-123"},
+          {"rule": "File types use underscore_case", "example": "component_analysis, error_propagation"},
+          {"rule": "JSON data files stored in json/ subdirectory", "example": "json/SXM-12345_component_analysis.json"},
+          {"rule": "Visualization files stored in supporting_images/ subdirectory", "example": "supporting_images/SXM-12345_component_relationships.png"}
+        ]
+      }
+    }
+  },
+  "componentRelationships": {
+    "componentDependencyGraph": {
+      "description": "Graph of module dependencies in the component system",
+      "dependencies": [
+        {"from": "component_integration.py", "to": "component_analyzer.py", "type": "uses"},
+        {"from": "component_integration.py", "to": "component_visualizer.py", "type": "uses"},
+        {"from": "component_integration.py", "to": "context_aware_clusterer.py", "type": "uses"},
+        {"from": "component_analyzer.py", "to": "component_model.py", "type": "uses"},
+        {"from": "component_visualizer.py", "to": "component_model.py", "type": "uses"},
+        {"from": "context_aware_clusterer.py", "to": "component_model.py", "type": "uses"},
+        {"from": "direct_component_analyzer.py", "to": "component_model.py", "type": "uses"},
+        {"from": "direct_component_analyzer.py", "to": "component_utils.py", "type": "uses"}
+      ]
+    },
+    "componentHierarchy": {
+      "description": "Logical hierarchy of components in the system",
+      "levels": [
+        {
+          "level": 1,
+          "name": "Core Component Model",
+          "modules": ["component_model.py", "component_utils.py"],
+          "responsibility": "Define fundamental component model and utilities"
+        },
+        {
+          "level": 2,
+          "name": "Component Analysis",
+          "modules": ["direct_component_analyzer.py", "component_analyzer.py"],
+          "responsibility": "Analyze components in log data"
+        },
+        {
+          "level": 3,
+          "name": "Component Visualization",
+          "modules": ["component_visualizer.py"],
+          "responsibility": "Generate visual representations of component relationships"
+        },
+        {
+          "level": 3,
+          "name": "Component Clustering",
+          "modules": ["context_aware_clusterer.py"],
+          "responsibility": "Cluster errors with component awareness"
+        },
+        {
+          "level": 4,
+          "name": "Component Integration",
+          "modules": ["component_integration.py"],
+          "responsibility": "Integrate all component functionality"
+        }
+      ]
+    },
+    "dataFlowPatterns": {
+      "description": "Common data flow patterns in the component system",
+      "patterns": [
+        {
+          "name": "Component Identification Flow",
+          "description": "Flow of component identification",
+          "steps": [
+            {"module": "log_analyzer.py", "operation": "Extract errors from logs"},
+            {"module": "direct_component_analyzer.py", "operation": "Assign components to errors"},
+            {"module": "direct_component_analyzer.py", "operation": "Identify primary issue component"},
+            {"module": "direct_component_analyzer.py", "operation": "Generate component summary"}
+          ]
+        },
+        {
+          "name": "Component Visualization Flow",
+          "description": "Flow of component visualization generation",
+          "steps": [
+            {"module": "component_integration.py", "operation": "Request visualization from component_visualizer.py"},
+            {"module": "component_visualizer.py", "operation": "Check feature flags and acquire lock"},
+            {"module": "component_visualizer.py", "operation": "Generate visualization with appropriate layout algorithm"},
+            {"module": "component_visualizer.py", "operation": "Save visualization and release lock"},
+            {"module": "component_integration.py", "operation": "Add visualization path to results"}
+          ]
+        },
+        {
+          "name": "Error Clustering Flow",
+          "description": "Flow of error clustering",
+          "steps": [
+            {"module": "component_integration.py", "operation": "Request clustering from context_aware_clusterer.py"},
+            {"module": "context_aware_clusterer.py", "operation": "Vectorize and cluster errors"},
+            {"module": "context_aware_clusterer.py", "operation": "Enhance clusters with component information"},
+            {"module": "context_aware_clusterer.py", "operation": "Build error relationship graph"},
+            {"module": "context_aware_clusterer.py", "operation": "Extract root cause errors and causality paths"},
+            {"module": "component_integration.py", "operation": "Add clustering results to output"}
+          ]
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "requiredDependencies": [
+      {
+        "name": "NetworkX",
+        "version": ">=2.5",
+        "purpose": "Graph operations for component relationships",
+        "importStatement": "import networkx as nx",
+        "critical": true
+      },
+      {
+        "name": "Matplotlib",
+        "version": ">=3.3.0",
+        "purpose": "Visualization generation",
+        "importStatement": "import matplotlib.pyplot as plt",
+        "critical": true
+      },
+      {
+        "name": "NumPy",
+        "version": ">=1.19.0",
+        "purpose": "Numerical operations",
+        "importStatement": "import numpy as np",
+        "critical": true
+      },
+      {
+        "name": "scikit-learn",
+        "version": ">=0.24.0",
+        "purpose": "TF-IDF vectorization and clustering",
+        "importStatement": "from sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.cluster import KMeans",
+        "critical": true
+      }
+    ],
+    "optionalDependencies": [
+      {
+        "name": "pydot",
+        "version": ">=1.4.1",
+        "purpose": "Improved graph layouts",
+        "importStatement": "import pydot\nfrom networkx.drawing.nx_pydot import graphviz_layout",
+        "failoverMechanism": "Falls back to spectral layout, then shell layout, then spring layout"
+      },
+      {
+        "name": "PIL",
+        "version": ">=8.0.0",
+        "purpose": "Image verification",
+        "importStatement": "from PIL import Image",
+        "failoverMechanism": "Falls back to basic file size check"
+      }
+    ],
+    "internalDependencies": [
+      {
+        "name": "utils.path_utils",
+        "purpose": "Path and filename utilities",
+        "importStatement": "from utils.path_utils import get_output_path, OutputType, normalize_test_id, get_standardized_filename",
+        "failoverMechanism": "Internal fallback implementations provided"
+      },
+      {
+        "name": "reports.base.ComponentAwareEncoder",
+        "purpose": "Component-preserving JSON serialization",
+        "importStatement": "from reports.base import ComponentAwareEncoder",
+        "failoverMechanism": "Lambda factory approach for component preservation"
+      },
+      {
+        "name": "config.Config",
+        "purpose": "Feature flag configuration",
+        "importStatement": "from config import Config",
+        "failoverMechanism": "Default values for feature flags"
+      }
+    ]
+  },
+  "compatibilityNotes": {
+    "description": "Important notes about compatibility considerations",
+    "threadSafety": {
+      "description": "Thread safety considerations for component system",
+      "notes": [
+        "The component system is designed to be thread-safe for concurrent analysis of different logs",
+        "Visualization generation uses locks to prevent concurrent visualization of the same type",
+        "Thread-local storage is used for feature flags and visualization state",
+        "Matplotlib is configured with the 'Agg' backend to prevent GUI thread issues",
+        "Always clean up resources in finally blocks to prevent memory leaks"
+      ]
+    },
+    "memoryManagement": {
+      "description": "Memory management considerations",
+      "notes": [
+        "Deep copies are used for errors to avoid modifying originals",
+        "Figures are always closed after saving to prevent memory leaks",
+        "Component cache has a maximum size and implements a simple LRU mechanism",
+        "Large NetworkX graphs should be serialized and freed when no longer needed"
+      ]
+    },
+    "backwardCompatibility": {
+      "description": "Backward compatibility mechanisms",
+      "notes": [
+        "Legacy names for files are maintained (component_errors.png → component_distribution.png)",
+        "Compatibility functions are provided for reports/visualizations.py integration",
+        "Error objects can use text or message fields for error messages",
+        "Feature flags allow disabling new features for compatibility"
+      ]
+    }
+  }
+}{
+  "documentPurpose": {
+    "purpose": "This document provides comprehensive technical specifications and integration patterns for the Orbit Analyzer component system, designed specifically for AI-to-AI knowledge transfer. It facilitates accurate understanding of system architecture, component relationships, and integration approaches.",
+    "metadata": {
+      "version": "2.0.0",
+      "timestamp": "2025-05-16T12:00:00Z",
+      "documentType": "AI2AI Technical Specification",
+      "contextRequirements": "Requires understanding of Python programming and software architecture concepts"
+    }
+  },
+  "systemOverview": {
+    "name": "Orbit Analyzer Component System",
+    "description": "A comprehensive system for identifying, analyzing, and visualizing component relationships in log files. The system identifies components from logs, analyzes their relationships, detects error propagation patterns, and generates visualizations to aid in root cause analysis.",
+    "coreCapabilities": [
+      "Component identification from log files",
+      "Component relationship analysis",
+      "Error propagation visualization",
+      "Component-aware error clustering",
+      "Root cause component identification"
+    ],
+    "designPhilosophy": "The system follows a modular design with clear separation of concerns. Each module handles specific aspects of component analysis, while ensuring thread safety, performance optimization, and consistent component information preservation throughout the processing pipeline."
+  },
+  "modulesAndComponents": [
+    {
+      "moduleName": "component_model.py",
+      "fileLocation": "components/component_model.py",
+      "purpose": "Provides the core component model and registry, serving as the single source of truth for component definitions and relationships.",
+      "dependencies": [],
+      "classes": [
+        {
+          "name": "ComponentInfo",
+          "purpose": "Immutable container for component information",
+          "attributes": [
+            {"name": "_id", "type": "str", "description": "Unique identifier for the component (immutable)"},
+            {"name": "_name", "type": "str", "description": "Display name for the component (immutable)"},
+            {"name": "_description", "type": "str", "description": "Description of the component's functionality (immutable)"},
+            {"name": "_type", "type": "str", "description": "Component type classification (immutable)"},
+            {"name": "_source", "type": "str", "description": "Source of component identification (immutable)"},
+            {"name": "_parent", "type": "str", "description": "Parent component ID, if any (immutable)"},
+            {"name": "_children", "type": "list[str]", "description": "Child component IDs (immutable)"},
+            {"name": "_related_to", "type": "list[str]", "description": "Related component IDs (immutable)"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self, component_id, name=None, description=None, component_type=None, **kwargs)",
+              "purpose": "Initialize the component with required data",
+              "parameters": [
+                {"name": "component_id", "type": "str", "description": "Unique identifier for the component"},
+                {"name": "name", "type": "str", "description": "Display name (defaults to uppercase ID)"},
+                {"name": "description", "type": "str", "description": "Component description (defaults to empty string)"},
+                {"name": "component_type", "type": "str", "description": "Component type (defaults to 'unknown')"},
+                {"name": "kwargs", "type": "dict", "description": "Additional properties to store with the component"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def to_dict(self)",
+              "purpose": "Convert component info to dictionary for serialization",
+              "parameters": [],
+              "returns": "Dict containing component data"
+            },
+            {
+              "signature": "def from_dict(cls, data)",
+              "purpose": "Create component info from dictionary representation",
+              "parameters": [
+                {"name": "data", "type": "dict", "description": "Dictionary containing component data"}
+              ],
+              "returns": "ComponentInfo instance"
+            }
+          ]
+        },
+        {
+          "name": "ComponentRegistry",
+          "purpose": "Registry for component information, manages loading from schema and provides access to components",
+          "methods": [
+            {
+              "signature": "def __init__(self, schema_path=None)",
+              "purpose": "Initialize registry with schema path",
+              "parameters": [
+                {"name": "schema_path", "type": "str", "description": "Path to component schema JSON file (optional)"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def _load_schema(self, schema_path)",
+              "purpose": "Load components from schema file",
+              "parameters": [
+                {"name": "schema_path", "type": "str", "description": "Path to component schema JSON file"}
+              ],
+              "returns": "None",
+              "sideEffects": "Populates internal _components dictionary"
+            },
+            {
+              "signature": "def get_component(self, component_id)",
+              "purpose": "Get component by ID",
+              "parameters": [
+                {"name": "component_id", "type": "str", "description": "Component identifier"}
+              ],
+              "returns": "ComponentInfo instance"
+            },
+            {
+              "signature": "def identify_component_from_filename(self, filename)",
+              "purpose": "Identify component based on filename patterns",
+              "parameters": [
+                {"name": "filename", "type": "str", "description": "Filename to analyze"}
+              ],
+              "returns": "str (component ID)"
+            },
+            {
+              "signature": "def identify_primary_component(self, component_counts)",
+              "purpose": "Identify primary component based on error counts, applying special logic for SOA vs Android determination",
+              "parameters": [
+                {"name": "component_counts", "type": "dict[str, int]", "description": "Dictionary mapping component IDs to error counts"}
+              ],
+              "returns": "str (primary component ID)"
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "signature": "def get_component_registry(schema_path=None)",
+          "purpose": "Get or create the component registry singleton",
+          "parameters": [
+            {"name": "schema_path", "type": "str", "description": "Path to component schema (optional)"}
+          ],
+          "returns": "ComponentRegistry instance",
+          "behavior": "Uses a singleton pattern to ensure only one registry exists"
+        },
+        {
+          "signature": "def create_component_info(component_id, source='default', **kwargs)",
+          "purpose": "Create a ComponentInfo object with standard fields",
+          "parameters": [
+            {"name": "component_id", "type": "str", "description": "Component identifier"},
+            {"name": "source", "type": "str", "description": "Source of component identification"},
+            {"name": "kwargs", "type": "dict", "description": "Additional parameters for ComponentInfo"}
+          ],
+          "returns": "ComponentInfo instance"
+        }
+      ],
+      "usageExample": "# Get component registry\nregistry = get_component_registry('path/to/component_schema.json')\n\n# Get component by ID\ncomponent = registry.get_component('soa')\n\n# Identify component from filename\ncomponent_id = registry.identify_component_from_filename('app_debug.log')\n\n# Create component info\nsoa_component = create_component_info('soa', source='schema', name='SOA', description='SiriusXM application')"
+    },
+    {
+      "moduleName": "direct_component_analyzer.py",
+      "fileLocation": "components/direct_component_analyzer.py",
+      "purpose": "Provides direct component identification based on filenames and basic patterns, designed for efficiency and reliability.",
+      "dependencies": [
+        {"module": "component_model", "classes": ["ComponentRegistry", "get_component_registry"]},
+        {"module": "component_utils", "functions": ["identify_component_from_file", "enrich_with_component_info", "determine_primary_component"]}
+      ],
+      "classes": [
+        {
+          "name": "ComponentCache",
+          "purpose": "Cache for component identification results to avoid redundant processing",
+          "attributes": [
+            {"name": "cache", "type": "dict", "description": "Dictionary storing cached component identifications"},
+            {"name": "max_size", "type": "int", "description": "Maximum cache size (defaults to 1000)"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self, max_size: int = 1000)",
+              "purpose": "Initialize the cache with maximum size",
+              "parameters": [
+                {"name": "max_size", "type": "int", "description": "Maximum cache size", "default": 1000}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def get(self, text: str) -> Optional[str]",
+              "purpose": "Get component from cache if it exists",
+              "parameters": [
+                {"name": "text", "type": "str", "description": "Text to use as cache key"}
+              ],
+              "returns": "str (component ID) or None if not in cache"
+            },
+            {
+              "signature": "def set(self, text: str, component: str) -> None",
+              "purpose": "Add component to cache, manage cache size",
+              "parameters": [
+                {"name": "text", "type": "str", "description": "Text to use as cache key"},
+                {"name": "component", "type": "str", "description": "Component ID to cache"}
+              ],
+              "returns": "None",
+              "behavior": "Uses a simple LRU mechanism by clearing half the cache when full"
+            }
+          ]
+        },
+        {
+          "name": "ComponentAnalyzer",
+          "purpose": "Optimized Component Analyzer that performs component analysis in a single pass and maintains a cache of results",
+          "attributes": [
+            {"name": "registry", "type": "ComponentRegistry", "description": "Component registry instance"},
+            {"name": "_cache", "type": "dict", "description": "Cache for processed error IDs"},
+            {"name": "_component_counts", "type": "defaultdict", "description": "Counts of errors by component"},
+            {"name": "_primary_issue_component", "type": "str", "description": "Identified primary issue component"},
+            {"name": "_component_summary", "type": "list", "description": "Summary of component analysis"},
+            {"name": "_processed_errors", "type": "int", "description": "Count of processed errors"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self)",
+              "purpose": "Initialize the analyzer with component registry",
+              "returns": "None"
+            },
+            {
+              "signature": "def reset(self) -> None",
+              "purpose": "Reset internal state for a new analysis",
+              "returns": "None"
+            },
+            {
+              "signature": "def _get_error_id(self, error: Dict) -> str",
+              "purpose": "Generate a unique identifier for an error to use as cache key",
+              "parameters": [
+                {"name": "error", "type": "Dict", "description": "Error dictionary"}
+              ],
+              "returns": "str (unique error ID)",
+              "behavior": "Uses a combination of file and first 100 chars of text for thread-safe key"
+            },
+            {
+              "signature": "def assign_component_to_error(self, error: Dict) -> None",
+              "purpose": "Assign component to a single error based on analysis rules, using caching",
+              "parameters": [
+                {"name": "error", "type": "Dict", "description": "Error dictionary to be updated"}
+              ],
+              "returns": "None",
+              "behavior": "Updates error in-place with component information, uses cache for efficiency"
+            },
+            {
+              "signature": "def identify_primary_component(self) -> str",
+              "purpose": "Identify the primary component with issues based on component counts",
+              "returns": "str (primary component ID)",
+              "behavior": "Applies special logic for SOA vs Android determination"
+            },
+            {
+              "signature": "def generate_component_summary(self) -> List[Dict]",
+              "purpose": "Generate summary of components for error report",
+              "returns": "List[Dict] of component summary dictionaries",
+              "behavior": "Includes component metadata from registry"
+            },
+            {
+              "signature": "def add_root_cause_info(self, errors: List[Dict]) -> None",
+              "purpose": "Add root cause information to the first error",
+              "parameters": [
+                {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"}
+              ],
+              "returns": "None",
+              "behavior": "Modifies the first error in the list to add root cause information"
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "signature": "def assign_components_and_relationships(errors: List[Dict]) -> Tuple[List[Dict], List[Dict], str]",
+          "purpose": "Assign components to errors and identify relationships",
+          "parameters": [
+            {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"}
+          ],
+          "returns": "Tuple containing (updated errors, component summary, primary issue component)",
+          "behavior": "Uses caching to avoid redundant processing and creates a deep copy to avoid modifying the original"
+        },
+        {
+          "signature": "def identify_component_from_filename(filename: str) -> Tuple[str, str]",
+          "purpose": "Identify component based on filename pattern",
+          "parameters": [
+            {"name": "filename", "type": "str", "description": "Filename to analyze"}
+          ],
+          "returns": "Tuple of (component_id, source)",
+          "behavior": "Uses component_utils.identify_component_from_file"
+        },
+        {
+          "signature": "def trace_component_changes(error_before, error_after, operation_name=\"unknown\")",
+          "purpose": "Trace component changes for debugging purposes",
+          "parameters": [
+            {"name": "error_before", "type": "Dict", "description": "Error dictionary before operation"},
+            {"name": "error_after", "type": "Dict", "description": "Error dictionary after operation"},
+            {"name": "operation_name", "type": "str", "description": "Name of the operation for logging"}
+          ],
+          "returns": "bool (True if changes were detected, False otherwise)",
+          "behavior": "Logs warnings for any changes in component fields"
+        }
+      ],
+      "usageExample": "# Process a list of errors\nerrors = [\n    {\"text\": \"Error in app\", \"file\": \"app_debug.log\"},\n    {\"text\": \"Test signal error\", \"file\": \"mimosa.log\"}\n]\n\n# Assign components and get relationships\nenriched_errors, component_summary, primary_issue_component = assign_components_and_relationships(errors)\n\nprint(f\"Primary issue component: {primary_issue_component}\")\nfor component in component_summary:\n    print(f\"{component['id']}: {component['error_count']} errors\")"
+    },
+    {
+      "moduleName": "component_visualizer.py",
+      "fileLocation": "components/component_visualizer.py",
+      "purpose": "Generates component relationship diagrams and error distribution visualizations with enhanced thread safety, layout algorithms, and error handling.",
+      "dependencies": [
+        {"module": "matplotlib", "packages": ["pyplot", "patches"]},
+        {"module": "networkx", "packages": ["nx"]},
+        {"module": "numpy", "packages": ["np"]},
+        {"optional": true, "module": "pydot", "reason": "For improved graph layouts"}
+      ],
+      "classes": [
+        {
+          "name": "VisualizationStateManager",
+          "purpose": "Thread-safe state manager for visualization generation",
+          "attributes": [
+            {"name": "local", "type": "threading.local", "description": "Thread-local storage for visualization state"},
+            {"name": "feature_flags", "type": "dict", "description": "Cache of feature flag settings"},
+            {"name": "locks", "type": "dict", "description": "Dictionary of locks for different visualization types"}
+          ],
+          "methods": [
+            {
+              "signature": "def initialize_thread(self)",
+              "purpose": "Initialize thread-local storage for the current thread",
+              "returns": "None"
+            },
+            {
+              "signature": "def is_feature_enabled(self, feature_name, default=False)",
+              "purpose": "Check if a feature is enabled with thread-safe fallback",
+              "parameters": [
+                {"name": "feature_name", "type": "str", "description": "Name of the feature flag in Config"},
+                {"name": "default", "type": "bool", "description": "Default value if flag doesn't exist"}
+              ],
+              "returns": "bool indicating if feature is enabled",
+              "behavior": "Checks thread-local cache, then global cache, then Config"
+            },
+            {
+              "signature": "def acquire_lock(self, visualization_type)",
+              "purpose": "Acquire lock for a specific visualization type",
+              "parameters": [
+                {"name": "visualization_type", "type": "str", "description": "Type of visualization"}
+              ],
+              "returns": "bool (True if lock acquired, False otherwise)"
+            },
+            {
+              "signature": "def release_lock(self, visualization_type)",
+              "purpose": "Release lock for a specific visualization type",
+              "parameters": [
+                {"name": "visualization_type", "type": "str", "description": "Type of visualization"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def cleanup(self)",
+              "purpose": "Clean up resources for the current thread",
+              "returns": "None"
+            }
+          ]
+        },
+        {
+          "name": "ComponentVisualizer",
+          "purpose": "Visualizer for component relationships and error propagation without relying on PyGraphviz",
+          "attributes": [
+            {"name": "component_schema", "type": "dict", "description": "Component schema dictionary"},
+            {"name": "component_graph", "type": "nx.DiGraph", "description": "Directed graph of component relationships"},
+            {"name": "primary_issue_component", "type": "str", "description": "Primary issue component (for highlighting)"},
+            {"name": "component_colors", "type": "dict", "description": "Color mapping for components"},
+            {"name": "default_color", "type": "str", "description": "Default color for unknown components"},
+            {"name": "root_cause_color", "type": "str", "description": "Special color for root cause component"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self, component_schema_path: str = None, component_graph: Any = None)",
+              "purpose": "Initialize visualizer with schema or graph",
+              "parameters": [
+                {"name": "component_schema_path", "type": "str", "description": "Path to component schema JSON"},
+                {"name": "component_graph", "type": "nx.DiGraph", "description": "Existing component graph (optional)"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def _get_graph_layout(self, G)",
+              "purpose": "Get layout for graph using available algorithms with robust fallbacks",
+              "parameters": [
+                {"name": "G", "type": "nx.Graph", "description": "NetworkX graph"}
+              ],
+              "returns": "dict of node positions",
+              "behavior": "Uses multi-layered fallback approach: pydot -> spectral -> shell -> spring"
+            },
+            {
+              "signature": "def set_primary_issue_component(self, component_id)",
+              "purpose": "Mark a component as the primary issue component",
+              "parameters": [
+                {"name": "component_id", "type": "str", "description": "Component to mark as primary"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def generate_component_relationship_diagram(self, output_dir: str, test_id: str = None, width=800, height=600) -> str",
+              "purpose": "Generate component relationship diagram using advanced layout techniques",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save the diagram"},
+                {"name": "test_id", "type": "str", "description": "Test ID for filename"},
+                {"name": "width", "type": "int", "description": "Width in pixels (unused, for compatibility)"},
+                {"name": "height", "type": "int", "description": "Height in pixels (unused, for compatibility)"}
+              ],
+              "returns": "str (path to generated image)",
+              "behavior": "Thread-safe, respects feature flags, includes robust fallback mechanisms"
+            },
+            {
+              "signature": "def generate_component_error_distribution(self, output_dir: str, test_id: str, component_summary: List[Dict] = None, clusters: Dict = None, primary_component: str = None) -> str",
+              "purpose": "Generate visualization of error distribution across components",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save visualization"},
+                {"name": "test_id", "type": "str", "description": "Test ID for filename"},
+                {"name": "component_summary", "type": "List[Dict]", "description": "Summary of components involved"},
+                {"name": "clusters", "type": "Dict", "description": "Dictionary of error clusters (optional)"},
+                {"name": "primary_component", "type": "str", "description": "Primary issue component"}
+              ],
+              "returns": "str (path to generated image)",
+              "behavior": "Thread-safe, respects feature flags, handles empty data gracefully"
+            },
+            {
+              "signature": "def generate_error_propagation_diagram(self, output_dir: str, test_id: str, error_graph=None) -> str",
+              "purpose": "Generate visualization of error propagation paths",
+              "parameters": [
+                {"name": "output_dir", "type": "str", "description": "Directory to save visualization"},
+                {"name": "test_id", "type": "str", "description": "Test ID for filename"},
+                {"name": "error_graph", "type": "nx.DiGraph or Dict", "description": "Error graph"}
+              ],
+              "returns": "str (path to generated image)",
+              "behavior": "Thread-safe, respects feature flags, handles different input formats"
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "signature": "def _is_feature_enabled(feature_name, default=False)",
+          "purpose": "Check if a feature is enabled with thread-safe fallback",
+          "parameters": [
+            {"name": "feature_name", "type": "str", "description": "Name of the feature flag in Config"},
+            {"name": "default", "type": "bool", "description": "Default value if flag doesn't exist"}
+          ],
+          "returns": "bool indicating if feature is enabled",
+          "behavior": "Uses thread-local cache for efficiency"
+        },
+        {
+          "signature": "def generate_component_visualization(output_dir, test_id, component_summary, relationships=None, primary_component=None)",
+          "purpose": "Generate a component relationship diagram (compatibility wrapper)",
+          "parameters": [
+            {"name": "output_dir", "type": "str", "description": "Directory to save diagram"},
+            {"name": "test_id", "type": "str", "description": "Test ID for filename"},
+            {"name": "component_summary", "type": "List[Dict]", "description": "Component summary data"},
+            {"name": "relationships", "type": "List[Dict]", "description": "Component relationships (optional)"},
+            {"name": "primary_component", "type": "str", "description": "Primary issue component (optional)"}
+          ],
+          "returns": "str (path to generated visualization) or None if generation fails",
+          "behavior": "Compatibility function for reports/visualizations.py"
+        }
+      ],
+      "usageExample": "# Create visualizer\nvisualizer = ComponentVisualizer('path/to/component_schema.json')\n\n# Set primary issue component\nvisualizer.set_primary_issue_component('soa')\n\n# Generate relationship diagram\ndiagram_path = visualizer.generate_component_relationship_diagram(\n    output_dir='/output/dir',\n    test_id='SXM-12345'\n)\n\n# Generate error distribution\ndistribution_path = visualizer.generate_component_error_distribution(\n    output_dir='/output/dir',\n    test_id='SXM-12345',\n    component_summary=[\n        {'id': 'soa', 'error_count': 10},\n        {'id': 'mimosa', 'error_count': 5}\n    ],\n    primary_component='soa'\n)"
+    },
+    {
+      "moduleName": "context_aware_clusterer.py",
+      "fileLocation": "components/context_aware_clusterer.py",
+      "purpose": "Provides enhanced error clustering with awareness of component relationships, temporal sequences, and cause-effect relationships.",
+      "dependencies": [
+        {"module": "sklearn.feature_extraction.text", "classes": ["TfidfVectorizer"]},
+        {"module": "sklearn.cluster", "classes": ["KMeans"]},
+        {"module": "networkx", "packages": ["nx"]}
+      ],
+      "classes": [
+        {
+          "name": "ContextAwareClusterer",
+          "purpose": "Enhanced error clustering with component awareness",
+          "attributes": [
+            {"name": "component_schema", "type": "dict", "description": "Component schema dictionary"},
+            {"name": "component_graph", "type": "nx.DiGraph", "description": "Directed graph of component relationships"},
+            {"name": "error_graph", "type": "nx.DiGraph", "description": "Directed graph of error relationships (built during clustering)"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self, component_schema_path: str)",
+              "purpose": "Initialize clusterer with component schema",
+              "parameters": [
+                {"name": "component_schema_path", "type": "str", "description": "Path to component schema JSON"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def cluster_errors(self, errors: List[Dict], num_clusters: Optional[int] = None) -> Dict[int, List[Dict]]",
+              "purpose": "Cluster errors with awareness of component relationships and temporal sequence",
+              "parameters": [
+                {"name": "errors", "type": "List[Dict]", "description": "List of error objects"},
+                {"name": "num_clusters", "type": "Optional[int]", "description": "Optional number of clusters (auto-determined if None)"}
+              ],
+              "returns": "Dict[int, List[Dict]] mapping cluster IDs to lists of errors",
+              "behavior": "Uses TF-IDF vectorization and KMeans clustering, enhanced with component and temporal information"
+            },
+            {
+              "signature": "def _normalize_error_text(self, text: str) -> str",
+              "purpose": "Normalize error text for better clustering by removing variable parts",
+              "parameters": [
+                {"name": "text", "type": "str", "description": "Original error text"}
+              ],
+              "returns": "str (normalized text)",
+              "behavior": "Replaces timestamps, IDs, file paths, etc. with placeholders"
+            },
+            {
+              "signature": "def _determine_optimal_clusters(self, matrix: np.ndarray, num_errors: int) -> int",
+              "purpose": "Determine optimal number of clusters based on dataset size",
+              "parameters": [
+                {"name": "matrix", "type": "np.ndarray", "description": "TF-IDF matrix"},
+                {"name": "num_errors", "type": "int", "description": "Number of errors"}
+              ],
+              "returns": "int (recommended number of clusters)",
+              "behavior": "Uses heuristic: sqrt of number of samples, capped between 2 and 8"
+            },
+            {
+              "signature": "def _enhance_clusters(self, clusters: Dict[int, List[Dict]], components: List[str]) -> Dict[int, List[Dict]]",
+              "purpose": "Enhance clusters with component and temporal information",
+              "parameters": [
+                {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary of initial clusters"},
+                {"name": "components", "type": "List[str]", "description": "List of component IDs corresponding to errors"}
+              ],
+              "returns": "Dict[int, List[Dict]] of enhanced clusters",
+              "behavior": "Analyzes component distribution and temporal relationships between clusters"
+            },
+            {
+              "signature": "def _are_components_related(self, comp1: str, comp2: str) -> bool",
+              "purpose": "Check if two components have a relationship in the component graph",
+              "parameters": [
+                {"name": "comp1", "type": "str", "description": "First component ID"},
+                {"name": "comp2", "type": "str", "description": "Second component ID"}
+              ],
+              "returns": "bool (True if related, False otherwise)",
+              "behavior": "Checks for direct connection or path with max length 2"
+            },
+            {
+              "signature": "def _build_error_graph(self, clusters: Dict[int, List[Dict]], errors: List[Dict]) -> nx.DiGraph",
+              "purpose": "Build a directed graph of error relationships",
+              "parameters": [
+                {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary of clusters"},
+                {"name": "errors", "type": "List[Dict]", "description": "Original list of errors"}
+              ],
+              "returns": "nx.DiGraph of error relationships",
+              "behavior": "Adds edges based on temporal sequence and causality likelihood"
+            },
+            {
+              "signature": "def get_root_cause_errors(self, clusters: Dict[int, List[Dict]]) -> List[Dict]",
+              "purpose": "Get errors identified as potential root causes",
+              "parameters": [
+                {"name": "clusters", "type": "Dict[int, List[Dict]]", "description": "Dictionary of clustered errors"}
+              ],
+              "returns": "List[Dict] of root cause errors",
+              "behavior": "Filters errors with is_root_cause=True and sorts by severity"
+            },
+            {
+              "signature": "def get_causality_paths(self) -> List[List[Dict]]",
+              "purpose": "Get potential causality paths from the error graph",
+              "returns": "List[List[Dict]] of error paths representing causal chains",
+              "behavior": "Finds paths from source nodes to target nodes in the error graph"
+            },
+            {
+              "signature": "def export_error_graph(self, output_path: str, test_id: str = \"Unknown\") -> str",
+              "purpose": "Export error graph as a JSON file for visualization",
+              "parameters": [
+                {"name": "output_path", "type": "str", "description": "Directory to save the JSON file"},
+                {"name": "test_id", "type": "str", "description": "Test ID for filename"}
+              ],
+              "returns": "str (path to exported JSON file)",
+              "behavior": "Converts graph to dictionary and serializes to JSON"
+            }
+          ]
+        }
+      ],
+      "usageExample": "# Initialize clusterer\nclusterer = ContextAwareClusterer('path/to/component_schema.json')\n\n# Cluster errors\nerrors = [\n    {'text': 'Error in app', 'file': 'app_debug.log', 'component': 'soa', 'timestamp': '2023-01-01T12:00:00'},\n    {'text': 'Signal error', 'file': 'mimosa.log', 'component': 'mimosa', 'timestamp': '2023-01-01T12:01:00'}\n]\n\nclusters = clusterer.cluster_errors(errors)\n\n# Get root cause errors\nroot_cause_errors = clusterer.get_root_cause_errors(clusters)\n\n# Get causality paths\ncausality_paths = clusterer.get_causality_paths()\n\n# Export error graph\ngraph_path = clusterer.export_error_graph('/output/dir', 'SXM-12345')"
+    },
+    {
+      "moduleName": "component_integration.py",
+      "fileLocation": "components/component_integration.py",
+      "purpose": "Integrates component analysis, relationship visualization, and error clustering to provide comprehensive component-aware analysis.",
+      "dependencies": [
+        {"module": "components.component_analyzer", "classes": ["ComponentAnalyzer"]},
+        {"module": "components.component_visualizer", "classes": ["ComponentVisualizer"]},
+        {"module": "components.context_aware_clusterer", "classes": ["ContextAwareClusterer"]}
+      ],
+      "classes": [
+        {
+          "name": "ComponentIntegration",
+          "purpose": "Integration layer for component relationship analysis, visualizations, and enhanced error clustering",
+          "attributes": [
+            {"name": "analyzer", "type": "ComponentAnalyzer", "description": "Component analyzer instance"},
+            {"name": "visualizer", "type": "ComponentVisualizer", "description": "Component visualizer instance"},
+            {"name": "clusterer", "type": "ContextAwareClusterer", "description": "Context-aware clusterer instance"},
+            {"name": "schema_path", "type": "str", "description": "Path to component schema"},
+            {"name": "feature_cache", "type": "dict", "description": "Cache for feature flags"}
+          ],
+          "methods": [
+            {
+              "signature": "def __init__(self, component_schema_path: str)",
+              "purpose": "Initialize with component schema",
+              "parameters": [
+                {"name": "component_schema_path", "type": "str", "description": "Path to component schema JSON"}
+              ],
+              "returns": "None"
+            },
+            {
+              "signature": "def _is_feature_enabled(self, feature_name, default=False)",
+              "purpose": "Check if a feature is enabled with thread-safe fallback",
+              "parameters": [
+                {"name": "feature_name", "type": "str", "description": "Name of the feature flag in Config"},
+                {"name": "default", "type": "bool", "description": "Default value if flag doesn't exist"}
+              ],
+              "returns": "bool indicating if feature is enabled",
+              "behavior": "Uses thread-local cache for efficiency"
+            },
+            {
+              "signature": "def analyze_logs(self, log_entries: List[Any], errors: List[Any], output_dir: str, test_id: str) -> Dict[str, Any]",
+              "purpose": "Perform comprehensive component-aware analysis",
+              "parameters": [
+                {"name": "log_entries", "type": "List[Any]", "description": "List of log entries from all files"},
+                {"name": "errors", "type": "List[Any]", "description": "List of detected errors"},
+                {"name": "output_dir", "type": "str", "description": "Directory for output files"},
+                {"name": "test_id", "type": "str", "description": "Test ID for file naming"}
+              ],
+              "returns": "Dict[str, Any] containing analysis results and paths to generated files",
+              "behavior": "Coordinates the entire analysis pipeline with error handling and feature flags"
+            },
+            {
+              "signature": "def get_enhanced_report_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]",
+              "purpose": "Generate additional data for enhancing test reports",
+              "parameters": [
+                {"name": "analysis_results", "type": "Dict[str, Any]", "description": "Results from analyze_logs"}
+              ],
+              "returns": "Dict[str, Any] with report enhancement data",
+              "behavior": "Extracts component diagrams, root cause component, and clustering information"
+            }
+          ]
+        }
+      ],
+      "usageExample": "# Initialize integration\nintegration = ComponentIntegration('path/to/component_schema.json')\n\n# Analyze logs\nresults = integration.analyze_logs(\n    log_entries=all_log_entries,\n    errors=detected_errors,\n    output_dir='/output/dir',\n    test_id='SXM-12345'\n)\n\n# Get enhanced report data\nreport_data = integration.get_enhanced_report_data(results)\n\n# Access analysis files\ncomponent_diagram = results['analysis_files'].get('component_diagram')\nerror_propagation = results['analysis_files'].get('error_propagation')\ncomponent_distribution = results['analysis_files'].get('component_distribution')\n\n# Access component analysis\nprimary_component = results['primary_issue_component']\ncomponent_analysis = results['component_analysis']"
+    }
+  ],
+  "architectureAndProcessingFlows": {
+    "componentIdentificationFlow": {
+      "description": "Process for identifying components from log entries",
+      "steps": [
+        {"number": 1, "description": "Receive log entries or error objects"},
+        {"number": 2, "description": "Extract filename from each entry"},
+        {"number": 3, "description": "Check component cache for previously identified components"},
+        {"number": 4, "description": "If not in cache, identify component based on filename patterns"},
+        {"number": 5, "description": "Apply special case rules for known filenames (app_debug.log → soa, etc.)"},
+        {"number": 6, "description": "Store component ID and source in cache for future lookups"},
+        {"number": 7, "description": "Update entry with component information in-place"},
+        {"number": 8, "description": "Track component counts for primary component identification"},
+        {"number": 9, "description": "Return enriched entries"}
+      ],
+      "codeExample": "# Component identification flow\nanalyzer = ComponentAnalyzer()\n\n# Step 1: Process log entries\nfor entry in log_entries:\n    # Steps 2-7: Identify and assign component\n    analyzer.assign_component_to_error(entry)\n    \n# Step 8: Identify primary component\nprimary_component = analyzer.identify_primary_component()\n\n# Step 9: Generate component summary\ncomponent_summary = analyzer.generate_component_summary()"
+    },
+    "visualizationGenerationFlow": {
+      "description": "Process for generating component visualizations",
+      "steps": [
+        {"number": 1, "description": "Initialize visualizer with component schema or graph"},
+        {"number": 2, "description": "Set primary issue component for highlighting"},
+        {"number": 3, "description": "Check if visualization feature is enabled via feature flags"},
+        {"number": 4, "description": "Acquire thread lock for the specific visualization type"},
+        {"number": 5, "description": "Configure matplotlib backend for thread safety"},
+        {"number": 6, "description": "Generate visualization based on type:"},
+        {"number": 6.1, "description": "For relationship diagrams: Build graph and use multi-layer layout algorithm"},
+        {"number": 6.2, "description": "For error distribution: Extract component data and generate bar chart"},
+        {"number": 6.3, "description": "For error propagation: Build causality graph and visualize paths"},
+        {"number": 7, "description": "Save visualization with proper cleanup to prevent memory leaks"},
+        {"number": 8, "description": "Verify generated image is valid"},
+        {"number": 9, "description": "Release thread lock"},
+        {"number": 10, "description": "Return path to generated visualization"}
+      ],
+      "codeExample": "# Visualization generation flow\nvisualizer = ComponentVisualizer('path/to/component_schema.json')\n\n# Steps 1-2: Initialize and set primary component\nvisualizer.set_primary_issue_component('soa')\n\n# Steps 3-10: Generate visualization with thread safety\nwith _visualization_locks[\"component\"]:\n    # Configure matplotlib backend\n    plt = visualizer._configure_matplotlib_backend()\n    \n    # Get layout with optimized algorithm selection\n    pos = visualizer._get_graph_layout(visualizer.component_graph)\n    \n    # Draw graph components (nodes, edges, labels)\n    # ...\n    \n    # Save and cleanup\n    image_path = visualizer._save_figure_with_cleanup(fig, path)\n    \n    # Verify image\n    valid = visualizer._verify_image(image_path)\n\n# Return path to visualization\nreturn image_path"
+    },
+    "errorClusteringFlow": {
+      "description": "Process for context-aware error clustering",
+      "steps": [
+        {"number": 1, "description": "Initialize clusterer with component schema"},
+        {"number": 2, "description": "Extract error texts for TF-IDF vectorization"},
+        {"number": 3, "description": "Normalize error texts by removing variable parts"},
+        {"number": 4, "description": "Vectorize errors using TF-IDF"},
+        {"number": 5, "description": "Determine optimal number of clusters based on data size"},
+        {"number": 6, "description": "Apply KMeans clustering"},
+        {"number": 7, "description": "Group errors by assigned cluster"},
+        {"number": 8, "description": "Enhance clusters with component information:"},
+        {"number": 8.1, "description": "Analyze component distribution in each cluster"},
+        {"number": 8.2, "description": "Identify related clusters based on component relationships"},
+        {"number": 8.3, "description": "Analyze temporal relationships between clusters"},
+        {"number": 8.4, "description": "Classify clusters as root cause vs. symptoms"},
+        {"number": 9, "description": "Build error relationship graph for causality analysis"},
+        {"number": 10, "description": "Return enhanced clusters with identifiers"}
+      ],
+      "codeExample": "# Error clustering flow\nclusterer = ContextAwareClusterer('path/to/component_schema.json')\n\n# Steps 1-7: Basic clustering\ntexts = [error.get('text', '') for error in errors]\ncomponents = [error.get('component', 'unknown') for error in errors]\n\n# Vectorize error texts\ntfidf_matrix = clusterer._vectorize_errors(texts)\n\n# Determine cluster count and apply KMeans\nnum_clusters = clusterer._determine_optimal_clusters(tfidf_matrix, len(errors))\nkmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)\nlabels = kmeans.fit_predict(tfidf_matrix)\n\n# Group by cluster\nclusters = defaultdict(list)\nfor idx, label in enumerate(labels):\n    clusters[int(label)].append(errors[idx])\n\n# Steps 8-10: Enhance clusters\nenhanced_clusters = clusterer._enhance_clusters(dict(clusters), components)\nclusterer.error_graph = clusterer._build_error_graph(enhanced_clusters, errors)\n\nreturn enhanced_clusters"
+    },
+    "integrationFlow": {
+      "description": "Complete integration flow for component analysis",
+      "steps": [
+        {"number": 1, "description": "Initialize component integration with schema"},
+        {"number": 2, "description": "Initialize thread-local storage for thread safety"},
+        {"number": 3, "description": "Enrich logs with component information"},
+        {"number": 4, "description": "Generate baseline component relationship diagram if enabled"},
+        {"number": 5, "description": "Analyze component errors and identify primary issue component"},
+        {"number": 6, "description": "Generate error propagation visualization if enabled"},
+        {"number": 7, "description": "Generate component error distribution visualization if enabled"},
+        {"number": 8, "description": "Perform context-aware error clustering"},
+        {"number": 9, "description": "Extract root cause errors and causality paths"},
+        {"number": 10, "description": "Export error graph and component analysis to JSON"},
+        {"number": 11, "description": "Return consolidated results with file paths and metrics"}
+      ],
+      "codeExample": "# Complete integration flow\nintegration = ComponentIntegration('path/to/component_schema.json')\n\n# Initialize results structure\nresults = {\n    \"test_id\": test_id,\n    \"timestamp\": datetime.now().isoformat(),\n    \"analysis_files\": {},\n    \"metrics\": {}\n}\n\n# Step 3: Enrich logs with component information\nlog_entries = integration.analyzer.enrich_log_entries_with_components(log_entries)\nerrors = integration.analyzer.enrich_log_entries_with_components(errors)\n\n# Step 4: Generate baseline component relationship diagram\nif integration._is_feature_enabled(\"ENABLE_COMPONENT_RELATIONSHIPS\", True):\n    relationship_path = integration.visualizer.generate_component_relationship_diagram(\n        output_dir, test_id\n    )\n    results[\"analysis_files\"][\"component_diagram\"] = relationship_path\n\n# Step 5: Analyze component errors\ncomponent_analysis = integration.analyzer.analyze_component_failures(errors)\nprimary_issue_component = component_analysis.get(\"root_cause_component\")\nif primary_issue_component:\n    integration.visualizer.set_primary_issue_component(primary_issue_component)\n    results[\"primary_issue_component\"] = primary_issue_component\n\n# Step 6-7: Generate visualizations\nif integration._is_feature_enabled(\"ENABLE_ERROR_PROPAGATION\", True):\n    error_graph = component_analysis.get(\"error_graph\")\n    propagation_path = integration.visualizer.generate_error_propagation_diagram(\n        output_dir, test_id, error_graph\n    )\n    results[\"analysis_files\"][\"error_propagation\"] = propagation_path\n\nif integration._is_feature_enabled(\"ENABLE_COMPONENT_DISTRIBUTION\", True):\n    component_summary = component_analysis.get(\"component_summary\", [])\n    error_chart_path = integration.visualizer.generate_component_error_distribution(\n        output_dir, test_id, component_summary, None, primary_issue_component\n    )\n    results[\"analysis_files\"][\"component_distribution\"] = error_chart_path\n\n# Steps 8-9: Perform clustering and extract causality\ncomponent_aware_clusters = integration.clusterer.cluster_errors(errors)\nroot_cause_errors = integration.clusterer.get_root_cause_errors(component_aware_clusters)\ncausality_paths = integration.clusterer.get_causality_paths()\n\n# Step 10: Export analysis data\nerror_graph_path = integration.clusterer.export_error_graph(json_dir, test_id)\nresults[\"analysis_files\"][\"error_graph\"] = error_graph_path\n\n# Step 11: Return consolidated results\nreturn results"
+    }
+  },
+  "integrationPoints": {
+    "entryPoints": [
+      {
+        "name": "direct_component_analyzer.assign_components_and_relationships",
+        "signature": "def assign_components_and_relationships(errors: List[Dict]) -> Tuple[List[Dict], List[Dict], str]",
+        "description": "Primary entry point for basic component identification",
+        "parameters": [
+          {"name": "errors", "type": "List[Dict]", "description": "List of error dictionaries"}
+        ],
+        "returns": [
+          {"name": "processed_errors", "type": "List[Dict]", "description": "Errors with component information"},
+          {"name": "component_summary", "type": "List[Dict]", "description": "Summary of component analysis"},
+          {"name": "primary_issue_component", "type": "str", "description": "Primary issue component"}
+        ],
+        "exampleUsage": "errors_with_components, component_summary, primary_issue_component = assign_components_and_relationships(errors)"
+      },
+      {
+        "name": "ComponentIntegration.analyze_logs",
+        "signature": "def analyze_logs(self, log_entries: List[Any], errors: List[Any], output_dir: str, test_id: str) -> Dict[str, Any]",
+        "description": "Main entry point for comprehensive component analysis",
+        "parameters": [
+          {"name": "log_entries", "type": "List[Any]", "description": "List of all log entries"},
+          {"name": "errors", "type": "List[Any]", "description": "List of detected errors"},
+          {"name": "output_dir", "type": "str", "description": "Directory for output files"},
+          {"name": "test_id", "type": "str", "description": "Test ID for file naming"}
+        ],
+        "returns": [
+          {"name": "results", "type": "Dict[str, Any]", "description": "Analysis results and file paths"}
+        ],
+        "exampleUsage": "results = integration.analyze_logs(log_entries, errors, output_dir, test_id)"
+      },
+      {
+        "name": "ComponentVisualizer.generate_component_relationship_diagram",
+        "signature": "def generate_component_relationship_diagram(self, output_dir: str, test_id: str = None, width=800, height=600) -> str",
+        "description": "Entry point for component relationship visualization",
+        "parameters": [
+          {"name": "output_dir", "type": "str", "description": "Directory to save the diagram"},
+          {"name": "test_id", "type": "str", "description": "Test ID for filename"},
+          {"name": "width", "type": "int", "description": "Width in pixels (unused, for compatibility)"},
+          {"name": "height", "type": "int", "description": "Height in pixels (unused, for compatibility)"}
+        ],
+        "returns": [
+          {"name": "image_path", "type": "str", "description": "Path to generated image"}
+        ],
+        "exampleUsage": "diagram_path = visualizer.generate_component_relationship_diagram(output_dir, test_id)"
+      }
+    ],
+    "componentPreservationMechanisms": {
+      "description": "Mechanisms for preserving component information throughout processing",
+      "approaches": [
+        {
+          "name": "Extract-Process-Restore Pattern",
+          "description": "Extract component fields before processing, then restore them after",
+          "example": "def process_with_preservation(data):\n    # Extract component fields\n    component_fields = {}\n    for field in COMPONENT_FIELDS:\n        if field in data:\n            component_fields[field] = data[field]\n    \n    # Process data\n    processed_data = process_function(data)\n    \n    # Restore component fields\n    for field, value in component_fields.items():\n        processed_data[field] = value\n        \n    return processed_data"
+        },
+        {
+          "name": "Component-Aware Serialization",
+          "description": "Use specialized JSON encoder that preserves component fields",
+          "example": "def save_with_component_preservation(data, path, primary_component):\n    from reports.base import ComponentAwareEncoder\n    \n    with open(path, 'w', encoding='utf-8') as f:\n        json.dump(data, f, cls=lambda *args, **kwargs: ComponentAwareEncoder(\n            *args, primary_issue_component=primary_component, **kwargs\n        ), indent=2)"
+        },
+        {
+          "name": "Deep Copy and Modification",
+          "description": "Create deep copy before modification to avoid altering original data",
+          "example": "def assign_components_and_relationships(errors):\n    # Create deep copy to avoid modifying original\n    processed_errors = copy.deepcopy(errors)\n    \n    # Process the copy\n    for error in processed_errors:\n        analyzer.assign_component_to_error(error)\n        \n    return processed_errors, component_summary, primary_issue_component"
+        }
+      ]
+    },
+    "threadSafetyMechanisms": {
+      "description": "Mechanisms for ensuring thread safety in component operations",
+      "approaches": [
+        {
+          "name": "Thread-Local Storage",
+          "description": "Use thread-local storage for feature flags and visualization state",
+          "example": "# Thread-local storage\n_visualization_local = threading.local()\n\ndef _is_feature_enabled(feature_name, default=False):\n    # Use thread-local cache if available\n    if not hasattr(_visualization_local, 'feature_cache'):\n        _visualization_local.feature_cache = {}\n    \n    # Check cache first\n    if feature_name in _visualization_local.feature_cache:\n        return _visualization_local.feature_cache[feature_name]\n    \n    # Get from config and cache result\n    result = getattr(Config, feature_name, default)\n    _visualization_local.feature_cache[feature_name] = result\n    \n    return result"
+        },
+        {
+          "name": "Visualization Locks",
+          "description": "Use locks to prevent concurrent visualization generation",
+          "example": "# Visualization locks\n_visualization_locks = {\n    \"component\": threading.Lock(),\n    \"component_errors\": threading.Lock(),\n    \"error_propagation\": threading.Lock()\n}\n\ndef generate_visualization(...):\n    # Acquire lock to prevent concurrent generation\n    with _visualization_locks[\"component\"]:\n        # Generate visualization\n        # ...\n        return image_path"
+        },
+        {
+          "name": "Matplotlib Configuration",
+          "description": "Configure matplotlib for thread safety",
+          "example": "def _configure_matplotlib_backend():\n    # Import matplotlib and explicitly use a non-GUI backend\n    import matplotlib\n    \n    # Force Agg backend to avoid tkinter thread issues\n    matplotlib.use('Agg', force=True)\n    \n    import matplotlib.pyplot as plt\n    \n    # Configure global settings\n    plt.rcParams['figure.max_open_warning'] = 50\n    plt.rcParams['font.size'] = 10\n    \n    return plt"
+        }
+      ]
+    }
+  },
+  "criticalMechanisms": {
+    "componentIdentificationOptimizations": {
+      "description": "Optimizations for component identification to improve performance",
+      "mechanisms": [
+        {
+          "name": "Component Cache",
+          "description": "Cache component identification results to avoid redundant processing",
+          "implementation": "class ComponentCache:\n    def __init__(self, max_size: int = 1000):\n        self.cache = {}\n        self.max_size = max_size\n    \n    def get(self, text: str) -> Optional[str]:\n        if not text:\n            return None\n        # Use a more efficient hash for cache key\n        cache_key = hash(text.lower())\n        return self.cache.get(cache_key)\n    \n    def set(self, text: str, component: str) -> None:\n        if not text:\n            return\n        \n        cache_key = hash(text.lower())\n        \n        # Manage cache size\n        if len(self.cache) >= self.max_size:\n            # Clear half the cache when full\n            items = list(self.cache.items())\n            self.cache = dict(items[len(items)//2:])\n        \n        self.cache[cache_key] = component"
+        },
+        {
+          "name": "Error ID Generation",
+          "description": "Generate unique immutable identifiers for errors to use as cache keys",
+          "implementation": "def _get_error_id(self, error: Dict) -> str:\n    # Use a combination of file and first 100 chars of text\n    file_str = str(error.get('file', ''))\n    text_str = str(error.get('text', ''))[:100] if 'text' in error else ''\n    return f\"{file_str}:{hash(text_str)}\""
+        },
+        {
+          "name": "Batch Processing",
+          "description": "Process errors in batches instead of individually",
+          "implementation": "# Process all errors in one batch\nfor error in errors:\n    analyzer.assign_component_to_error(error)\n\n# Identify primary component once\nprimary_issue_component = analyzer.identify_primary_component()"
+        }
+      ]
+    },
+    "visualizationLayoutAlgorithms": {
+      "description": "Multi-layered layout algorithms for component visualization without PyGraphviz dependency",
+      "mechanisms": [
+        {
+          "name": "Fallback Layout System",
+          "description": "Use a series of layout algorithms with robust fallbacks",
+          "implementation": "def _get_graph_layout(self, G):\n    # Check graph size to optimize layout approach\n    node_count = G.number_of_nodes()\n    if node_count == 0:\n        return {}\n    \n    # For very small graphs, spring layout is sufficient\n    if node_count <= 3:\n        return nx.spring_layout(G, seed=42)\n    \n    # First attempt: Try pydot (part of NetworkX)\n    try:\n        import pydot\n        from networkx.drawing.nx_pydot import graphviz_layout\n        # Silence warning messages\n        with warnings.catch_warnings():\n            warnings.simplefilter(\"ignore\")\n            return graphviz_layout(G, prog='dot')\n    except Exception as e:\n        logging.debug(f\"Pydot layout failed ({str(e)}), trying next option\")\n    \n    # Second attempt: Try spectral layout\n    try:\n        return nx.spectral_layout(G)\n    except Exception as e:\n        logging.debug(f\"Spectral layout failed ({str(e)}), trying next option\")\n    \n    # Third attempt: Try shell layout\n    try:\n        # Group nodes by type\n        groups = []\n        seen = set()\n        \n        type_groups = defaultdict(list)\n        for node in G.nodes():\n            node_type = G.nodes[node].get(\"type\", \"unknown\")\n            type_groups[node_type].append(node)\n            \n        # Create groups\n        for group_type in [\"application\", \"proxy\", \"platform\", \"unknown\"]:\n            if group_type in type_groups and type_groups[group_type]:\n                groups.append(type_groups[group_type])\n                seen.update(type_groups[group_type])\n        \n        # Add remaining nodes\n        remaining = [node for node in G.nodes() if node not in seen]\n        if remaining:\n            groups.append(remaining)\n            \n        # Use shell layout with groups\n        if groups:\n            return nx.shell_layout(G, groups)\n    except Exception as e:\n        logging.debug(f\"Shell layout failed ({str(e)}), falling back to spring layout\")\n    \n    # Final fallback: Enhanced spring layout\n    return nx.spring_layout(\n        G, \n        k=0.3 + (0.1 / max(node_count, 1)),  # Dynamic spacing\n        iterations=100,                       # More iterations\n        seed=42                               # Consistent layout\n    )"
+        },
+        {
+          "name": "Dynamic Figure Sizing",
+          "description": "Calculate appropriate figure size based on graph complexity",
+          "implementation": "def _calculate_figure_size(self, G):\n    # Base size\n    width = 10\n    height = 8\n    \n    # Get node count\n    node_count = G.number_of_nodes()\n    \n    # Adjust based on graph size\n    if node_count <= 5:\n        width = 8\n        height = 6\n    elif node_count <= 10:\n        width = 10\n        height = 8\n    elif node_count <= 20:\n        width = 12\n        height = 10\n    else:\n        # For very large graphs\n        width = 14\n        height = 12\n            \n    return (width, height)"
+        },
+        {
+          "name": "Figure Cleanup",
+          "description": "Save figure with proper cleanup to prevent memory leaks",
+          "implementation": "def _save_figure_with_cleanup(self, fig, image_path, dpi=100):\n    try:\n        # Ensure directory exists\n        os.makedirs(os.path.dirname(image_path), exist_ok=True)\n        \n        # Save figure with specified DPI\n        fig.savefig(image_path, bbox_inches='tight', dpi=dpi)\n        return image_path\n    finally:\n        # Always close figure to free memory, even if save fails\n        plt.close(fig)"
+        }
+      ]
+    },
+    "errorClusteringAlgorithms": {
+      "description": "Advanced error clustering algorithms with component and temporal awareness",
+      "mechanisms": [
+        {
+          "name": "Error Text Normalization",
+          "description": "Normalize error text by replacing variable parts with placeholders",
+          "implementation": "def _normalize_error_text(self, text: str) -> str:\n    if not text:\n        return \"\"\n        \n    # Replace timestamps\n    text = re.sub(r'\\d{2}:\\d{2}:\\d{2}', 'TIMESTAMP', text)\n    \n    # Replace IDs, UUIDs\n    text = re.sub(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', 'UUID', text)\n    \n    # Replace file paths but keep the file name\n    text = re.sub(r'(?:[a-zA-Z]:\\\\|\\/)(?:[^\\\\\\\/]+\\\\|\\/)+([^\\\\\\\/]+)', r'PATH/\\1', text)\n    \n    # Replace memory addresses\n    text = re.sub(r'0x[0-9a-f]+', 'MEMORY_ADDR', text)\n    \n    # Replace sequence numbers\n    text = re.sub(r'\\b\\d+\\b', 'NUM', text)\n    \n    # Lower case\n    text = text.lower()\n    \n    return text"
+        },
+        {
+          "name": "Temporal Relationship Analysis",
+          "description": "Analyze temporal relationships between errors in different clusters",
+          "implementation": "def _analyze_temporal_relationships(self, clusters):\n    # Extract timestamps for each cluster\n    cluster_timestamps = {}\n    for cluster_id, errors in clusters.items():\n        timestamps = []\n        for error in errors:\n            ts = error.get('timestamp')\n            if ts:\n                dt_ts = self._ensure_datetime(ts)\n                if dt_ts:\n                    timestamps.append(dt_ts)\n        \n        if timestamps:\n            cluster_timestamps[cluster_id] = {\n                'earliest': min(timestamps),\n                'latest': max(timestamps),\n                'count': len(timestamps)\n            }\n    \n    # Identify sequence relationships\n    sequence_graph = nx.DiGraph()\n    for c1 in cluster_timestamps:\n        for c2 in cluster_timestamps:\n            if c1 != c2:\n                # If c1's earliest error is before c2's earliest error\n                if cluster_timestamps[c1]['earliest'] < cluster_timestamps[c2]['earliest']:\n                    # Add an edge from c1 to c2\n                    weight = (cluster_timestamps[c2]['earliest'] - \n                             cluster_timestamps[c1]['earliest']).total_seconds()\n                    sequence_graph.add_edge(c1, c2, weight=weight)\n    \n    # Identify

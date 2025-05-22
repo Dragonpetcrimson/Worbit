@@ -1,0 +1,270 @@
+{
+  "components": [
+    {
+      "id": "soa",
+      "name": "SOA",
+      "description": "SOA - SiriusXM application running on Android Automotive OS (AAOS)",
+      "type": "application",
+      "logSources": ["adb", "appium*.log", "app_debug.log"],
+      "receives_from": ["phoebe", "mimosa"],
+      "sends_to": ["charles"],
+      "parent": "android",
+      "errorPatterns": [
+        "(?i)exception.*?com\\.siriusxm",
+        "(?i)soa.*?error",
+        "(?i)failed to load.*?channel",
+        "(?i)null pointer.*?siriusxm",
+        "(?i)\\[HTTP\\]",
+        "(?i)AppiumDriver",
+        "(?i)EspressoDriver",
+        "(?i)siriusxm",
+        "(?i)com\\.siriusxm",
+        "(?i)sxm:s:",
+        "(?i)^sxm\\b"
+      ]
+    },
+    {
+      "id": "android",
+      "name": "Android",
+      "description": "Android system and platform errors",
+      "type": "platform",
+      "logSources": ["app_debug.log", "appium*.log"],
+      "receives_from": [],
+      "sends_to": ["soa"],
+      "children": ["soa"],
+      "errorPatterns": [
+        "(?i)activitymanager(?!.*siriusxm)",
+        "(?i)packagemanager(?!.*siriusxm)",
+        "(?i)dalvikvmruntime",
+        "(?i)android\\.app\\.activity(?!.*siriusxm)",
+        "(?i)bluetoothmanager(?!.*siriusxm)",
+        "(?i)system\\.err(?!.*siriusxm)"
+      ]
+    },
+    {
+      "id": "mimosa",
+      "name": "Mimosa",
+      "description": "Provides fake testing data (Satellite/IP channel)",
+      "type": "test_data_provider",
+      "logSources": ["mimosa.log"],
+      "receives_from": ["smite"],
+      "sends_to": ["soa", "lapetus"],
+      "errorPatterns": [
+        "(?i)mimosa.*?error",
+        "(?i)failed to generate.*?data",
+        "(?i)could not simulate.*?signal"
+      ]
+    },
+    {
+      "id": "charles",
+      "name": "Charles",
+      "description": "Proxy for live data",
+      "type": "proxy",
+      "logSources": [".har"],
+      "receives_from": ["soa"],
+      "sends_to": ["phoebe"],
+      "errorPatterns": [
+        "(?i)connection.*?refused",
+        "(?i)timeout.*?exceeded",
+        "HTTP 4[0-9]{2}",
+        "HTTP 5[0-9]{2}"
+      ]
+    },
+    {
+      "id": "smite",
+      "name": "SMITE",
+      "description": "Head controller for automated and semi-automated testing",
+      "type": "test_controller",
+      "logSources": ["smite.log", "test_execution.log"],
+      "receives_from": ["user_interface"],
+      "sends_to": ["telesto"],
+      "errorPatterns": [
+        "(?i)smite.*?error",
+        "(?i)test execution.*?failed",
+        "(?i)cannot initialize.*?test"
+      ]
+    },
+    {
+      "id": "telesto",
+      "name": "Telesto",
+      "description": "Coordinates components",
+      "type": "coordinator",
+      "logSources": ["telesto.log"],
+      "receives_from": ["smite"],
+      "sends_to": ["mimosa", "phoebe", "lapetus", "arecibo"],
+      "errorPatterns": [
+        "(?i)telesto.*?error",
+        "(?i)coordination.*?failed",
+        "(?i)component.*?unreachable"
+      ]
+    },
+    {
+      "id": "arecibo",
+      "name": "Arecibo",
+      "description": "Monitors traffic from Phoebe",
+      "type": "monitor",
+      "logSources": ["arecibo.log"],
+      "receives_from": ["phoebe", "telesto"],
+      "sends_to": [],
+      "errorPatterns": [
+        "(?i)arecibo.*?error",
+        "(?i)monitoring.*?failed",
+        "(?i)invalid traffic.*?detected"
+      ]
+    },
+    {
+      "id": "phoebe",
+      "name": "Phoebe",
+      "description": "Proxy to run data to SOA",
+      "type": "proxy",
+      "logSources": ["phoebe.log"],
+      "receives_from": ["telesto", "lapetus", "charles"],
+      "sends_to": ["soa", "arecibo"],
+      "errorPatterns": [
+        "(?i)phoebe.*?error",
+        "(?i)proxy.*?failed",
+        "(?i)data transmission.*?error"
+      ]
+    },
+    {
+      "id": "lapetus",
+      "name": "Lapetus",
+      "description": "API to add channel and categories",
+      "type": "api_service",
+      "logSources": ["lapetus.log"],
+      "receives_from": ["telesto", "mimosa"],
+      "sends_to": ["phoebe"],
+      "errorPatterns": [
+        "(?i)lapetus.*?error",
+        "(?i)api.*?failed",
+        "(?i)channel configuration.*?error"
+      ]
+    },
+    {
+      "id": "translator",
+      "name": "Translator",
+      "description": "Translates commands between test framework and SOA",
+      "type": "translator",
+      "logSources": ["translator*.log"],
+      "receives_from": ["smite"],
+      "sends_to": ["soa"],
+      "errorPatterns": [
+        "(?i)SiriusXm\\.Translator",
+        "(?i)\\[TX\\]",
+        "(?i)\\[RX\\]",
+        "(?i)AutoSmiteTranslator",
+        "(?i)translator.*?error"
+      ]
+    },
+    {
+      "id": "ip_traffic",
+      "name": "IP Traffic",
+      "description": "Network traffic and HTTP communication",
+      "type": "communication",
+      "logSources": [".har", "charles*.log"],
+      "receives_from": ["charles", "phoebe"],
+      "sends_to": [],
+      "errorPatterns": [
+        "(?i)http[s]?://",
+        "(?i)get\\s+",
+        "(?i)post\\s+",
+        "(?i)http/[0-9]",
+        "(?i)status:\\s*[0-9]{3}",
+        "(?i)connection:\\s",
+        "(?i)har\\s"
+      ]
+    }
+  ],
+  "dataFlows": [
+    {
+      "source": "mimosa",
+      "target": "soa",
+      "description": "Fake test data (direct)",
+      "dataType": "test_signals"
+    },
+    {
+      "source": "mimosa",
+      "target": "lapetus",
+      "description": "Channel and category data",
+      "dataType": "channel_data"
+    },
+    {
+      "source": "lapetus",
+      "target": "phoebe",
+      "description": "Configured channel data",
+      "dataType": "channel_data"
+    },
+    {
+      "source": "phoebe",
+      "target": "soa",
+      "description": "Proxied data",
+      "dataType": "application_data"
+    },
+    {
+      "source": "phoebe",
+      "target": "arecibo",
+      "description": "Traffic monitoring",
+      "dataType": "traffic_data"
+    },
+    {
+      "source": "smite",
+      "target": "telesto",
+      "description": "Test configuration",
+      "dataType": "test_configuration"
+    },
+    {
+      "source": "smite",
+      "target": "translator",
+      "description": "Test commands",
+      "dataType": "control_commands"
+    },
+    {
+      "source": "telesto",
+      "target": "mimosa",
+      "description": "Test data configuration",
+      "dataType": "configuration"
+    },
+    {
+      "source": "telesto",
+      "target": "phoebe",
+      "description": "Proxy configuration",
+      "dataType": "configuration"
+    },
+    {
+      "source": "telesto",
+      "target": "lapetus",
+      "description": "API configuration",
+      "dataType": "configuration"
+    },
+    {
+      "source": "telesto",
+      "target": "arecibo",
+      "description": "Monitor configuration",
+      "dataType": "configuration"
+    },
+    {
+      "source": "soa",
+      "target": "charles",
+      "description": "HTTP requests",
+      "dataType": "traffic_data"
+    },
+    {
+      "source": "charles",
+      "target": "phoebe",
+      "description": "Proxied HTTP data",
+      "dataType": "traffic_data"
+    },
+    {
+      "source": "translator",
+      "target": "soa",
+      "description": "Test commands",
+      "dataType": "control_commands"
+    },
+    {
+      "source": "android",
+      "target": "soa",
+      "description": "Platform services",
+      "dataType": "system_services"
+    }
+  ]
+}
