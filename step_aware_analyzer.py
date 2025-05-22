@@ -366,6 +366,10 @@ def generate_step_report(
         # Fallback to os.path.relpath if path_utils not available
         image_relative_path = os.path.relpath(timeline_image_path, output_dir) if timeline_image_path else ""
         logging.info(f"Using os.path.relpath for timeline image: {image_relative_path}")
+
+    # Normalize path separators for consistent HTML embedding
+    if image_relative_path:
+        image_relative_path = image_relative_path.replace(os.sep, "/")
     
     # Check for component analysis report
     component_report_file = f"{test_id}_component_report.html"
@@ -484,13 +488,21 @@ def generate_step_report(
             """
         
         # IMPLEMENTATION CHANGE (Module 3): Use unconditional embedding for timeline
-        html += f"""
-            <div id="timeline-section" class="timeline-container">
-                <h2>Test Execution Timeline</h2>
-                <img src="{image_relative_path}" alt="Execution timeline" class="timeline-image"/>
-                <p><em>Error points are color-coded by severity.</em></p>
-            </div>
-        """
+        if image_relative_path:
+            html += f"""
+                <div id="timeline-section" class="timeline-container">
+                    <h2>Test Execution Timeline</h2>
+                    <img src="{image_relative_path}" alt="Execution timeline" class="timeline-image"/>
+                    <p><em>Error points are color-coded by severity.</em></p>
+                </div>
+            """
+        else:
+            html += f"""
+                <div id="timeline-section" class="error-message">
+                    <p><strong>Timeline Image Unavailable</strong></p>
+                    <p>No timeline image could be generated for this report.</p>
+                </div>
+            """
         
         # Add component information if available
         if component_analysis and component_analysis.get("metrics", {}).get("root_cause_component"):
