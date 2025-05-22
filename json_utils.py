@@ -85,7 +85,11 @@ def serialize_to_json_file(
         Path to the output file
     """
     # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    dir_name = os.path.dirname(file_path)
+    if not dir_name:
+        # Use current directory when no directory part is provided
+        dir_name = "."
+    os.makedirs(dir_name, exist_ok=True)
     
     # Write with component awareness
     with open(file_path, 'w', encoding='utf-8') as f:
