@@ -254,18 +254,9 @@ def generate_step_report(
             if valid_timestamps == 0:
                 logging.error("ERROR: No valid timestamps extracted from logs. Timeline visualization will fail.")
     
-    # IMPLEMENTATION CHANGE (Module 1): Enrich step_dict with timestamp information before passing to build_step_dict
-    step_dict = {}
-    for step_num, logs in step_to_logs.items():
-        timestamps = [log.timestamp for log in logs if hasattr(log, 'timestamp') and log.timestamp]
-        valid_timestamps = [ts for ts in map(validate_timestamp, timestamps) if ts is not None]
-        if valid_timestamps:
-            entry = step_dict.setdefault(step_num, {})
-            entry['start_time'] = min(valid_timestamps)
-            entry['end_time'] = max(valid_timestamps)
-    
-    # Original call to build_step_dict now has enriched step_dict
-    timeline_step_dict = build_step_dict(step_to_logs, feature_file)
+    # Build the step dictionary with metadata used for timeline visualization
+    # This dictionary contains step names and start/end timestamps
+    step_dict = build_step_dict(step_to_logs, feature_file)
     
     report_path = os.path.join(output_dir, f"{test_id}_step_report.html")
     
@@ -274,16 +265,7 @@ def generate_step_report(
     if total_logs > 10000:
         logging.warning(f"Large dataset detected with {total_logs} log entries. Visualization may be slow.")
     
-    # Parse the feature file to get step descriptions
-    try:
-        parser = GherkinParser(feature_file)
-        steps = parser.parse()
-        if not steps:
-            logging.warning(f"No steps found in feature file: {feature_file}")
-        step_dict = {step.step_number: step for step in steps}
-    except Exception as e:
-        logging.error(f"Error parsing feature file {feature_file}: {str(e)}")
-        step_dict = {}  # Continue with empty step dictionary
+
     
     # Define supporting_images directory path - always use this consistent subdirectory
     images_dir = os.path.join(output_dir, "supporting_images")
@@ -311,10 +293,10 @@ def generate_step_report(
                 # Use cluster timeline if clusters are available
                 logging.info("Generating cluster timeline visualization")
                 timeline_image_path = generate_cluster_timeline_image(
-                    step_to_logs=step_to_logs, 
-                    step_dict=timeline_step_dict,  # Use our enhanced step_dict with durations 
+                    step_to_logs=step_to_logs,
+                    step_dict=step_dict,  # Use our enriched step_dict with durations
                     clusters=clusters,
-                    output_dir=output_dir, 
+                    output_dir=output_dir,
                     test_id=test_id
                 )
                 timeline_type = "cluster"
@@ -324,8 +306,8 @@ def generate_step_report(
                 logging.info("Generating standard timeline visualization")
                 timeline_image_path = generate_timeline_image(
                     step_to_logs=step_to_logs,
-                    step_dict=timeline_step_dict,  # Use our enhanced step_dict with durations
-                    output_dir=output_dir, 
+                    step_dict=step_dict,  # Use our enriched step_dict with durations
+                    output_dir=output_dir,
                     test_id=test_id
                 )
                 timeline_type = "standard"
@@ -539,7 +521,10 @@ def generate_step_report(
         for step_num, logs in sorted(step_to_logs.items()):
             found_steps = True
             step = step_dict.get(step_num)
-            step_text = f"{step.keyword} {step.text}" if step else f"Step {step_num} (Unknown)"
+            if isinstance(step, dict):
+                step_text = step.get("step_name", f"Step {step_num} (Unknown)")
+            else:
+                step_text = f"{step.keyword} {step.text}" if step else f"Step {step_num} (Unknown)"
             
             # Get format distribution
             formats = {}
