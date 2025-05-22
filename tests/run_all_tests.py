@@ -1017,6 +1017,21 @@ def generate_html_report(results, output_path):
             </div>
         </div>
         """
+
+    # Discover step report files relative to the HTML output directory
+    step_reports = []
+    search_dir = os.path.dirname(os.path.abspath(output_path))
+    for root_dir, _, files in os.walk(search_dir):
+        for file in files:
+            if file.endswith('_step_report.html'):
+                step_reports.append(os.path.relpath(os.path.join(root_dir, file), search_dir))
+
+    step_reports_html = ""
+    if step_reports:
+        step_reports_html += "<h2>Step Reports</h2><ul>"
+        for path in sorted(step_reports):
+            step_reports_html += f'<li><a href="{path}">{os.path.basename(path)}</a></li>'
+        step_reports_html += "</ul>"
     
     # Enhanced HTML template with better formatting
     html_content = f"""<!DOCTYPE html>
@@ -1093,7 +1108,9 @@ def generate_html_report(results, output_path):
         
         <h2>Category Results</h2>
         {category_results}
-        
+
+        {step_reports_html}
+
         <div class="timestamp">Report generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
     </div>
 </body>
