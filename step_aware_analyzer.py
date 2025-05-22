@@ -24,7 +24,8 @@ class Config:
     ENABLE_DIAGNOSTIC_CHECKS = False
 
 # Jinja2 environment for HTML templates
-TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
+# Use the shared templates in the reports package to ensure consistency
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "reports", "templates")
 env = Environment(
     loader=FileSystemLoader(TEMPLATE_DIR),
     autoescape=select_autoescape(["html", "xml"]),
