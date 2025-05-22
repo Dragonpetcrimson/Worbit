@@ -1287,6 +1287,58 @@ class TestStepAwareAnalyzer(unittest.TestCase):
         self.assertIn("Timeline could not be generated", html_content)
         self.assertNotIn('visualization_placeholder', html_content)
 
+    def test_generate_step_report_real_timeline(self):
+        """Verify a real timeline image is created and referenced in the report."""
+        if correlate_logs_with_steps is None:
+            self.skipTest("gherkin_log_correlator module not available")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Copy sample log to temporary location
+            logs_dir = os.path.join(temp_dir, "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            sample_src = os.path.join(os.path.dirname(__file__), "test_data", "logs", "sample.log")
+            sample_log = os.path.join(logs_dir, "sample.log")
+            shutil.copy(sample_src, sample_log)
+
+            # Create simple feature file with two steps
+            feature_file = os.path.join(temp_dir, "sample.feature")
+            with open(feature_file, "w", encoding="utf-8") as f:
+                f.write("Feature: Sample\n")
+                f.write("  Scenario: Demo\n")
+                f.write("    Given start\n")
+                f.write("    Then finish\n")
+
+            # Correlate logs with steps
+            step_to_logs = correlate_logs_with_steps(feature_file, [sample_log])
+
+            output_dir = os.path.join(temp_dir, "output")
+            os.makedirs(output_dir, exist_ok=True)
+
+            test_id = "SXM-TIMELINE"
+
+            # Generate the report using the real timeline generator
+            report_path = generate_step_report(
+                feature_file=feature_file,
+                logs_dir=logs_dir,
+                step_to_logs=step_to_logs,
+                output_dir=output_dir,
+                test_id=test_id
+            )
+
+            self.assertTrue(os.path.exists(report_path))
+
+            with open(report_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+
+            expected_img = f'src="supporting_images/{test_id}_timeline.png"'
+            self.assertIn(expected_img, html_content)
+            self.assertNotIn("placeholder", html_content.lower())
+
+            image_path = os.path.join(output_dir, "supporting_images", f"{test_id}_timeline.png")
+            self.assertTrue(os.path.exists(image_path))
+            self.assertGreater(os.path.getsize(image_path), 0)
+            self.assertNotIn("placeholder", os.path.basename(image_path))
+
 
 @TestRegistry.register(category='integration', importance=2)
 class TestBatchProcessor(unittest.TestCase):
