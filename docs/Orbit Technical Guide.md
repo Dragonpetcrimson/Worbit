@@ -510,10 +510,13 @@ def build_component_analysis(errors: List[Dict], primary_issue_component: str,
                           existing_analysis: Optional[Dict] = None) -> Dict[str, Any]:
     """Build comprehensive component analysis data structure."""
     
-def generate_component_report(output_dir: str, test_id: str, 
-                           component_analysis: Dict[str, Any], 
+def generate_component_report(output_dir: str, test_id: str,
+                           component_analysis: Dict[str, Any],
                            primary_issue_component: str) -> str:
     """Generate component analysis report."""
+```
+HTML reports are rendered using Jinja2 templates stored in `reports/templates`.
+```
 ```
 
 #### Visualizations (`reports/visualizations.py`)

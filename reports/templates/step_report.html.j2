@@ -1,0 +1,89 @@
+{% extends "base.html.j2" %}
+{% block content %}
+<h1>Step-Aware Log Analysis for {{ test_id }}</h1>
+<div class="summary">
+    <p><strong>Feature File:</strong> {{ feature_file }}</p>
+    <p><strong>Log Directory:</strong> {{ logs_dir }}</p>
+    <p><strong>Total Steps:</strong> {{ total_steps }}</p>
+    <p><strong>Steps with Logs:</strong> {{ steps_with_logs }}</p>
+    <p><strong>Total Log Entries:</strong> {{ total_logs }}</p>
+    <p><strong>Generated:</strong> {{ generated }}</p>
+    <p><em>This report shows log entries correlated with each Gherkin test step.</em></p>
+</div>
+{% if component_report_available %}
+<div class="report-link">
+    <h3>📊 Component Analysis Available</h3>
+    <p><a href="{{ component_report_file }}" target="_blank">View Component Analysis Report</a></p>
+    <p><em>This report shows component relationships, error propagation analysis, and root cause identification.</em></p>
+</div>
+{% endif %}
+{% if timeline_image %}
+<div id="timeline-section" class="timeline-container">
+    <h2>Test Execution Timeline</h2>
+    <img src="{{ timeline_image }}" alt="Execution timeline" class="timeline-image"/>
+    <p><em>Error points are color-coded by severity.</em></p>
+</div>
+{% else %}
+<div id="timeline-section" class="error-message">
+    <p><strong>Timeline Image Unavailable</strong></p>
+    <p>No timeline image could be generated for this report.</p>
+</div>
+{% endif %}
+{% if component_analysis %}
+<div class="component-info">
+    <h3>🔍 Component Analysis</h3>
+    <p><strong>Root Cause Component:</strong> {{ component_analysis.metrics.root_cause_component | upper }}</p>
+    <p><strong>Affected Components:</strong> {{ component_analysis.metrics.components_with_issues | length }}</p>
+    <p><em>For detailed component relationship analysis, view the Component Analysis Report linked above.</em></p>
+</div>
+{% endif %}
+<h2>Step-by-Step Analysis</h2>
+{% if steps %}
+{% for step in steps %}
+<div class="step">
+    <div class="step-header">
+        <h3>Step {{ step.number }}: {{ step.text }}</h3>
+    </div>
+    <div class="step-body">
+        <div class="stats">
+            <p><strong>Log Entries:</strong> {{ step.log_count }}</p>
+            <p><strong>Time Range:</strong> {{ step.timestamp_range }}</p>
+            {% if step.component_counts %}
+            <p><strong>Errors by Component:</strong>
+            {% for comp, count in step.component_counts.items() %}
+                <span class="format">{{ comp.upper() }}: {{ count }}</span>
+            {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="format-distribution">
+            <strong>Format Distribution:</strong><br>
+            {% for fmt, count in step.formats.items() %}
+                {% set percentage = (count / step.log_count * 100) if step.log_count else 0 %}
+                <span class="format">{{ fmt }}: {{ count }} ({{ '%.1f'|format(percentage) }}%)</span>
+            {% endfor %}
+        </div>
+        <p><span class="toggle-logs" onclick="toggleLogs(this)">Show Log Samples</span></p>
+        <div class="logs-container">
+            {% for log in step.logs %}
+            <div class="log-entry" {% if log.error %}style="border-left-color: #ff5555;"{% endif %}>
+                <div class="timestamp">{{ log.file }}:{{ log.line_number }} | {{ log.timestamp }}{{ log.component_info }}</div>
+                <div>{{ log.text }}</div>
+            </div>
+            {% endfor %}
+            {% if step.log_count > step.logs|length %}
+            <div class="log-entry">
+                <em>...and {{ step.log_count - step.logs|length }} more logs...</em>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div id="timeline-section" class="error-message">
+    <p><strong>No Steps Found</strong></p>
+    <p>No test steps with associated logs were found. This might indicate a problem with log parsing or step correlation.</p>
+</div>
+{% endif %}
+{% endblock %}

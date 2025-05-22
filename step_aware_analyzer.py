@@ -5,6 +5,7 @@ import logging
 import traceback
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from gherkin_log_correlator import GherkinParser, LogEntry, correlate_logs_with_steps
 
 # Import timeline generators directly from reports.visualizations
@@ -18,9 +19,16 @@ try:
 except ImportError:
     HAS_CONFIG = False
     # Define a dummy Config to avoid errors
-    class Config:
-        ENABLE_STEP_REPORT_IMAGES = True
-        ENABLE_DIAGNOSTIC_CHECKS = False
+class Config:
+    ENABLE_STEP_REPORT_IMAGES = True
+    ENABLE_DIAGNOSTIC_CHECKS = False
+
+# Jinja2 environment for HTML templates
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
+env = Environment(
+    loader=FileSystemLoader(TEMPLATE_DIR),
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 def extract_step_name(step_number, feature_file):
     """
@@ -33,7 +41,6 @@ def extract_step_name(step_number, feature_file):
             if step.step_number == step_number:
                 return f"{step.keyword} {step.text}"
         return f"Step {step_number} (Unknown)"
-    except Exception as e:
         logging.error(f"Error extracting step name: {str(e)}")
         return f"Step {step_number} (Unknown)"
 
@@ -67,7 +74,6 @@ def validate_timestamp(timestamp):
                     
         logging.warning(f"Unable to parse timestamp: {timestamp}")
         return None
-    except Exception as e:
         logging.error(f"Error validating timestamp {timestamp}: {str(e)}")
         return None
 
@@ -242,7 +248,6 @@ def generate_step_report(
     # Ensure output directory exists
     try:
         os.makedirs(output_dir, exist_ok=True)
-    except Exception as e:
         error_msg = f"Failed to create output directory {output_dir}: {str(e)}"
         logging.error(error_msg)
         raise OSError(error_msg) from e
@@ -328,7 +333,6 @@ def generate_step_report(
             else:
                 logging.warning("Failed to generate timeline image - path is None")
                 
-        except Exception as e:
             logging.error(f"Error generating timeline image: {str(e)}")
             traceback.print_exc()
             # Continue without timeline
@@ -346,7 +350,6 @@ def generate_step_report(
                 "Timeline visualization failed: insufficient step data"
             )
             logging.info(f"Generated placeholder image: {timeline_image_path}")
-        except Exception as e:
             logging.error(f"Error generating placeholder: {str(e)}")
             traceback.print_exc()
     
@@ -367,6 +370,110 @@ def generate_step_report(
         image_relative_path = image_relative_path.replace(os.sep, "/")
     
     # Check for component analysis report
+codex/add-jinja2-templates-and-update-reports
+    component_report_file = f"{test_id}_component_report.html"
+    component_report_path = os.path.join(output_dir, component_report_file)
+    component_report_available = os.path.exists(component_report_path)
+
+    # Build context for Jinja2 template
+    steps_context = []
+    for step_num, logs in sorted(step_to_logs.items()):
+        step = step_dict.get(step_num)
+        step_text = step.get("step_name", f"Step {step_num}") if isinstance(step, dict) else f"Step {step_num}"
+
+        formats = {}
+        component_counts = {}
+        sample_logs = []
+        timestamps = []
+        for i, log in enumerate(logs):
+            format_name = getattr(log, 'format_name', 'unknown')
+            formats[format_name] = formats.get(format_name, 0) + 1
+            if hasattr(log, 'is_error') and log.is_error and hasattr(log, 'component'):
+                component = log.component
+                component_counts[component] = component_counts.get(component, 0) + 1
+            ts = getattr(log, 'timestamp', None)
+            valid_ts = validate_timestamp(ts)
+            if valid_ts:
+                timestamps.append(valid_ts)
+            if i < 5:
+                ts_str = valid_ts.isoformat() if valid_ts else 'No timestamp'
+                component_info = f" [Component: <strong>{log.component.upper()}</strong>]" if hasattr(log, 'component') else ""
+                sample_logs.append({
+                    'file': log.file,
+                    'line_number': log.line_number,
+                    'timestamp': ts_str,
+                    'component_info': component_info,
+                    'text': log.text,
+                    'error': getattr(log, 'is_error', False)
+                })
+
+        timestamp_range = "Unknown"
+        if timestamps:
+            first_ts = min(timestamps)
+            last_ts = max(timestamps)
+            duration = (last_ts - first_ts).total_seconds()
+            timestamp_range = f"{first_ts.strftime('%H:%M:%S.%f')[:-3]} to {last_ts.strftime('%H:%M:%S.%f')[:-3]} ({duration:.2f}s)"
+
+        steps_context.append({
+            'number': step_num,
+            'text': step_text,
+            'log_count': len(logs),
+            'timestamp_range': timestamp_range,
+            'formats': formats,
+            'component_counts': component_counts,
+            'logs': sample_logs
+        })
+
+    context = {
+        'title': f'Step-Aware Log Analysis for {test_id}',
+        'test_id': test_id,
+        'feature_file': os.path.basename(feature_file),
+        'logs_dir': logs_dir,
+        'total_steps': len(step_dict),
+        'steps_with_logs': len(step_to_logs),
+        'total_logs': total_logs,
+        'generated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'timeline_image': image_relative_path,
+        'component_report_available': component_report_available,
+        'component_report_file': component_report_file,
+        'component_analysis': component_analysis,
+        'steps': steps_context
+    }
+
+    try:
+        template = env.get_template('step_report.html.j2')
+        html = template.render(**context)
+
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+
+        logging.info(f"Generated step-aware HTML report with {timeline_type} timeline image: {report_path}")
+        return report_path
+    except Exception as e:
+        error_msg = f"Error generating HTML report: {str(e)}"
+        logging.error(error_msg)
+        traceback.print_exc()
+
+        try:
+            error_report_path = os.path.join(output_dir, f"{test_id}_error_report.html")
+            with open(error_report_path, 'w', encoding='utf-8') as f:
+                f.write(f"""
+                <!DOCTYPE html>
+                <html>
+                <head><title>Error Report for {test_id}</title></head>
+                <body>
+                    <h1>Error Generating Report for {test_id}</h1>
+                    <p>An error occurred while generating the step-aware report:</p>
+                    <pre>{str(e)}</pre>
+                    <p>Please check the logs for more details.</p>
+                </body>
+                </html>
+                """)
+            return error_report_path
+        except Exception:
+            return report_path
+
+=======
     component_report_file = f"{test_id}_component_report.html"
     component_report_path = os.path.join(output_dir, component_report_file)
     component_report_available = os.path.exists(component_report_path)
@@ -696,6 +803,7 @@ def generate_step_report(
         except:
             # If we can't even write the error report, just return the path that would have been
             return report_path
+ main
 
 def run_step_aware_analysis(
     test_id: str, 
@@ -737,7 +845,6 @@ def run_step_aware_analysis(
     # Ensure output directory exists
     try:
         os.makedirs(output_dir, exist_ok=True)
-    except Exception as e:
         logging.error(f"Failed to create output directory {output_dir}: {str(e)}")
         return None
     
@@ -754,7 +861,6 @@ def run_step_aware_analysis(
             return None
             
         logging.info(f"Found {len(log_files)} log files for analysis")
-    except Exception as e:
         logging.error(f"Error finding log files: {str(e)}")
         return None
     
@@ -786,7 +892,6 @@ def run_step_aware_analysis(
                 from gpt_summarizer import enrich_logs_with_errors
                 step_to_logs = enrich_logs_with_errors(step_to_logs, errors)
                 logging.info("Enhanced log entries with error information")
-            except Exception as e:
                 logging.warning(f"Error enriching logs with error info: {str(e)}")
         
         # Generate HTML report
@@ -801,7 +906,6 @@ def run_step_aware_analysis(
         )
         
         return report_path
-    except Exception as e:
         logging.error(f"Error in step-aware analysis: {str(e)}")
         traceback.print_exc()
         return None

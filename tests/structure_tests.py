@@ -310,11 +310,19 @@ class DirectoryStructureTest(unittest.TestCase):
                       f"Image files found in JSON directory: {image_files_in_json}")
         
         # Verify no nested directories
-        supporting_images_dirs = [d for d in os.listdir(dirs["images"]) 
-                               if os.path.isdir(os.path.join(dirs["images"], d)) 
+        supporting_images_dirs = [d for d in os.listdir(dirs["images"])
+                               if os.path.isdir(os.path.join(dirs["images"], d))
                                and d == "supporting_images"]
-        self.assertEqual(len(supporting_images_dirs), 0, 
+        self.assertEqual(len(supporting_images_dirs), 0,
                       "Nested supporting_images directory found")
+
+    def test_template_directory(self):
+        """Verify that report templates exist."""
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                    "reports", "templates")
+        self.assertTrue(os.path.isdir(template_dir), "Template directory missing")
+        for name in ["base.html.j2", "component_report.html.j2", "step_report.html.j2"]:
+            self.assertTrue(os.path.exists(os.path.join(template_dir, name)), f"Missing template {name}")
 
 
 @TestRegistry.register(category='structure', importance=1, tags=['json', 'serialization'])
