@@ -1,0 +1,19 @@
+{
+  "nodes": [
+    {
+      "component": "soa",
+      "id": "node1"
+    },
+    {
+      "component": "mimosa",
+      "id": "node2"
+    }
+  ],
+  "links": [
+    {
+      "weight": 0.5,
+      "source": "node1",
+      "target": "node2"
+    }
+  ]
+}

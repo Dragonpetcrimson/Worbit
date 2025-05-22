@@ -1,0 +1,118 @@
+{
+  "primary_issue_component": "soa",
+  "root_cause_component": "soa",
+  "component_summary": [
+    {
+      "id": "soa",
+      "name": "SOA",
+      "description": "Test",
+      "error_count": 10
+    }
+  ],
+  "component_error_counts": {
+    "soa": 10,
+    "android": 5
+  },
+  "relationships": [
+    {
+      "source": "soa",
+      "target": "soa",
+      "description": "Self-reference (auto-generated)",
+      "weight": 1.0
+    }
+  ],
+  "metrics": {
+    "component_tagged_logs": 0,
+    "component_tagged_errors": 0,
+    "component_error_counts": {},
+    "components_with_issues": [],
+    "root_cause_component": "soa"
+  },
+  "component_info": {
+    "soa": {
+      "name": "SOA",
+      "description": "SiriusXM application built on Android",
+      "related_to": [
+        "phoebe",
+        "mimosa",
+        "charles"
+      ]
+    },
+    "mimosa": {
+      "name": "Mimosa",
+      "description": "Provides fake testing data (Satellite/IP channel)",
+      "related_to": [
+        "soa",
+        "lapetus"
+      ]
+    },
+    "charles": {
+      "name": "Charles",
+      "description": "Proxy for live data",
+      "related_to": [
+        "soa",
+        "phoebe"
+      ]
+    },
+    "phoebe": {
+      "name": "Phoebe",
+      "description": "Proxy to run data to SOA",
+      "related_to": [
+        "soa",
+        "arecibo",
+        "lapetus",
+        "charles"
+      ]
+    },
+    "arecibo": {
+      "name": "Arecibo",
+      "description": "Monitors traffic from Phoebe",
+      "related_to": [
+        "phoebe"
+      ]
+    },
+    "translator": {
+      "name": "Translator",
+      "description": "Translates commands between test framework and SOA",
+      "related_to": [
+        "soa",
+        "smite"
+      ]
+    },
+    "telesto": {
+      "name": "Telesto",
+      "description": "Coordinates components",
+      "related_to": [
+        "mimosa",
+        "phoebe",
+        "lapetus",
+        "arecibo"
+      ]
+    },
+    "lapetus": {
+      "name": "Lapetus",
+      "description": "API to add channel and categories",
+      "related_to": [
+        "phoebe",
+        "telesto",
+        "mimosa"
+      ]
+    },
+    "ip_traffic": {
+      "name": "IP Traffic",
+      "description": "Network traffic and HTTP communication",
+      "related_to": [
+        "charles",
+        "soa",
+        "phoebe"
+      ]
+    },
+    "android": {
+      "name": "Android",
+      "description": "Android system and app interactions",
+      "related_to": [
+        "soa"
+      ]
+    }
+  }
+}

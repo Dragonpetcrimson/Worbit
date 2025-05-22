@@ -1,0 +1,827 @@
+2025-03-17 10:09:43.64 -04:00	[INF]	[]	[]	[AutoSmiteTranslator]	AutoSmiteThread accepted TCP client
+2025-03-17 10:09:43.65 -04:00	[INF]	[RX]	[check_translator_status]	[AutoSmiteTranslator]	{"type":"command","name":"check_translator_status"}
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	[TaskRunner] No active connection attempts
+2025-03-17 10:09:43.65 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(1/3) Checking [AdbConnection]
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbConnection]	[AdbConnection][CheckStatus] Get connected device
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	[AdbManager] SharpAdbClient gets connected devices
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	  - Connected device name: phx_x86_64 with serial: emulator-5554
+2025-03-17 10:09:43.65 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(1/3) [AdbConnection] Ready
+2025-03-17 10:09:43.65 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(2/3) Checking [AAOSAdbAppConnection]
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	[AdbManager] SharpAdbClient gets connected devices
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	  - Connected device name: phx_x86_64 with serial: emulator-5554
+2025-03-17 10:09:43.65 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	Executing 'dumpsys window windows | grep -E 'mFocusedApp'' shell command on connected device emulator-5554
+2025-03-17 10:09:44.04 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	[AdbManager] SharpAdbClient gets connected devices
+2025-03-17 10:09:44.04 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	  - Connected device name: phx_x86_64 with serial: emulator-5554
+2025-03-17 10:09:44.04 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	Executing 'dumpsys window windows | grep -E 'mObscuringWindow'' shell command on connected device emulator-5554
+2025-03-17 10:09:44.20 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	[AdbManager] SharpAdbClient gets connected devices
+2025-03-17 10:09:44.20 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	  - Connected device name: phx_x86_64 with serial: emulator-5554
+2025-03-17 10:09:44.20 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	Executing 'dumpsys activity activities | grep -m 1 'ActivityRecord'' shell command on connected device emulator-5554
+2025-03-17 10:09:44.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	[AdbManager] SharpAdbClient gets connected devices
+2025-03-17 10:09:44.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	  - Connected device name: phx_x86_64 with serial: emulator-5554
+2025-03-17 10:09:44.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Adb.AdbManager]	Executing 'dumpsys activity | grep -E '(topResumedActivity)'' shell command on connected device emulator-5554
+2025-03-17 10:09:44.66 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(2/3) [AAOSAdbAppConnection] Ready
+2025-03-17 10:09:44.66 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(3/3) Checking [AAOSAppiumConnection]
+2025-03-17 10:09:44.66 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.ServerUtils.ServerManager]	Requesting appium server status
+2025-03-17 10:09:44.66 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.ServerUtils.ServerManager]	Sending a GET request "http://127.0.0.1:4723/wd/hub/status"
+2025-03-17 10:09:44.67 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.ServerUtils.ServerManager]	Received session id: 'null', appium version: '2.5.4'. Is server running: 'true'
+2025-03-17 10:09:45.45 -04:00	[INF]	[]	[]	[SiriusXm.Translator.Connection.TranslatorConnection]	(3/3) [AAOSAppiumConnection] Ready
+2025-03-17 10:09:45.59 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:09:45.68 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:09:45.68 -04:00	[INF]	[TX]	[check_translator_status]	[AutoSmiteTranslator]	{"type":"response","name":"check_translator_status","result":"success","status":"ready","api_version":"1.7.0","stopwatch":2032}
+2025-03-17 10:10:30.26 -04:00	[INF]	[RX]	[direct_tune]	[AutoSmiteTranslator]	{"type":"command","name":"direct_tune","channel_id":176}
+2025-03-17 10:10:30.38 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:30.45 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:30.66 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:30.75 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:30.93 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:30.96 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:31.27 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:31.35 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:31.36 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Utils.NavigationPathGenerator]	Getting a shortest path from 'now_playing' to 'direct_tuner'
+2025-03-17 10:10:31.36 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Utils.NavigationPathGenerator]	Path from 'now_playing' to 'direct_tuner'
+2025-03-17 10:10:31.37 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Utils.NavigationPathGenerator]	    1: now_playing:sports_pxp_game -> 'direct_tune_button' tap -> direct_tuner
+2025-03-17 10:10:31.37 -04:00	[DBG]	[]	[]	[SiriusXm.Translator.Services.NavigationProcessor]	[Path procesing]:
+2025-03-17 10:10:31.37 -04:00	[DBG]	[]	[]	[SiriusXm.Translator.Services.NavigationProcessor]	  1: now_playing:sports_pxp_game -> 'direct_tune_button' tap -> direct_tuner
+2025-03-17 10:10:31.37 -04:00	[DBG]	[]	[]	[SiriusXm.Translator.Services.NavigationProcessor]	  [Transition processing]: now_playing:sports_pxp_game -> 'direct_tune_button' tap -> direct_tuner
+2025-03-17 10:10:31.75 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of direct_tune_button using selector By.TagName: NowPlayingScreen_NowPlayingContent_PxPContent_ContentIdentifier_Text
+2025-03-17 10:10:31.83 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 741:210 INSIDE screen 2348:930
+2025-03-17 10:10:31.96 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'direct_tune_button' located on: 616:180 with size 250:60
+2025-03-17 10:10:32.40 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:34.52 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:34.71 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 1224:525 INSIDE screen 2348:930
+2025-03-17 10:10:34.84 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Screen found: 'direct_tuner'
+2025-03-17 10:10:35.21 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of delete_button using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButtonKeyRemove
+2025-03-17 10:10:35.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:731 INSIDE screen 2348:930
+2025-03-17 10:10:35.52 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'delete_button' located on: 425:673 with size 200:117
+2025-03-17 10:10:36.39 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:37.24 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of entry_field using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericText
+2025-03-17 10:10:37.41 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 697:238 INSIDE screen 2348:930
+2025-03-17 10:10:37.80 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of delete_button using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButtonKeyRemove
+2025-03-17 10:10:37.94 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:731 INSIDE screen 2348:930
+2025-03-17 10:10:38.08 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'delete_button' located on: 425:673 with size 200:117
+2025-03-17 10:10:38.52 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:39.24 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of entry_field using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericText
+2025-03-17 10:10:39.38 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 697:238 INSIDE screen 2348:930
+2025-03-17 10:10:39.70 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of delete_button using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButtonKeyRemove
+2025-03-17 10:10:39.82 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:731 INSIDE screen 2348:930
+2025-03-17 10:10:39.94 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'delete_button' located on: 425:673 with size 200:117
+2025-03-17 10:10:40.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:41.13 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of entry_field using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericText
+2025-03-17 10:10:41.18 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 697:238 INSIDE screen 2348:930
+2025-03-17 10:10:41.57 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_1 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton1
+2025-03-17 10:10:41.63 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:353 INSIDE screen 2348:930
+2025-03-17 10:10:41.86 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_1 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton1
+2025-03-17 10:10:41.96 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:353 INSIDE screen 2348:930
+2025-03-17 10:10:42.07 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'numpad_1' located on: 425:295 with size 200:116
+2025-03-17 10:10:42.47 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:43.25 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_7 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton7
+2025-03-17 10:10:43.34 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:605 INSIDE screen 2348:930
+2025-03-17 10:10:43.64 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_7 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton7
+2025-03-17 10:10:43.75 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 525:605 INSIDE screen 2348:930
+2025-03-17 10:10:43.90 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'numpad_7' located on: 425:547 with size 200:116
+2025-03-17 10:10:44.29 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:45.05 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_6 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton6
+2025-03-17 10:10:45.12 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 945:479 INSIDE screen 2348:930
+2025-03-17 10:10:45.46 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of numpad_6 using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButton6
+2025-03-17 10:10:45.55 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 945:479 INSIDE screen 2348:930
+2025-03-17 10:10:45.67 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'numpad_6' located on: 845:421 with size 200:116
+2025-03-17 10:10:46.09 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:46.87 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of go_button using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButtonGo
+2025-03-17 10:10:46.93 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 945:731 INSIDE screen 2348:930
+2025-03-17 10:10:47.23 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of go_button using selector By.TagName: DirectTuneScreen_DirectTune_NumericKeypad_NumericButtonGo
+2025-03-17 10:10:47.35 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 945:731 INSIDE screen 2348:930
+2025-03-17 10:10:47.46 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	Performing Tap on 'go_button' located on: 845:673 with size 200:117
+2025-03-17 10:10:47.85 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumScreenInteraction]	'tap' action has been succesfully performed
+2025-03-17 10:10:49.24 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:49.31 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:49.31 -04:00	[INF]	[TX]	[direct_tune]	[AutoSmiteTranslator]	{"type":"response","name":"direct_tune","result":"success","stopwatch":19044}
+2025-03-17 10:10:49.31 -04:00	[INF]	[RX]	[transition_to_screen]	[AutoSmiteTranslator]	{"type":"command","name":"transition_to_screen","screen_id":"now_playing"}
+2025-03-17 10:10:49.48 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:49.54 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:49.74 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:49.79 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:49.79 -04:00	[INF]	[TX]	[transition_to_screen]	[AutoSmiteTranslator]	{"type":"response","name":"transition_to_screen","result":"success","stopwatch":478}
+2025-03-17 10:10:49.79 -04:00	[INF]	[RX]	[get_current_screen]	[AutoSmiteTranslator]	{"type":"command","name":"get_current_screen"}
+2025-03-17 10:10:49.89 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:49.98 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:49.98 -04:00	[INF]	[TX]	[get_current_screen]	[AutoSmiteTranslator]	{"type":"response","name":"get_current_screen","result":"success","screen_id":"now_playing","variation":"sports_pxp_game","stopwatch":187}
+2025-03-17 10:10:54.99 -04:00	[INF]	[RX]	[get_current_screen]	[AutoSmiteTranslator]	{"type":"command","name":"get_current_screen"}
+2025-03-17 10:10:55.14 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:55.18 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:55.18 -04:00	[INF]	[TX]	[get_current_screen]	[AutoSmiteTranslator]	{"type":"response","name":"get_current_screen","result":"success","screen_id":"now_playing","variation":"sports_pxp_game","stopwatch":187}
+2025-03-17 10:10:57.19 -04:00	[INF]	[RX]	[get_property]	[AutoSmiteTranslator]	{"type":"command","name":"get_property","element_id":"league_logo","property":"image","index":null}
+2025-03-17 10:10:57.30 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of root_screen_last using selector {
+  "name": "anyOf",
+  "args": [
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withParent",
+          "args": {
+            "name": "withTagValue",
+            "args": {
+              "name": "is",
+              "args": "activity_content"
+            },
+            "class": "androidx.test.espresso.matcher.ViewMatchers"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "topPanel"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    },
+    {
+      "name": "allOf",
+      "args": [
+        {
+          "name": "withResourceName",
+          "args": {
+            "name": "is",
+            "args": "diagnostics_layout"
+          },
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        },
+        {
+          "name": "isCompletelyDisplayed",
+          "class": "androidx.test.espresso.matcher.ViewMatchers"
+        }
+      ]
+    }
+  ]
+}
+2025-03-17 10:10:57.32 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSScreenMapper]	Variation and Screen found: 'now_playing:sports_pxp_game'
+2025-03-17 10:10:57.50 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.Appium.AppiumManager]	Found 1 instances of league_logo using selector By.TagName: NowPlayingScreen_NowPlayingContent_PxPContent_ContentLogo_Image
+2025-03-17 10:10:57.63 -04:00	[VRB]	[]	[]	[SiriusXm.Translator.AAOS.Utils.AAOSElementLocator]	  --element filtering true 546:210 INSIDE screen 2348:930
+2025-03-17 10:10:57.68 -04:00	[INF]	[TX]	[get_property]	[AutoSmiteTranslator]	{"type":"response","name":"get_property","result":"success","value":"image data","stopwatch":488}
+2025-03-17 10:11:06.47 -04:00	[INF]	[RX]	[capture_screenshot]	[AutoSmiteTranslator]	{"type":"command","name":"capture_screenshot","display_type":"head_unit_display","multiple_pages":false}
+2025-03-17 10:11:13.20 -04:00	[INF]	[TX]	[capture_screenshot]	[AutoSmiteTranslator]	{"type":"response","name":"capture_screenshot","result":"success","screenshot_list":[{"image_file":"image data","image_extension":"png"}],"stopwatch":6723}

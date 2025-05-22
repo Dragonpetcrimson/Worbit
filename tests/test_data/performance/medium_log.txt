@@ -1,0 +1,500 @@
+2025-03-26 03:53:02 [ERROR] - [charles] - Permission denied
+2025-03-26 20:23:58 [FATAL] - [mimosa] - Resource not found
+2025-03-26 14:15:59 [DEBUG] - [soa] - Normal operation 2
+2025-03-26 03:22:37 [FATAL] - [android] - Invalid state detected
+2025-03-26 05:41:51 [INFO] - [phoebe] - Normal operation 4
+2025-03-26 18:48:33 [INFO] - [mimosa] - Normal operation 5
+2025-03-26 12:25:31 [INFO] - [soa] - Normal operation 6
+2025-03-26 10:26:37 [FATAL] - [mimosa] - Invalid state detected
+2025-03-26 01:17:05 [DEBUG] - [mimosa] - Normal operation 8
+2025-03-26 03:16:38 [INFO] - [android] - Normal operation 9
+2025-03-26 16:56:14 [INFO] - [soa] - Normal operation 10
+2025-03-26 17:22:11 [INFO] - [soa] - Normal operation 11
+2025-03-26 06:24:49 [DEBUG] - [phoebe] - Normal operation 12
+2025-03-26 03:09:17 [INFO] - [soa] - Normal operation 13
+2025-03-26 22:07:00 [DEBUG] - [phoebe] - Normal operation 14
+2025-03-26 11:54:58 [WARNING] - [soa] - Normal operation 15
+2025-03-26 18:19:45 [DEBUG] - [android] - Normal operation 16
+2025-03-26 03:07:53 [ERROR] - [soa] - Unexpected response format
+2025-03-26 19:14:01 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 03:33:51 [ERROR] - [android] - Unexpected response format
+2025-03-26 10:57:53 [WARNING] - [phoebe] - Normal operation 20
+2025-03-26 03:07:43 [FATAL] - [charles] - Resource not found
+2025-03-26 13:47:01 [ERROR] - [soa] - Invalid state detected
+2025-03-26 15:52:48 [ERROR] - [phoebe] - Timeout waiting for response
+2025-03-26 14:23:24 [DEBUG] - [android] - Normal operation 24
+2025-03-26 20:55:20 [FATAL] - [charles] - Timeout waiting for response
+2025-03-26 16:20:10 [DEBUG] - [mimosa] - Normal operation 26
+2025-03-26 22:25:43 [FATAL] - [android] - Unexpected response format
+2025-03-26 07:02:31 [DEBUG] - [phoebe] - Normal operation 28
+2025-03-26 07:15:50 [FATAL] - [soa] - Timeout waiting for response
+2025-03-26 22:09:52 [DEBUG] - [phoebe] - Normal operation 30
+2025-03-26 03:15:32 [WARNING] - [phoebe] - Normal operation 31
+2025-03-26 18:24:44 [WARNING] - [mimosa] - Normal operation 32
+2025-03-26 18:53:39 [ERROR] - [soa] - Invalid state detected
+2025-03-26 19:35:04 [ERROR] - [android] - Invalid state detected
+2025-03-26 00:37:03 [ERROR] - [soa] - Invalid state detected
+2025-03-26 23:21:02 [ERROR] - [phoebe] - Permission denied
+2025-03-26 05:58:52 [DEBUG] - [charles] - Normal operation 37
+2025-03-26 01:59:50 [INFO] - [mimosa] - Normal operation 38
+2025-03-26 10:39:56 [FATAL] - [soa] - Connection refused
+2025-03-26 04:08:34 [INFO] - [charles] - Normal operation 40
+2025-03-26 12:19:45 [ERROR] - [mimosa] - Permission denied
+2025-03-26 17:06:30 [FATAL] - [mimosa] - Unexpected response format
+2025-03-26 20:51:38 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 22:12:38 [WARNING] - [charles] - Normal operation 44
+2025-03-26 13:42:18 [WARNING] - [android] - Normal operation 45
+2025-03-26 17:48:12 [INFO] - [charles] - Normal operation 46
+2025-03-26 06:26:08 [WARNING] - [charles] - Normal operation 47
+2025-03-26 03:53:25 [ERROR] - [mimosa] - Connection refused
+2025-03-26 18:01:34 [ERROR] - [charles] - Permission denied
+2025-03-26 00:46:25 [ERROR] - [android] - Permission denied
+2025-03-26 09:44:14 [DEBUG] - [android] - Normal operation 51
+2025-03-26 12:07:18 [FATAL] - [mimosa] - Permission denied
+2025-03-26 22:40:45 [ERROR] - [soa] - Timeout waiting for response
+2025-03-26 14:54:48 [ERROR] - [android] - Resource not found
+2025-03-26 18:52:00 [ERROR] - [android] - Invalid state detected
+2025-03-26 12:33:53 [INFO] - [android] - Normal operation 56
+2025-03-26 16:43:54 [ERROR] - [phoebe] - Timeout waiting for response
+2025-03-26 14:32:48 [WARNING] - [soa] - Normal operation 58
+2025-03-26 17:02:30 [DEBUG] - [phoebe] - Normal operation 59
+2025-03-26 13:57:53 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 00:30:08 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 22:21:39 [ERROR] - [android] - Resource not found
+2025-03-26 00:37:41 [WARNING] - [phoebe] - Normal operation 63
+2025-03-26 21:41:06 [ERROR] - [soa] - Permission denied
+2025-03-26 16:01:02 [ERROR] - [soa] - Permission denied
+2025-03-26 09:20:16 [FATAL] - [mimosa] - Timeout waiting for response
+2025-03-26 17:44:25 [ERROR] - [phoebe] - Resource not found
+2025-03-26 17:36:19 [FATAL] - [soa] - Permission denied
+2025-03-26 00:33:31 [ERROR] - [mimosa] - Timeout waiting for response
+2025-03-26 19:17:31 [INFO] - [android] - Normal operation 70
+2025-03-26 14:03:35 [ERROR] - [mimosa] - Permission denied
+2025-03-26 13:57:42 [INFO] - [soa] - Normal operation 72
+2025-03-26 23:33:06 [ERROR] - [soa] - Invalid state detected
+2025-03-26 17:41:55 [DEBUG] - [android] - Normal operation 74
+2025-03-26 09:21:01 [WARNING] - [soa] - Normal operation 75
+2025-03-26 09:44:47 [ERROR] - [soa] - Unexpected response format
+2025-03-26 07:01:01 [ERROR] - [charles] - Permission denied
+2025-03-26 21:29:01 [ERROR] - [mimosa] - Timeout waiting for response
+2025-03-26 18:50:00 [WARNING] - [android] - Normal operation 79
+2025-03-26 21:47:52 [DEBUG] - [charles] - Normal operation 80
+2025-03-26 15:33:33 [ERROR] - [charles] - Unexpected response format
+2025-03-26 01:37:43 [ERROR] - [charles] - Unexpected response format
+2025-03-26 14:28:16 [ERROR] - [soa] - Timeout waiting for response
+2025-03-26 19:46:31 [INFO] - [phoebe] - Normal operation 84
+2025-03-26 12:36:21 [INFO] - [mimosa] - Normal operation 85
+2025-03-26 05:20:53 [ERROR] - [phoebe] - Permission denied
+2025-03-26 12:34:49 [ERROR] - [soa] - Unexpected response format
+2025-03-26 22:25:48 [DEBUG] - [android] - Normal operation 88
+2025-03-26 07:42:14 [FATAL] - [charles] - Resource not found
+2025-03-26 18:30:02 [ERROR] - [android] - Resource not found
+2025-03-26 11:40:09 [ERROR] - [soa] - Connection refused
+2025-03-26 19:23:08 [FATAL] - [soa] - Invalid state detected
+2025-03-26 00:44:44 [ERROR] - [soa] - Connection refused
+2025-03-26 03:16:14 [WARNING] - [mimosa] - Normal operation 94
+2025-03-26 20:28:34 [FATAL] - [phoebe] - Connection refused
+2025-03-26 08:33:10 [ERROR] - [charles] - Resource not found
+2025-03-26 16:26:30 [FATAL] - [phoebe] - Timeout waiting for response
+2025-03-26 09:54:08 [DEBUG] - [soa] - Normal operation 98
+2025-03-26 12:08:48 [ERROR] - [phoebe] - Resource not found
+2025-03-26 00:51:40 [DEBUG] - [mimosa] - Normal operation 100
+2025-03-26 09:44:07 [ERROR] - [charles] - Connection refused
+2025-03-26 10:47:14 [INFO] - [android] - Normal operation 102
+2025-03-26 13:15:25 [WARNING] - [soa] - Normal operation 103
+2025-03-26 21:20:48 [ERROR] - [charles] - Permission denied
+2025-03-26 15:05:10 [ERROR] - [phoebe] - Connection refused
+2025-03-26 16:21:41 [ERROR] - [android] - Permission denied
+2025-03-26 17:37:07 [ERROR] - [phoebe] - Permission denied
+2025-03-26 15:44:15 [ERROR] - [android] - Connection refused
+2025-03-26 12:45:01 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 09:05:36 [ERROR] - [charles] - Resource not found
+2025-03-26 09:29:24 [ERROR] - [soa] - Unexpected response format
+2025-03-26 17:10:52 [WARNING] - [soa] - Normal operation 112
+2025-03-26 04:00:42 [INFO] - [soa] - Normal operation 113
+2025-03-26 14:59:46 [INFO] - [soa] - Normal operation 114
+2025-03-26 15:48:30 [FATAL] - [phoebe] - Connection refused
+2025-03-26 04:49:45 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 06:14:09 [INFO] - [phoebe] - Normal operation 117
+2025-03-26 08:39:06 [WARNING] - [mimosa] - Normal operation 118
+2025-03-26 06:51:17 [INFO] - [phoebe] - Normal operation 119
+2025-03-26 17:59:54 [WARNING] - [charles] - Normal operation 120
+2025-03-26 21:39:07 [ERROR] - [charles] - Permission denied
+2025-03-26 20:59:44 [WARNING] - [charles] - Normal operation 122
+2025-03-26 08:50:33 [WARNING] - [soa] - Normal operation 123
+2025-03-26 07:33:52 [INFO] - [android] - Normal operation 124
+2025-03-26 16:04:39 [INFO] - [charles] - Normal operation 125
+2025-03-26 16:42:17 [FATAL] - [mimosa] - Invalid state detected
+2025-03-26 11:43:49 [FATAL] - [phoebe] - Connection refused
+2025-03-26 08:44:30 [INFO] - [phoebe] - Normal operation 128
+2025-03-26 23:01:38 [ERROR] - [mimosa] - Connection refused
+2025-03-26 22:12:15 [ERROR] - [phoebe] - Connection refused
+2025-03-26 21:07:54 [INFO] - [mimosa] - Normal operation 131
+2025-03-26 23:26:10 [ERROR] - [soa] - Connection refused
+2025-03-26 18:02:04 [ERROR] - [mimosa] - Invalid state detected
+2025-03-26 04:24:27 [ERROR] - [charles] - Connection refused
+2025-03-26 18:27:54 [INFO] - [android] - Normal operation 135
+2025-03-26 00:02:05 [INFO] - [mimosa] - Normal operation 136
+2025-03-26 07:56:59 [ERROR] - [charles] - Permission denied
+2025-03-26 22:02:09 [DEBUG] - [charles] - Normal operation 138
+2025-03-26 00:47:28 [WARNING] - [mimosa] - Normal operation 139
+2025-03-26 00:17:15 [FATAL] - [phoebe] - Permission denied
+2025-03-26 03:08:04 [WARNING] - [android] - Normal operation 141
+2025-03-26 13:11:19 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 09:44:44 [ERROR] - [charles] - Unexpected response format
+2025-03-26 06:18:45 [FATAL] - [mimosa] - Invalid state detected
+2025-03-26 21:44:07 [ERROR] - [charles] - Permission denied
+2025-03-26 05:45:44 [WARNING] - [phoebe] - Normal operation 146
+2025-03-26 12:53:17 [DEBUG] - [phoebe] - Normal operation 147
+2025-03-26 04:14:46 [ERROR] - [soa] - Unexpected response format
+2025-03-26 03:59:58 [ERROR] - [mimosa] - Resource not found
+2025-03-26 04:57:25 [DEBUG] - [phoebe] - Normal operation 150
+2025-03-26 04:45:49 [WARNING] - [android] - Normal operation 151
+2025-03-26 11:39:46 [DEBUG] - [charles] - Normal operation 152
+2025-03-26 06:05:39 [DEBUG] - [charles] - Normal operation 153
+2025-03-26 01:14:03 [WARNING] - [android] - Normal operation 154
+2025-03-26 07:49:54 [INFO] - [android] - Normal operation 155
+2025-03-26 18:01:15 [FATAL] - [charles] - Permission denied
+2025-03-26 03:39:38 [ERROR] - [phoebe] - Timeout waiting for response
+2025-03-26 05:44:03 [FATAL] - [phoebe] - Connection refused
+2025-03-26 05:06:46 [WARNING] - [soa] - Normal operation 159
+2025-03-26 03:16:09 [ERROR] - [android] - Resource not found
+2025-03-26 21:13:17 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 14:51:00 [INFO] - [mimosa] - Normal operation 162
+2025-03-26 04:52:38 [FATAL] - [soa] - Resource not found
+2025-03-26 16:43:07 [INFO] - [phoebe] - Normal operation 164
+2025-03-26 20:23:37 [ERROR] - [mimosa] - Timeout waiting for response
+2025-03-26 09:58:48 [DEBUG] - [charles] - Normal operation 166
+2025-03-26 06:31:58 [DEBUG] - [phoebe] - Normal operation 167
+2025-03-26 01:37:19 [ERROR] - [soa] - Connection refused
+2025-03-26 21:07:40 [FATAL] - [android] - Invalid state detected
+2025-03-26 23:48:58 [DEBUG] - [soa] - Normal operation 170
+2025-03-26 00:26:43 [ERROR] - [soa] - Connection refused
+2025-03-26 19:56:10 [WARNING] - [mimosa] - Normal operation 172
+2025-03-26 21:57:29 [FATAL] - [soa] - Unexpected response format
+2025-03-26 06:20:15 [FATAL] - [soa] - Timeout waiting for response
+2025-03-26 16:26:26 [FATAL] - [mimosa] - Resource not found
+2025-03-26 12:33:15 [DEBUG] - [soa] - Normal operation 176
+2025-03-26 07:36:35 [ERROR] - [charles] - Resource not found
+2025-03-26 18:32:08 [DEBUG] - [mimosa] - Normal operation 178
+2025-03-26 12:16:38 [INFO] - [charles] - Normal operation 179
+2025-03-26 00:54:25 [ERROR] - [android] - Invalid state detected
+2025-03-26 21:40:01 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 18:24:50 [ERROR] - [phoebe] - Connection refused
+2025-03-26 10:34:10 [WARNING] - [phoebe] - Normal operation 183
+2025-03-26 02:30:32 [ERROR] - [android] - Connection refused
+2025-03-26 10:33:08 [WARNING] - [soa] - Normal operation 185
+2025-03-26 14:05:01 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 19:25:59 [ERROR] - [phoebe] - Resource not found
+2025-03-26 23:24:27 [ERROR] - [soa] - Invalid state detected
+2025-03-26 14:33:27 [FATAL] - [phoebe] - Resource not found
+2025-03-26 06:46:51 [FATAL] - [phoebe] - Permission denied
+2025-03-26 02:09:25 [FATAL] - [charles] - Permission denied
+2025-03-26 13:20:51 [ERROR] - [charles] - Permission denied
+2025-03-26 03:40:53 [INFO] - [mimosa] - Normal operation 193
+2025-03-26 17:08:25 [FATAL] - [charles] - Connection refused
+2025-03-26 16:13:42 [DEBUG] - [android] - Normal operation 195
+2025-03-26 05:14:24 [FATAL] - [charles] - Resource not found
+2025-03-26 18:11:13 [ERROR] - [mimosa] - Invalid state detected
+2025-03-26 21:16:36 [ERROR] - [charles] - Invalid state detected
+2025-03-26 06:42:12 [ERROR] - [mimosa] - Timeout waiting for response
+2025-03-26 10:09:53 [WARNING] - [soa] - Normal operation 200
+2025-03-26 21:31:00 [ERROR] - [phoebe] - Resource not found
+2025-03-26 12:22:35 [DEBUG] - [android] - Normal operation 202
+2025-03-26 18:20:48 [FATAL] - [soa] - Invalid state detected
+2025-03-26 16:13:27 [ERROR] - [mimosa] - Connection refused
+2025-03-26 13:50:07 [FATAL] - [soa] - Invalid state detected
+2025-03-26 13:26:23 [DEBUG] - [mimosa] - Normal operation 206
+2025-03-26 22:06:54 [WARNING] - [soa] - Normal operation 207
+2025-03-26 10:41:02 [ERROR] - [phoebe] - Resource not found
+2025-03-26 02:28:52 [ERROR] - [charles] - Invalid state detected
+2025-03-26 17:40:19 [WARNING] - [charles] - Normal operation 210
+2025-03-26 13:34:48 [ERROR] - [android] - Invalid state detected
+2025-03-26 09:29:03 [DEBUG] - [soa] - Normal operation 212
+2025-03-26 03:15:07 [INFO] - [android] - Normal operation 213
+2025-03-26 11:31:24 [WARNING] - [android] - Normal operation 214
+2025-03-26 12:45:32 [FATAL] - [mimosa] - Permission denied
+2025-03-26 04:57:05 [ERROR] - [soa] - Permission denied
+2025-03-26 19:34:23 [INFO] - [phoebe] - Normal operation 217
+2025-03-26 05:22:12 [ERROR] - [charles] - Resource not found
+2025-03-26 08:56:27 [ERROR] - [mimosa] - Connection refused
+2025-03-26 10:26:07 [INFO] - [soa] - Normal operation 220
+2025-03-26 19:03:02 [ERROR] - [android] - Connection refused
+2025-03-26 14:50:22 [ERROR] - [android] - Permission denied
+2025-03-26 15:32:26 [ERROR] - [mimosa] - Invalid state detected
+2025-03-26 13:03:29 [ERROR] - [charles] - Connection refused
+2025-03-26 16:59:13 [ERROR] - [soa] - Unexpected response format
+2025-03-26 07:12:48 [INFO] - [mimosa] - Normal operation 226
+2025-03-26 05:46:13 [WARNING] - [charles] - Normal operation 227
+2025-03-26 16:53:24 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 08:34:26 [WARNING] - [phoebe] - Normal operation 229
+2025-03-26 12:01:27 [ERROR] - [soa] - Permission denied
+2025-03-26 02:44:17 [DEBUG] - [soa] - Normal operation 231
+2025-03-26 12:37:01 [INFO] - [android] - Normal operation 232
+2025-03-26 08:32:46 [ERROR] - [mimosa] - Invalid state detected
+2025-03-26 03:18:08 [FATAL] - [soa] - Invalid state detected
+2025-03-26 23:50:06 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 00:39:07 [WARNING] - [soa] - Normal operation 236
+2025-03-26 19:48:48 [FATAL] - [android] - Invalid state detected
+2025-03-26 02:59:17 [WARNING] - [phoebe] - Normal operation 238
+2025-03-26 11:56:11 [DEBUG] - [charles] - Normal operation 239
+2025-03-26 03:34:10 [DEBUG] - [soa] - Normal operation 240
+2025-03-26 12:37:46 [WARNING] - [soa] - Normal operation 241
+2025-03-26 01:14:28 [WARNING] - [android] - Normal operation 242
+2025-03-26 18:43:50 [ERROR] - [soa] - Connection refused
+2025-03-26 02:41:56 [WARNING] - [soa] - Normal operation 244
+2025-03-26 00:16:26 [ERROR] - [soa] - Unexpected response format
+2025-03-26 23:46:41 [WARNING] - [charles] - Normal operation 246
+2025-03-26 09:38:22 [DEBUG] - [soa] - Normal operation 247
+2025-03-26 22:58:15 [ERROR] - [android] - Unexpected response format
+2025-03-26 10:53:53 [FATAL] - [soa] - Invalid state detected
+2025-03-26 04:18:33 [FATAL] - [mimosa] - Permission denied
+2025-03-26 19:54:12 [FATAL] - [charles] - Timeout waiting for response
+2025-03-26 15:52:09 [INFO] - [charles] - Normal operation 252
+2025-03-26 22:21:09 [INFO] - [phoebe] - Normal operation 253
+2025-03-26 13:05:36 [DEBUG] - [soa] - Normal operation 254
+2025-03-26 03:01:15 [ERROR] - [mimosa] - Permission denied
+2025-03-26 11:07:09 [ERROR] - [soa] - Connection refused
+2025-03-26 02:29:34 [ERROR] - [charles] - Permission denied
+2025-03-26 19:36:42 [FATAL] - [soa] - Resource not found
+2025-03-26 18:34:41 [ERROR] - [mimosa] - Permission denied
+2025-03-26 13:48:58 [ERROR] - [phoebe] - Permission denied
+2025-03-26 17:33:22 [FATAL] - [charles] - Invalid state detected
+2025-03-26 22:45:26 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 10:53:51 [INFO] - [android] - Normal operation 263
+2025-03-26 12:49:22 [ERROR] - [mimosa] - Resource not found
+2025-03-26 22:57:06 [INFO] - [mimosa] - Normal operation 265
+2025-03-26 21:25:12 [WARNING] - [android] - Normal operation 266
+2025-03-26 11:18:38 [ERROR] - [mimosa] - Timeout waiting for response
+2025-03-26 14:39:58 [ERROR] - [phoebe] - Timeout waiting for response
+2025-03-26 01:30:27 [WARNING] - [charles] - Normal operation 269
+2025-03-26 02:13:06 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 22:18:49 [INFO] - [phoebe] - Normal operation 271
+2025-03-26 23:12:15 [INFO] - [charles] - Normal operation 272
+2025-03-26 15:16:05 [FATAL] - [soa] - Connection refused
+2025-03-26 10:49:38 [DEBUG] - [soa] - Normal operation 274
+2025-03-26 10:46:32 [ERROR] - [mimosa] - Resource not found
+2025-03-26 00:25:31 [FATAL] - [soa] - Resource not found
+2025-03-26 09:30:16 [DEBUG] - [phoebe] - Normal operation 277
+2025-03-26 02:44:29 [WARNING] - [android] - Normal operation 278
+2025-03-26 09:45:03 [ERROR] - [soa] - Timeout waiting for response
+2025-03-26 16:38:23 [WARNING] - [android] - Normal operation 280
+2025-03-26 14:21:57 [DEBUG] - [android] - Normal operation 281
+2025-03-26 06:13:27 [INFO] - [android] - Normal operation 282
+2025-03-26 05:58:23 [FATAL] - [android] - Timeout waiting for response
+2025-03-26 15:14:14 [ERROR] - [android] - Invalid state detected
+2025-03-26 22:12:09 [WARNING] - [soa] - Normal operation 285
+2025-03-26 04:52:27 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 00:15:46 [INFO] - [mimosa] - Normal operation 287
+2025-03-26 03:55:07 [ERROR] - [charles] - Connection refused
+2025-03-26 00:29:17 [ERROR] - [mimosa] - Connection refused
+2025-03-26 16:27:41 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 02:43:22 [WARNING] - [soa] - Normal operation 291
+2025-03-26 04:07:39 [DEBUG] - [charles] - Normal operation 292
+2025-03-26 05:19:47 [ERROR] - [charles] - Invalid state detected
+2025-03-26 05:11:34 [INFO] - [phoebe] - Normal operation 294
+2025-03-26 18:51:03 [DEBUG] - [mimosa] - Normal operation 295
+2025-03-26 09:40:45 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 12:56:29 [ERROR] - [soa] - Connection refused
+2025-03-26 22:06:55 [DEBUG] - [android] - Normal operation 298
+2025-03-26 18:40:31 [ERROR] - [soa] - Resource not found
+2025-03-26 16:27:43 [ERROR] - [phoebe] - Resource not found
+2025-03-26 07:10:53 [WARNING] - [charles] - Normal operation 301
+2025-03-26 13:10:21 [ERROR] - [android] - Unexpected response format
+2025-03-26 22:59:24 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 00:08:00 [ERROR] - [android] - Invalid state detected
+2025-03-26 09:38:57 [INFO] - [mimosa] - Normal operation 305
+2025-03-26 10:40:22 [ERROR] - [soa] - Resource not found
+2025-03-26 01:49:11 [WARNING] - [phoebe] - Normal operation 307
+2025-03-26 13:55:24 [ERROR] - [phoebe] - Permission denied
+2025-03-26 13:35:33 [DEBUG] - [mimosa] - Normal operation 309
+2025-03-26 20:25:06 [ERROR] - [mimosa] - Connection refused
+2025-03-26 12:59:11 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 20:55:15 [FATAL] - [mimosa] - Permission denied
+2025-03-26 05:04:21 [FATAL] - [android] - Unexpected response format
+2025-03-26 06:25:46 [DEBUG] - [android] - Normal operation 314
+2025-03-26 01:26:42 [DEBUG] - [mimosa] - Normal operation 315
+2025-03-26 11:36:05 [INFO] - [android] - Normal operation 316
+2025-03-26 02:29:59 [WARNING] - [mimosa] - Normal operation 317
+2025-03-26 00:13:15 [DEBUG] - [android] - Normal operation 318
+2025-03-26 08:51:27 [INFO] - [android] - Normal operation 319
+2025-03-26 20:57:15 [INFO] - [phoebe] - Normal operation 320
+2025-03-26 03:54:38 [FATAL] - [charles] - Connection refused
+2025-03-26 08:41:03 [WARNING] - [soa] - Normal operation 322
+2025-03-26 14:07:16 [DEBUG] - [phoebe] - Normal operation 323
+2025-03-26 10:12:17 [ERROR] - [soa] - Permission denied
+2025-03-26 08:49:04 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 07:12:18 [ERROR] - [phoebe] - Permission denied
+2025-03-26 11:32:16 [DEBUG] - [charles] - Normal operation 327
+2025-03-26 07:20:28 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 10:09:06 [ERROR] - [charles] - Resource not found
+2025-03-26 12:57:38 [WARNING] - [soa] - Normal operation 330
+2025-03-26 12:52:52 [DEBUG] - [android] - Normal operation 331
+2025-03-26 13:43:21 [DEBUG] - [phoebe] - Normal operation 332
+2025-03-26 01:28:02 [DEBUG] - [charles] - Normal operation 333
+2025-03-26 11:40:18 [ERROR] - [phoebe] - Permission denied
+2025-03-26 15:50:51 [FATAL] - [soa] - Permission denied
+2025-03-26 19:24:29 [INFO] - [charles] - Normal operation 336
+2025-03-26 00:40:59 [INFO] - [mimosa] - Normal operation 337
+2025-03-26 14:50:17 [ERROR] - [android] - Permission denied
+2025-03-26 05:55:46 [ERROR] - [charles] - Connection refused
+2025-03-26 00:13:08 [ERROR] - [soa] - Permission denied
+2025-03-26 22:00:15 [ERROR] - [charles] - Connection refused
+2025-03-26 08:16:22 [FATAL] - [android] - Invalid state detected
+2025-03-26 01:10:05 [FATAL] - [mimosa] - Unexpected response format
+2025-03-26 13:21:33 [DEBUG] - [android] - Normal operation 344
+2025-03-26 12:39:15 [ERROR] - [phoebe] - Resource not found
+2025-03-26 12:19:19 [ERROR] - [android] - Unexpected response format
+2025-03-26 19:38:35 [DEBUG] - [charles] - Normal operation 347
+2025-03-26 18:34:43 [ERROR] - [phoebe] - Resource not found
+2025-03-26 12:01:21 [INFO] - [android] - Normal operation 349
+2025-03-26 17:56:55 [DEBUG] - [mimosa] - Normal operation 350
+2025-03-26 17:35:38 [ERROR] - [mimosa] - Resource not found
+2025-03-26 05:40:15 [ERROR] - [android] - Unexpected response format
+2025-03-26 09:27:03 [WARNING] - [phoebe] - Normal operation 353
+2025-03-26 20:47:15 [WARNING] - [mimosa] - Normal operation 354
+2025-03-26 17:45:06 [WARNING] - [charles] - Normal operation 355
+2025-03-26 07:20:27 [ERROR] - [android] - Unexpected response format
+2025-03-26 02:29:44 [FATAL] - [android] - Resource not found
+2025-03-26 09:59:51 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 06:14:34 [INFO] - [mimosa] - Normal operation 359
+2025-03-26 14:59:50 [ERROR] - [phoebe] - Connection refused
+2025-03-26 13:34:44 [DEBUG] - [soa] - Normal operation 361
+2025-03-26 20:11:10 [DEBUG] - [charles] - Normal operation 362
+2025-03-26 14:25:37 [DEBUG] - [phoebe] - Normal operation 363
+2025-03-26 18:12:21 [FATAL] - [soa] - Connection refused
+2025-03-26 10:23:00 [FATAL] - [charles] - Unexpected response format
+2025-03-26 05:17:49 [ERROR] - [phoebe] - Unexpected response format
+2025-03-26 04:29:51 [DEBUG] - [phoebe] - Normal operation 367
+2025-03-26 20:16:28 [INFO] - [android] - Normal operation 368
+2025-03-26 00:55:35 [FATAL] - [phoebe] - Unexpected response format
+2025-03-26 00:44:16 [WARNING] - [charles] - Normal operation 370
+2025-03-26 14:57:05 [FATAL] - [charles] - Invalid state detected
+2025-03-26 00:16:15 [DEBUG] - [phoebe] - Normal operation 372
+2025-03-26 06:41:42 [INFO] - [charles] - Normal operation 373
+2025-03-26 04:39:39 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 14:10:43 [DEBUG] - [phoebe] - Normal operation 375
+2025-03-26 07:37:47 [DEBUG] - [charles] - Normal operation 376
+2025-03-26 21:19:40 [ERROR] - [soa] - Connection refused
+2025-03-26 10:01:17 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 21:29:36 [WARNING] - [soa] - Normal operation 379
+2025-03-26 09:05:32 [FATAL] - [charles] - Unexpected response format
+2025-03-26 13:57:19 [DEBUG] - [mimosa] - Normal operation 381
+2025-03-26 03:14:57 [FATAL] - [charles] - Timeout waiting for response
+2025-03-26 16:01:21 [ERROR] - [mimosa] - Resource not found
+2025-03-26 18:06:05 [DEBUG] - [phoebe] - Normal operation 384
+2025-03-26 17:08:28 [ERROR] - [mimosa] - Connection refused
+2025-03-26 13:39:46 [FATAL] - [charles] - Resource not found
+2025-03-26 00:50:34 [ERROR] - [phoebe] - Connection refused
+2025-03-26 14:35:25 [ERROR] - [charles] - Timeout waiting for response
+2025-03-26 20:35:37 [FATAL] - [soa] - Resource not found
+2025-03-26 14:13:55 [INFO] - [mimosa] - Normal operation 390
+2025-03-26 08:59:40 [ERROR] - [soa] - Resource not found
+2025-03-26 12:57:24 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 05:32:12 [WARNING] - [phoebe] - Normal operation 393
+2025-03-26 03:20:04 [ERROR] - [soa] - Connection refused
+2025-03-26 16:25:32 [ERROR] - [mimosa] - Permission denied
+2025-03-26 23:13:42 [FATAL] - [mimosa] - Resource not found
+2025-03-26 17:38:07 [WARNING] - [soa] - Normal operation 397
+2025-03-26 17:12:10 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 17:14:58 [WARNING] - [phoebe] - Normal operation 399
+2025-03-26 21:43:25 [FATAL] - [mimosa] - Timeout waiting for response
+2025-03-26 23:53:22 [ERROR] - [charles] - Connection refused
+2025-03-26 14:36:57 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 10:12:14 [ERROR] - [android] - Connection refused
+2025-03-26 14:30:46 [INFO] - [soa] - Normal operation 404
+2025-03-26 01:04:35 [FATAL] - [charles] - Permission denied
+2025-03-26 22:19:44 [INFO] - [charles] - Normal operation 406
+2025-03-26 08:21:53 [DEBUG] - [charles] - Normal operation 407
+2025-03-26 16:40:27 [FATAL] - [soa] - Unexpected response format
+2025-03-26 07:38:44 [WARNING] - [phoebe] - Normal operation 409
+2025-03-26 01:11:49 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 22:56:53 [WARNING] - [phoebe] - Normal operation 411
+2025-03-26 12:47:17 [DEBUG] - [mimosa] - Normal operation 412
+2025-03-26 03:37:59 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 22:04:30 [DEBUG] - [phoebe] - Normal operation 414
+2025-03-26 21:48:36 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 00:52:33 [ERROR] - [mimosa] - Permission denied
+2025-03-26 18:55:46 [FATAL] - [charles] - Unexpected response format
+2025-03-26 09:14:10 [WARNING] - [soa] - Normal operation 418
+2025-03-26 14:08:01 [FATAL] - [android] - Permission denied
+2025-03-26 05:41:59 [ERROR] - [android] - Unexpected response format
+2025-03-26 14:25:46 [INFO] - [android] - Normal operation 421
+2025-03-26 14:52:15 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 01:06:48 [WARNING] - [mimosa] - Normal operation 423
+2025-03-26 15:41:36 [INFO] - [soa] - Normal operation 424
+2025-03-26 12:00:30 [DEBUG] - [android] - Normal operation 425
+2025-03-26 23:33:52 [ERROR] - [android] - Connection refused
+2025-03-26 03:50:00 [ERROR] - [phoebe] - Invalid state detected
+2025-03-26 02:36:22 [DEBUG] - [phoebe] - Normal operation 428
+2025-03-26 05:43:18 [ERROR] - [mimosa] - Unexpected response format
+2025-03-26 20:18:06 [ERROR] - [mimosa] - Invalid state detected
+2025-03-26 01:44:13 [INFO] - [android] - Normal operation 431
+2025-03-26 18:50:51 [ERROR] - [soa] - Resource not found
+2025-03-26 07:08:24 [INFO] - [charles] - Normal operation 433
+2025-03-26 11:13:00 [FATAL] - [android] - Unexpected response format
+2025-03-26 09:33:34 [INFO] - [android] - Normal operation 435
+2025-03-26 05:12:11 [ERROR] - [phoebe] - Permission denied
+2025-03-26 11:36:20 [INFO] - [mimosa] - Normal operation 437
+2025-03-26 10:21:26 [ERROR] - [mimosa] - Resource not found
+2025-03-26 19:14:32 [DEBUG] - [android] - Normal operation 439
+2025-03-26 08:53:18 [DEBUG] - [mimosa] - Normal operation 440
+2025-03-26 03:03:40 [FATAL] - [charles] - Timeout waiting for response
+2025-03-26 23:29:41 [ERROR] - [soa] - Unexpected response format
+2025-03-26 14:44:26 [FATAL] - [charles] - Permission denied
+2025-03-26 03:09:08 [DEBUG] - [android] - Normal operation 444
+2025-03-26 18:21:29 [FATAL] - [soa] - Connection refused
+2025-03-26 04:35:20 [FATAL] - [mimosa] - Resource not found
+2025-03-26 12:05:44 [FATAL] - [soa] - Permission denied
+2025-03-26 10:45:23 [ERROR] - [soa] - Permission denied
+2025-03-26 09:46:03 [DEBUG] - [charles] - Normal operation 449
+2025-03-26 12:36:44 [FATAL] - [phoebe] - Invalid state detected
+2025-03-26 23:03:08 [ERROR] - [charles] - Connection refused
+2025-03-26 14:53:28 [ERROR] - [phoebe] - Connection refused
+2025-03-26 18:32:13 [DEBUG] - [charles] - Normal operation 453
+2025-03-26 16:08:30 [FATAL] - [phoebe] - Permission denied
+2025-03-26 09:24:27 [DEBUG] - [soa] - Normal operation 455
+2025-03-26 02:44:00 [DEBUG] - [mimosa] - Normal operation 456
+2025-03-26 12:43:19 [WARNING] - [phoebe] - Normal operation 457
+2025-03-26 15:28:38 [FATAL] - [android] - Permission denied
+2025-03-26 19:43:06 [ERROR] - [soa] - Invalid state detected
+2025-03-26 09:56:13 [ERROR] - [soa] - Permission denied
+2025-03-26 16:05:42 [FATAL] - [android] - Timeout waiting for response
+2025-03-26 18:21:10 [WARNING] - [mimosa] - Normal operation 462
+2025-03-26 05:59:35 [INFO] - [soa] - Normal operation 463
+2025-03-26 22:58:43 [WARNING] - [android] - Normal operation 464
+2025-03-26 17:39:23 [FATAL] - [charles] - Resource not found
+2025-03-26 15:35:33 [FATAL] - [charles] - Unexpected response format
+2025-03-26 10:54:04 [ERROR] - [charles] - Permission denied
+2025-03-26 06:58:54 [WARNING] - [mimosa] - Normal operation 468
+2025-03-26 01:31:24 [INFO] - [phoebe] - Normal operation 469
+2025-03-26 20:04:34 [DEBUG] - [android] - Normal operation 470
+2025-03-26 10:39:47 [FATAL] - [mimosa] - Connection refused
+2025-03-26 19:17:06 [ERROR] - [android] - Timeout waiting for response
+2025-03-26 08:33:56 [DEBUG] - [phoebe] - Normal operation 473
+2025-03-26 18:58:08 [ERROR] - [mimosa] - Permission denied
+2025-03-26 13:08:18 [DEBUG] - [android] - Normal operation 475
+2025-03-26 08:58:03 [WARNING] - [charles] - Normal operation 476
+2025-03-26 18:48:40 [ERROR] - [soa] - Connection refused
+2025-03-26 09:49:44 [DEBUG] - [mimosa] - Normal operation 478
+2025-03-26 02:56:25 [WARNING] - [phoebe] - Normal operation 479
+2025-03-26 03:29:30 [DEBUG] - [soa] - Normal operation 480
+2025-03-26 03:33:54 [FATAL] - [android] - Timeout waiting for response
+2025-03-26 18:46:46 [DEBUG] - [charles] - Normal operation 482
+2025-03-26 08:21:51 [ERROR] - [phoebe] - Connection refused
+2025-03-26 04:32:09 [INFO] - [mimosa] - Normal operation 484
+2025-03-26 20:48:56 [FATAL] - [charles] - Permission denied
+2025-03-26 07:48:26 [FATAL] - [android] - Unexpected response format
+2025-03-26 12:51:18 [INFO] - [mimosa] - Normal operation 487
+2025-03-26 00:53:51 [DEBUG] - [phoebe] - Normal operation 488
+2025-03-26 15:11:34 [ERROR] - [phoebe] - Permission denied
+2025-03-26 12:14:05 [ERROR] - [soa] - Permission denied
+2025-03-26 17:53:36 [ERROR] - [soa] - Invalid state detected
+2025-03-26 19:47:15 [ERROR] - [charles] - Resource not found
+2025-03-26 18:16:00 [ERROR] - [soa] - Resource not found
+2025-03-26 07:17:06 [ERROR] - [android] - Permission denied
+2025-03-26 09:31:40 [DEBUG] - [mimosa] - Normal operation 495
+2025-03-26 07:30:30 [WARNING] - [mimosa] - Normal operation 496
+2025-03-26 21:44:54 [WARNING] - [soa] - Normal operation 497
+2025-03-26 20:07:02 [WARNING] - [phoebe] - Normal operation 498
+2025-03-26 07:44:23 [ERROR] - [mimosa] - Permission denied

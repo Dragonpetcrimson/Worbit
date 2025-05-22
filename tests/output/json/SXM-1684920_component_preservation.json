@@ -1,0 +1,13 @@
+{
+  "test_id": "SXM-1684920",
+  "primary_issue_component": "arecibo",
+  "final_component_counts": {
+    "arecibo": 20
+  },
+  "component_source_counts": {
+    "filename": 20
+  },
+  "source_component_alignment": true,
+  "primary_component_presence": 20,
+  "component_fields_preserved": true
+}

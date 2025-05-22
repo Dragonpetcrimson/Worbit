@@ -1,0 +1,1045 @@
+{ "document_metadata": { "title": "Orbit Analyzer Test System Interface Documentation", "version": "1.0.0", "timestamp": "2025-05-16T12:00:00Z", "document_type": "System Architecture Documentation", "purpose": "This document provides a comprehensive interface specification of the Orbit Analyzer test system to enable knowledge transfer between developers or AI systems. It contains detailed information about the system architecture, component relationships, and implementation details that allows understanding the system without access to the original source code.", "context_requirements": "This documentation assumes basic understanding of Python unittest framework and software testing principles." },
+
+"system_overview": { "name": "Orbit Analyzer Test System", "description": "The Orbit Analyzer test system is a comprehensive framework for testing the Orbit Analyzer application. It provides a registry-based architecture for registering, discovering, and executing tests across various categories with different priorities. The system supports extensive configuration options, structured directory organization, and reporting capabilities.", "design_philosophy": "The test system follows a modular architecture organized by functional categories, with a central registry for test discovery and metadata. It emphasizes test independence, proper resource management, and consistent directory structure. Tests are categorized by importance and functionality, with support for parallel execution and comprehensive reporting.", "core_functionality": [ "Test registration and discovery via TestRegistry", "Category-based test organization", "Filtering tests by importance, tags, and other criteria", "Standardized test output directories and reporting", "Performance measurement and benchmarking", "Integration with CI/CD systems via JUnit XML reporting", "Coverage analysis for code quality assessment" ] },
+
+"modules_and_components": { "test_registry": { "file_location": "tests/test_registry.py", "purpose": "Provides a centralized mechanism for test registration, discovery, and filtering with metadata and dependency tracking", "classes": { "TestRegistry": { "description": "Static class that maintains the registry of test classes with their metadata", "static_attributes": { "CATEGORIES": { "type": "List[str]", "description": "List of standard test categories", "value": ["core", "component", "report", "visualization", "integration", "performance", "structure"] }, "_test_modules": { "type": "Dict", "description": "Internal dictionary storing registered test modules" }, "_dependencies": { "type": "Dict", "description": "Dictionary tracking dependencies between tests" }, "_cache": { "type": "Dict", "description": "Cache for get_modules results" } }, "methods": { "register": { "signature": "@classmethod def register(cls, category='core', importance=1, slow=False, tags=None, depends_on=None, platforms=None, python_version=None)", "description": "Decorator to register a test class with the registry", "parameters": { "category": { "type": "str", "description": "Test category for grouping (must be in CATEGORIES)", "default": "core" }, "importance": { "type": "int", "description": "Importance level (1=critical, 2=important, 3=optional)", "default": 1 }, "slow": { "type": "bool", "description": "Whether this test is slow and should be skipped in quick test mode", "default": false }, "tags": { "type": "List[str]", "description": "Additional tags for fine-grained filtering", "default": null }, "depends_on": { "type": "List[str]", "description": "Test classes this test depends on", "default": null }, "platforms": { "type": "List[str]", "description": "Platforms where this test is valid ('windows', 'linux', 'macos')", "default": "All platforms" }, "python_version": { "type": "tuple", "description": "Minimum Python version required", "default": "(3, 7)" } }, "returns": { "type": "function", "description": "Decorated test class" }, "example": "@TestRegistry.register(category='component', importance=1, tags=['analyzer', 'identification'], depends_on=['TestComponentSchema'])\nclass TestComponentAnalyzer(unittest.TestCase):\n """Unit tests for the ComponentAnalyzer class."""\n # Test methods..." }, "get_modules": { "signature": "@classmethod def get_modules(cls, category=None, max_importance=3, include_slow=True, tags=None, platform=None, validate_dependencies=True)", "description": "Get registered test modules, with advanced filtering options", "parameters": { "category": { "type": "str or List[str]", "description": "Specific category or categories to return (None=all categories)", "default": null }, "max_importance": { "type": "int", "description": "Maximum importance level to include (lower=more important)", "default": 3 }, "include_slow": { "type": "bool", "description": "Whether to include tests marked as slow", "default": true }, "tags": { "type": "List[str]", "description": "Only include tests with these tags", "default": null }, "platform": { "type": "str", "description": "Current platform ('windows', 'linux', 'macos')", "default": null }, "validate_dependencies": { "type": "bool", "description": "Check and include dependencies", "default": true } }, "returns": { "type": "Dict[str, List[Dict]]", "description": "Dictionary of test modules by category" }, "example": "modules = TestRegistry.get_modules(category='core', max_importance=2, tags=['analyzer'])" }, "list_categories": { "signature": "@classmethod def list_categories(cls)", "description": "List all available categories with count of tests in each", "returns": { "type": "Dict[str, int]", "description": "Dictionary mapping category names to test counts" }, "example": "categories = TestRegistry.list_categories()\nprint(categories) # {'core': 10, 'component': 5, ...}" }, "list_tags": { "signature": "@classmethod def list_tags(cls)", "description": "List all available tags", "returns": { "type": "Set[str]", "description": "Set of all tags used in tests" }, "example": "tags = TestRegistry.list_tags()\nprint(tags) # {'analyzer', 'visualization', ...}" }, "validate_dependencies": { "signature": "@classmethod def validate_dependencies(cls)", "description": "Validate that all dependencies exist", "returns": { "type": "Tuple[bool, Dict]", "description": "Tuple of (valid, missing_dependencies)" }, "example": "valid, missing_dependencies = TestRegistry.validate_dependencies()\nif not valid:\n print('Missing dependencies:', missing_dependencies)" }, "clear_cache": { "signature": "@classmethod def clear_cache(cls)", "description": "Clear the get_modules result cache", "returns": { "type": "None" }, "example": "TestRegistry.clear_cache()" } } } } },
+
+"test_utils": {
+  "file_location": "tests/test_utils.py",
+  "purpose": "Provides utility functions and classes for test configuration, directory handling, test data generation, and validation",
+  "classes": {
+    "ConfigManager": {
+      "description": "Manages test configuration with proper overrides",
+      "static_attributes": {
+        "_config": {
+          "type": "Dict",
+          "description": "Cached configuration values"
+        }
+      },
+      "methods": {
+        "get": {
+          "signature": "@classmethod def get(cls, key: str, default: Any = None) -> Any",
+          "description": "Get a configuration value",
+          "parameters": {
+            "key": {
+              "type": "str",
+              "description": "Configuration key to retrieve"
+            },
+            "default": {
+              "type": "Any",
+              "description": "Default value if key not found",
+              "default": null
+            }
+          },
+          "returns": {
+            "type": "Any",
+            "description": "Configuration value"
+          },
+          "example": "timeout = ConfigManager.get(\"TEST_TIMEOUT\", 60)"
+        },
+        "set": {
+          "signature": "@classmethod def set(cls, key: str, value: Any) -> None",
+          "description": "Set a configuration value",
+          "parameters": {
+            "key": {
+              "type": "str",
+              "description": "Configuration key to set"
+            },
+            "value": {
+              "type": "Any",
+              "description": "Value to set"
+            }
+          },
+          "returns": {
+            "type": "None"
+          },
+          "example": "ConfigManager.set(\"SKIP_SLOW_TESTS\", True)"
+        }
+      }
+    },
+    "MockLogEntry": {
+      "description": "Mock log entry for testing",
+      "constructor": {
+        "signature": "def __init__(self, timestamp=None, is_error=False, file=\"test.log\", line_num=1, severity=\"Medium\", text=\"Test log entry\", component=None)",
+        "parameters": {
+          "timestamp": {
+            "type": "datetime",
+            "description": "Timestamp of the log entry",
+            "default": "current datetime"
+          },
+          "is_error": {
+            "type": "bool",
+            "description": "Whether this is an error entry",
+            "default": false
+          },
+          "file": {
+            "type": "str",
+            "description": "Source file",
+            "default": "test.log"
+          },
+          "line_num": {
+            "type": "int",
+            "description": "Line number in source file",
+            "default": 1
+          },
+          "severity": {
+            "type": "str",
+            "description": "Severity level",
+            "default": "Medium"
+          },
+          "text": {
+            "type": "str",
+            "description": "Log entry text",
+            "default": "Test log entry"
+          },
+          "component": {
+            "type": "str",
+            "description": "Associated component",
+            "default": null
+          }
+        }
+      },
+      "attributes": {
+        "timestamp": {
+          "type": "datetime",
+          "description": "Timestamp of the log entry"
+        },
+        "is_error": {
+          "type": "bool",
+          "description": "Whether this is an error entry"
+        },
+        "file": {
+          "type": "str",
+          "description": "Source file"
+        },
+        "line_number": {
+          "type": "int",
+          "description": "Line number in source file (used by LogEntry in gherkin_log_correlator)"
+        },
+        "line_num": {
+          "type": "int",
+          "description": "Line number in source file (used by Error objects)"
+        },
+        "severity": {
+          "type": "str",
+          "description": "Severity level"
+        },
+        "text": {
+          "type": "str",
+          "description": "Log entry text"
+        },
+        "component": {
+          "type": "str",
+          "description": "Associated component"
+        }
+      }
+    },
+    "MockGherkinStep": {
+      "description": "Mock Gherkin step for testing",
+      "constructor": {
+        "signature": "def __init__(self, step_number, text=\"Test step\", keyword=\"Given\")",
+        "parameters": {
+          "step_number": {
+            "type": "int",
+            "description": "Step number in the feature file"
+          },
+          "text": {
+            "type": "str",
+            "description": "Step text",
+            "default": "Test step"
+          },
+          "keyword": {
+            "type": "str",
+            "description": "Gherkin keyword",
+            "default": "Given"
+          }
+        }
+      },
+      "attributes": {
+        "step_number": {
+          "type": "int",
+          "description": "Step number in the feature file"
+        },
+        "text": {
+          "type": "str",
+          "description": "Step text"
+        },
+        "keyword": {
+          "type": "str",
+          "description": "Gherkin keyword"
+        }
+      }
+    }
+  },
+  "functions": {
+    "setup_test_output_directories": {
+      "signature": "def setup_test_output_directories(test_id: str) -> Dict[str, str]",
+      "description": "Set up standardized test output directories",
+      "parameters": {
+        "test_id": {
+          "type": "str",
+          "description": "Test identifier"
+        }
+      },
+      "returns": {
+        "type": "Dict[str, str]",
+        "description": "Dictionary with paths to created directories"
+      },
+      "return_values": {
+        "base": "Path to base directory",
+        "json": "Path to JSON directory",
+        "images": "Path to images directory",
+        "debug": "Path to debug directory",
+        "test_id": "Normalized test ID"
+      },
+      "side_effects": "Creates directories on the filesystem",
+      "example": "dirs = setup_test_output_directories(\"SXM-123456\")\njson_dir = dirs[\"json\"]"
+    },
+    "get_test_output_path": {
+      "signature": "def get_test_output_path(test_id: str, filename: str, file_type: Optional[str] = None) -> str",
+      "description": "Get standardized test output path",
+      "parameters": {
+        "test_id": {
+          "type": "str",
+          "description": "Test identifier"
+        },
+        "filename": {
+          "type": "str",
+          "description": "Name of the file"
+        },
+        "file_type": {
+          "type": "Optional[str]",
+          "description": "Optional type ('json', 'image', 'debug')",
+          "default": null
+        }
+      },
+      "returns": {
+        "type": "str",
+        "description": "Full path to the file in the appropriate directory"
+      },
+      "example": "report_path = get_test_output_path(test_id, f\"{test_id}_report.xlsx\")\njson_path = get_test_output_path(test_id, f\"{test_id}_data.json\", \"json\")"
+    },
+    "validate_directory_structure": {
+      "signature": "def validate_directory_structure(test_id: str) -> Dict[str, List[str]]",
+      "description": "Validate the test output directory structure",
+      "parameters": {
+        "test_id": {
+          "type": "str",
+          "description": "Test identifier"
+        }
+      },
+      "returns": {
+        "type": "Dict[str, List[str]]",
+        "description": "Dictionary with validation results"
+      },
+      "return_values": {
+        "json_in_images": "JSON files in images directory",
+        "images_in_json": "Image files in JSON directory",
+        "json_in_base": "JSON files in base directory",
+        "images_in_base": "Image files in base directory",
+        "other_issues": "Other directory structure issues"
+      },
+      "example": "issues = validate_directory_structure(test_id)\nif issues['json_in_images']:\n    print(f\"JSON files found in images directory: {issues['json_in_images']}\")"
+    },
+    "find_suitable_log_folder": {
+      "signature": "def find_suitable_log_folder() -> Optional[str]",
+      "description": "Find the first available SXM-* folder in logs directory",
+      "returns": {
+        "type": "Optional[str]",
+        "description": "Path to first suitable test folder, or None if none found"
+      },
+      "example": "log_folder = find_suitable_log_folder()\nif log_folder:\n    log_files = [os.path.join(log_folder, f) for f in os.listdir(log_folder) if f.endswith('.log')]"
+    },
+    "get_test_folder": {
+      "signature": "def get_test_folder() -> str",
+      "description": "Get a valid test folder, creating one if needed",
+      "returns": {
+        "type": "str",
+        "description": "Path to a test folder containing log files"
+      },
+      "side_effects": "May create test data if no suitable folder found",
+      "example": "test_folder = get_test_folder()\nlog_files = [os.path.join(test_folder, f) for f in os.listdir(test_folder) if f.endswith('.log')]"
+    },
+    "create_test_data": {
+      "signature": "def create_test_data() -> str",
+      "description": "Creates minimal test data if no real data found",
+      "returns": {
+        "type": "str",
+        "description": "Path to the created test data directory"
+      },
+      "side_effects": "Creates files on the filesystem",
+      "example": "test_folder = create_test_data()\nlog_files = [os.path.join(test_folder, f) for f in os.listdir(test_folder) if f.endswith('.log')]"
+    },
+    "create_test_image": {
+      "signature": "def create_test_image(path: str, text: str) -> None",
+      "description": "Create a simple test image with text for OCR testing",
+      "parameters": {
+        "path": {
+          "type": "str",
+          "description": "Path where the image should be saved"
+        },
+        "text": {
+          "type": "str",
+          "description": "Text to include in the image"
+        }
+      },
+      "returns": {
+        "type": "None"
+      },
+      "side_effects": "Creates an image file on the filesystem",
+      "dependencies": ["PIL (optional)"],
+      "example": "create_test_image(os.path.join(test_folder, \"screenshot.png\"), \"Test Error Screen\")"
+    },
+    "create_mock_errors": {
+      "signature": "def create_mock_errors(count: int = 5, components: List[str] = None) -> List[Dict]",
+      "description": "Create a list of mock errors for testing",
+      "parameters": {
+        "count": {
+          "type": "int",
+          "description": "Number of errors to create",
+          "default": 5
+        },
+        "components": {
+          "type": "List[str]",
+          "description": "List of components to use",
+          "default": "['soa', 'android', 'mimosa']"
+        }
+      },
+      "returns": {
+        "type": "List[Dict]",
+        "description": "List of error dictionaries"
+      },
+      "example": "errors = create_mock_errors(10, components=['soa', 'android'])"
+    },
+    "create_mock_clusters": {
+      "signature": "def create_mock_clusters(errors: List[Dict], num_clusters: int = 2) -> Dict[int, List[Dict]]",
+      "description": "Create mock clusters from errors for testing",
+      "parameters": {
+        "errors": {
+          "type": "List[Dict]",
+          "description": "List of errors to group into clusters"
+        },
+        "num_clusters": {
+          "type": "int",
+          "description": "Number of clusters to create",
+          "default": 2
+        }
+      },
+      "returns": {
+        "type": "Dict[int, List[Dict]]",
+        "description": "Dictionary mapping cluster IDs to lists of errors"
+      },
+      "example": "clusters = create_mock_clusters(errors, num_clusters=3)"
+    },
+    "validate_report_file": {
+      "signature": "def validate_report_file(file_path: str, required_fields: List[str] = None) -> Tuple[bool, List[str]]",
+      "description": "Validate a report file exists and contains required fields",
+      "parameters": {
+        "file_path": {
+          "type": "str",
+          "description": "Path to the report file"
+        },
+        "required_fields": {
+          "type": "List[str]",
+          "description": "List of fields that should be present in JSON reports",
+          "default": null
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, List[str]]",
+        "description": "Tuple of (is_valid, list_of_issues)"
+      },
+      "example": "is_valid, issues = validate_report_file(report_path, required_fields=[\"test_id\", \"summary\", \"errors\"])\nself.assertTrue(is_valid, f\"Report validation failed: {', '.join(issues)}\")"
+    },
+    "validate_visualization": {
+      "signature": "def validate_visualization(image_path: str, min_size: int = 1000) -> Tuple[bool, List[str]]",
+      "description": "Validate that a visualization image was properly created",
+      "parameters": {
+        "image_path": {
+          "type": "str",
+          "description": "Path to the image file"
+        },
+        "min_size": {
+          "type": "int",
+          "description": "Minimum expected file size in bytes",
+          "default": 1000
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, List[str]]",
+        "description": "Tuple of (is_valid, list_of_issues)"
+      },
+      "example": "is_valid, issues = validate_visualization(image_path)\nself.assertTrue(is_valid, f\"Visualization validation failed: {', '.join(issues)}\")"
+    },
+    "get_component_schema_path": {
+      "signature": "def get_component_schema_path() -> str",
+      "description": "Get the path to the component schema file",
+      "returns": {
+        "type": "str",
+        "description": "Path to the component schema file"
+      },
+      "side_effects": "May create a minimal schema if not found",
+      "example": "schema_path = get_component_schema_path()\nwith open(schema_path, 'r') as f:\n    schema = json.load(f)"
+    },
+    "timeit": {
+      "signature": "def timeit(func)",
+      "description": "Decorator to time function execution",
+      "parameters": {
+        "func": {
+          "type": "function",
+          "description": "Function to time"
+        }
+      },
+      "returns": {
+        "type": "function",
+        "description": "Wrapped function that logs execution time"
+      },
+      "side_effects": "Logs execution time",
+      "example": "@timeit\ndef test_log_parser_performance(self):\n    errors = parse_logs([self.large_log])"
+    },
+    "has_required_module": {
+      "signature": "def has_required_module(module_name: str) -> bool",
+      "description": "Check if a required module is available",
+      "parameters": {
+        "module_name": {
+          "type": "str",
+          "description": "Name of the module to check"
+        }
+      },
+      "returns": {
+        "type": "bool",
+        "description": "True if module is available, False otherwise"
+      },
+      "example": "if has_required_module('PIL'):\n    # Use PIL functionality\nelse:\n    # Fallback implementation"
+    },
+    "skip_if_module_missing": {
+      "signature": "def skip_if_module_missing(module_name: str)",
+      "description": "Decorator to skip test if module is missing",
+      "parameters": {
+        "module_name": {
+          "type": "str",
+          "description": "Name of module to check"
+        }
+      },
+      "returns": {
+        "type": "function",
+        "description": "Decorator function"
+      },
+      "example": "@skip_if_module_missing('PIL')\ndef test_image_processing(self):\n    # Test that requires PIL"
+    },
+    "skip_if_env_flag": {
+      "signature": "def skip_if_env_flag(flag_name: str, value: str = \"1\")",
+      "description": "Decorator to skip test if environment flag is set",
+      "parameters": {
+        "flag_name": {
+          "type": "str",
+          "description": "Name of environment variable to check"
+        },
+        "value": {
+          "type": "str",
+          "description": "Value to check for",
+          "default": "1"
+        }
+      },
+      "returns": {
+        "type": "function",
+        "description": "Decorator function"
+      },
+      "example": "@skip_if_env_flag('SKIP_SLOW_TESTS')\ndef test_slow_operation(self):\n    # Slow test implementation"
+    },
+    "copy_test_files": {
+      "signature": "def copy_test_files(source_dir: str, target_dir: str, file_patterns: List[str] = None) -> List[str]",
+      "description": "Copy test files from source to target directory",
+      "parameters": {
+        "source_dir": {
+          "type": "str",
+          "description": "Source directory containing files"
+        },
+        "target_dir": {
+          "type": "str",
+          "description": "Target directory to copy files to"
+        },
+        "file_patterns": {
+          "type": "List[str]",
+          "description": "List of glob patterns to match files",
+          "default": "[\"*.log\", \"*.png\"]"
+        }
+      },
+      "returns": {
+        "type": "List[str]",
+        "description": "List of copied file paths"
+      },
+      "side_effects": "Copies files to target directory",
+      "example": "log_files = copy_test_files(source_folder, self.temp_dir, file_patterns=[\"*.log\"])"
+    }
+  }
+},
+
+"run_all_tests": {
+  "file_location": "tests/run_all_tests.py",
+  "purpose": "Main entry point for executing tests, providing CLI interface, reporting, and results collection",
+  "functions": {
+    "discover_and_run_tests": {
+      "signature": "def discover_and_run_tests(categories=None, tags=None, max_importance=3, include_slow=True, validate_dependencies=True)",
+      "description": "Discover and run tests based on filter criteria",
+      "parameters": {
+        "categories": {
+          "type": "List[str]",
+          "description": "Categories to run",
+          "default": null
+        },
+        "tags": {
+          "type": "List[str]",
+          "description": "Tags to filter by",
+          "default": null
+        },
+        "max_importance": {
+          "type": "int",
+          "description": "Maximum importance level to include",
+          "default": 3
+        },
+        "include_slow": {
+          "type": "bool",
+          "description": "Whether to include slow tests",
+          "default": true
+        },
+        "validate_dependencies": {
+          "type": "bool",
+          "description": "Whether to validate dependencies",
+          "default": true
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, Dict]",
+        "description": "Tuple of (success_status, result_dict)"
+      },
+      "example": "success, results = discover_and_run_tests(categories=['core'], max_importance=1)"
+    },
+    "run_with_coverage": {
+      "signature": "def run_with_coverage(categories=None, tags=None, max_importance=3, include_slow=True, validate_dependencies=True, html_coverage=False, xml_coverage=False, coverage_source=None)",
+      "description": "Run tests with coverage analysis",
+      "parameters": {
+        "categories": {
+          "type": "List[str]",
+          "description": "Categories to run",
+          "default": null
+        },
+        "tags": {
+          "type": "List[str]",
+          "description": "Tags to filter by",
+          "default": null
+        },
+        "max_importance": {
+          "type": "int",
+          "description": "Maximum importance level to include",
+          "default": 3
+        },
+        "include_slow": {
+          "type": "bool",
+          "description": "Whether to include slow tests",
+          "default": true
+        },
+        "validate_dependencies": {
+          "type": "bool",
+          "description": "Whether to validate dependencies",
+          "default": true
+        },
+        "html_coverage": {
+          "type": "bool",
+          "description": "Generate HTML coverage report",
+          "default": false
+        },
+        "xml_coverage": {
+          "type": "bool",
+          "description": "Generate XML coverage report",
+          "default": false
+        },
+        "coverage_source": {
+          "type": "List[str]",
+          "description": "Source modules to measure coverage for",
+          "default": null
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, Dict, coverage.Coverage]",
+        "description": "Tuple of (success_status, result_dict, coverage_object)"
+      },
+      "dependencies": ["coverage"],
+      "example": "success, results, cov = run_with_coverage(categories=['core'], html_coverage=True, coverage_source=['log_analyzer'])"
+    },
+    "print_summary": {
+      "signature": "def print_summary(results: Dict)",
+      "description": "Print a summary of test results",
+      "parameters": {
+        "results": {
+          "type": "Dict",
+          "description": "Dictionary of test results"
+        }
+      },
+      "returns": {
+        "type": "None"
+      },
+      "side_effects": "Prints to console",
+      "example": "print_summary(results)"
+    },
+    "generate_html_report": {
+      "signature": "def generate_html_report(results: Dict, output_path: str)",
+      "description": "Generate HTML report of test results",
+      "parameters": {
+        "results": {
+          "type": "Dict",
+          "description": "Dictionary of test results"
+        },
+        "output_path": {
+          "type": "str",
+          "description": "Path to write HTML report"
+        }
+      },
+      "returns": {
+        "type": "None"
+      },
+      "side_effects": "Creates HTML file",
+      "example": "generate_html_report(results, 'test_reports/report.html')"
+    },
+    "generate_junit_xml": {
+      "signature": "def generate_junit_xml(results: Dict, output_path: str)",
+      "description": "Generate JUnit XML report of test results",
+      "parameters": {
+        "results": {
+          "type": "Dict",
+          "description": "Dictionary of test results"
+        },
+        "output_path": {
+          "type": "str",
+          "description": "Path to write XML report"
+        }
+      },
+      "returns": {
+        "type": "None"
+      },
+      "side_effects": "Creates XML file",
+      "example": "generate_junit_xml(results, 'test_reports/junit.xml')"
+    },
+    "save_results": {
+      "signature": "def save_results(results: Dict, output_path: str)",
+      "description": "Save test results to JSON file",
+      "parameters": {
+        "results": {
+          "type": "Dict",
+          "description": "Dictionary of test results"
+        },
+        "output_path": {
+          "type": "str",
+          "description": "Path to write JSON file"
+        }
+      },
+      "returns": {
+        "type": "None"
+      },
+      "side_effects": "Creates JSON file",
+      "example": "save_results(results, 'test_reports/results.json')"
+    },
+    "main": {
+      "signature": "def main()",
+      "description": "Main entry point for the test runner",
+      "returns": {
+        "type": "int",
+        "description": "Exit code (0 = success, non-zero = failure)"
+      },
+      "side_effects": "Runs tests and reports results",
+      "example": "if __name__ == '__main__':\n    sys.exit(main())"
+    }
+  }
+},
+
+"core_module_tests": {
+  "file_location": "tests/core_module_tests.py",
+  "purpose": "Tests for core processing modules including log parsing, error clustering, OCR, and summary generation",
+  "test_classes": {
+    "TestLogSegmenter": {
+      "description": "Tests the identification and collection of log files",
+      "category": "core",
+      "tests": [
+        "test_file_discovery",
+        "test_log_file_classification",
+        "test_image_file_classification",
+        "test_empty_directory_handling"
+      ]
+    },
+    "TestLogAnalyzer": {
+      "description": "Tests the parsing and analysis of log content",
+      "category": "core",
+      "tests": [
+        "test_log_parsing",
+        "test_error_extraction",
+        "test_context_capture",
+        "test_severity_classification"
+      ]
+    },
+    "TestErrorClusterer": {
+      "description": "Tests the clustering of related errors",
+      "category": "core",
+      "tests": [
+        "test_error_similarity",
+        "test_cluster_generation",
+        "test_optimal_cluster_count",
+        "test_error_distribution"
+      ]
+    },
+    "TestOcrProcessor": {
+      "description": "Tests the extraction of text from images",
+      "category": "core",
+      "tests": [
+        "test_ocr_processing",
+        "test_text_extraction",
+        "test_empty_image_handling"
+      ]
+    },
+    "TestGPTSummarizer": {
+      "description": "Tests the AI-powered summary generation",
+      "category": "core",
+      "tests": [
+        "test_prompt_generation",
+        "test_summary_format",
+        "test_root_cause_extraction",
+        "test_fallback_mechanism"
+      ]
+    },
+    "TestSecureApiKey": {
+      "description": "Tests the secure handling of API keys",
+      "category": "core",
+      "tests": [
+        "test_env_var_retrieval",
+        "test_keyring_fallback",
+        "test_missing_key_handling",
+        "test_keyring_exception_handling"
+      ]
+    }
+  }
+},
+
+"component_tests": {
+  "file_location": "tests/component_tests.py",
+  "purpose": "Tests for component identification, analysis, and relationship detection",
+  "test_classes": {
+    "TestComponentAnalyzer": {
+      "description": "Tests the identification of components from logs",
+      "category": "component",
+      "tests": [
+        "test_identify_component_from_log_file",
+        "test_identify_component_from_error_text",
+        "test_component_relationship_analysis",
+        "test_root_cause_determination"
+      ]
+    },
+    "TestComponentIntegration": {
+      "description": "Tests the integration of component-related functionality",
+      "category": "component",
+      "tests": [
+        "test_integration_with_error_clustering",
+        "test_visualization_generation",
+        "test_report_enhancement"
+      ]
+    },
+    "TestComponentVisualizer": {
+      "description": "Tests the generation of component visualizations",
+      "category": "component",
+      "tests": [
+        "test_relationship_diagram",
+        "test_error_propagation_visualization",
+        "test_component_distribution_heatmap",
+        "test_graph_layout_optimization"
+      ]
+    },
+    "TestContextAwareClusterer": {
+      "description": "Tests component-aware error clustering",
+      "category": "component",
+      "tests": [
+        "test_temporal_clustering",
+        "test_relationship_based_clustering",
+        "test_root_cause_identification",
+        "test_causality_path_generation"
+      ]
+    },
+    "TestDirectComponentAnalyzer": {
+      "description": "Tests direct component identification",
+      "category": "component",
+      "tests": [
+        "test_filename_identification",
+        "test_special_case_handling",
+        "test_relationship_assignment",
+        "test_primary_issue_determination"
+      ]
+    },
+    "ComponentPreservationTest": {
+      "description": "Tests preservation of component information",
+      "category": "component",
+      "tests": [
+        "test_json_serialization",
+        "test_component_validation",
+        "test_unknown_component_handling"
+      ]
+    }
+  }
+},
+
+"report_tests": {
+  "file_location": "tests/report_tests.py",
+  "purpose": "Tests for report generation in various formats",
+  "test_classes": {
+    "ReportsPackageTest": {
+      "description": "Tests the modular reports package components",
+      "category": "report",
+      "tests": [
+        "test_base_utilities",
+        "test_component_preservation",
+        "test_data_preprocessing",
+        "test_json_generation",
+        "test_report_manager"
+      ]
+    },
+    "TestReportsIntegration": {
+      "description": "Tests the integration of report generation",
+      "category": "report",
+      "tests": [
+        "test_directory_integration",
+        "test_file_path_handling",
+        "test_file_naming_convention"
+      ]
+    },
+    "TestExcelGenerator": {
+      "description": "Tests Excel report generation",
+      "category": "report",
+      "tests": [
+        "test_workbook_creation",
+        "test_data_formatting",
+        "test_file_path_handling",
+        "test_access_error_handling"
+      ]
+    },
+    "TestDocxGenerator": {
+      "description": "Tests DOCX report generation",
+      "category": "report",
+      "tests": [
+        "test_document_structure",
+        "test_content_extraction",
+        "test_component_inclusion",
+        "test_file_saving"
+      ]
+    },
+    "TestComponentReport": {
+      "description": "Tests component report generation",
+      "category": "report",
+      "tests": [
+        "test_html_structure",
+        "test_visualization_references",
+        "test_component_relationship_representation",
+        "test_error_distribution_visualization"
+      ]
+    }
+  }
+},
+
+"visualization_tests": {
+  "file_location": "tests/visualization_tests.py",
+  "purpose": "Tests for visualization generation",
+  "test_classes": {
+    "TestVisualizations": {
+      "description": "Tests basic visualization generation",
+      "category": "visualization",
+      "tests": [
+        "test_component_error_distribution",
+        "test_timeline_visualization",
+        "test_cluster_timeline_visualization",
+        "test_configuration_flags"
+      ]
+    },
+    "TestComponentVisualization": {
+      "description": "Tests component-specific visualizations",
+      "category": "visualization",
+      "tests": [
+        "test_image_directory_structure",
+        "test_visualization_path_handling",
+        "test_component_relationship_visualization"
+      ]
+    },
+    "TestTimelineGenerator": {
+      "description": "Tests timeline visualizations",
+      "category": "visualization",
+      "tests": [
+        "test_step_timeline",
+        "test_cluster_timeline",
+        "test_time_based_error_visualization",
+        "test_path_validation"
+      ]
+    }
+  }
+},
+
+"integration_tests": {
+  "file_location": "tests/integration_tests.py",
+  "purpose": "Tests for integrated functionality across modules",
+  "test_classes": {
+    "TestSystemIntegration": {
+      "description": "Tests overall system integration",
+      "category": "integration",
+      "tests": [
+        "test_module_presence",
+        "test_function_availability",
+        "test_configuration_validation",
+        "test_module_interdependencies"
+      ]
+    },
+    "TestController": {
+      "description": "Tests the main controller functionality",
+      "category": "integration",
+      "tests": [
+        "test_run_pipeline",
+        "test_feature_file_handling",
+        "test_output_directory_creation",
+        "test_error_handling_and_reporting"
+      ]
+    },
+    "TestGherkinLogCorrelator": {
+      "description": "Tests correlating logs with Gherkin steps",
+      "category": "integration",
+      "tests": [
+        "test_feature_file_parsing",
+        "test_step_extraction",
+        "test_log_correlation",
+        "test_step_timeline_generation"
+      ]
+    },
+    "TestStepAwareAnalyzer": {
+      "description": "Tests step-aware analysis reports",
+      "category": "integration",
+      "tests": [
+        "test_step_report_generation",
+        "test_log_analysis_integration",
+        "test_step_error_correlation",
+        "test_html_report_generation"
+      ]
+    },
+    "TestBatchProcessor": {
+      "description": "Tests batch processing of multiple tests",
+      "category": "integration",
+      "tests": [
+        "test_folder_discovery",
+        "test_sequential_processing",
+        "test_parallel_processing",
+        "test_batch_report_generation",
+        "test_result_aggregation"
+      ]
+    }
+  }
+},
+
+"structure_tests": {
+  "file_location": "tests/structure_tests.py",
+  "purpose": "Tests for project structure and organization",
+  "test_classes": {
+    "DirectoryStructureTest": {
+      "description": "Tests directory structure and path handling",
+      "category": "structure",
+      "tests": [
+        "test_directory_setup",
+        "test_path_normalization",
+        "test_filename_standardization",
+        "test_file_location_validation"
+      ]
+    },
+    "TestJsonUtils": {
+      "description": "Tests JSON serialization and deserialization",
+      "category": "structure",
+      "tests": [
+        "test_datetime_encoding",
+        "test_component_field_preservation",
+        "test_file_serialization",
+        "test_error_handling"
+      ]
+    }
+  }
+},
+
+"performance_tests": {
+  "file_location": "tests/performance_tests.py",
+  "purpose": "Tests for performance characteristics and benchmarks",
+  "test_classes": {
+    "PerformanceTests": {
+      "description": "Tests performance of various system components",
+      "category": "performance",
+      "importance": 2,
+      "slow": true,
+      "tests": [
+        "test_log_parser_performance",
+        "test_error_clustering_performance",
+        "test_component_analysis_performance",
+        "test_report_generation_performance",
+        "test_memory_usage",
+        "test_processing_throughput",
+        "test_algorithmic_efficiency"
+      ]
+    }
+  }
+},
+
+"legacy_test_runner": {
+  "file_location": "tests/legacy_test_runner.py",
+  "purpose": "Provides backward compatibility for running tests using the old system",
+  "functions": {
+    "discover_legacy_test_modules": {
+      "signature": "def discover_legacy_test_modules() -> List[str]",
+      "description": "Discovers test modules using old naming convention",
+      "returns": {
+        "type": "List[str]",
+        "description": "List of test module names"
+      },
+      "example": "modules = discover_legacy_test_modules()\nprint(f\"Found {len(modules)} legacy test modules\")"
+    },
+    "run_single_test_module": {
+      "signature": "def run_single_test_module(module_name: str) -> Tuple[bool, Dict[str, Any]]",
+      "description": "Run tests from a single module",
+      "parameters": {
+        "module_name": {
+          "type": "str",
+          "description": "Name of the test module to run"
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, Dict[str, Any]]",
+        "description": "Tuple of (success_status, result_stats)"
+      },
+      "example": "success, stats = run_single_test_module('log_analyzer_test')\nif not success:\n    print(f\"Test failed: {stats['error']}\")"
+    },
+    "run_all_legacy_tests": {
+      "signature": "def run_all_legacy_tests(include_performance=False) -> Tuple[bool, Dict[str, Dict]]",
+      "description": "Run all legacy tests",
+      "parameters": {
+        "include_performance": {
+          "type": "bool",
+          "description": "Whether to include performance tests",
+          "default": false
+        }
+      },
+      "returns": {
+        "type": "Tuple[bool, Dict[str, Dict]]",
+        "description": "Tuple of (success_status, results_by_module)"
+      },
+      "example": "success, results = run_all_legacy_tests()\nprint(f\"Overall success: {success}\")"
+    }
+  }
+}
+},
+
+"architecture_and_processing_flows": { "test_execution_flow": { "description": "The standard flow for test execution through the test system", "steps": [ { "step": 1, "name": "Test Discovery", "description": "Modules are imported and test classes are registered through TestRegistry", "code": "TestRegistry.get_modules(category=categories, max_importance=max_importance, include_slow=include_slow, tags=tags, validate_dependencies=validate_dependencies)" }, { "step": 2, "name": "Test Configuration", "description": "Configuration values are loaded from environment variables, config files, or defaults", "code": "timeout = ConfigManager.get("TEST_TIMEOUT", 60)" }, { "step": 3, "name": "Test Execution", "description": "Tests are executed by category and module", "code": "for category, module_list in sorted(modules.items()):\n suite = unittest.TestSuite()\n for module_info in module_list:\n test_class = module_info['class']\n suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test_class))\n \n runner = unittest.TextTestRunner(verbosity=verbosity)\n result = runner.run(suite)" }, { "step": 4, "name": "Result Collection", "description": "Test results are collected and organized", "code": "results[category] = {\n 'module_count': len(module_list),\n 'test_count': result.testsRun,\n 'failures': len(result.failures),\n 'errors': len(result.errors),\n 'skipped': len(result.skipped),\n 'duration': duration,\n 'success': len(result.failures) == 0 and len(result.errors) == 0\n}" }, { "step": 5, "name": "Result Reporting", "description": "Results are formatted and displayed or saved", "code": "print_summary(results)\nif junit_xml:\n generate_junit_xml(results, junit_xml)\nif html_report:\n generate_html_report(results, html_report)\nif save_results_path:\n save_results(results, save_results_path)" } ] }, "test_registration_process": { "description": "How tests are registered and discovered", "steps": [ { "step": 1, "name": "Decorator Application", "description": "Test classes are decorated with TestRegistry.register", "code": "@TestRegistry.register(category='component', importance=1, tags=['analyzer'])\nclass TestComponentAnalyzer(unittest.TestCase):\n # Test methods" }, { "step": 2, "name": "Metadata Storage", "description": "Metadata is stored in the TestRegistry's internal dictionaries", "code": "cls._test_modules.setdefault(category, []).append({\n 'class': cls,\n 'importance': importance,\n 'slow': slow,\n 'tags': tags or [],\n 'depends_on': depends_on or []\n})" }, { "step": 3, "name": "Dependency Tracking", "description": "Dependencies between tests are recorded", "code": "if depends_on:\n cls._dependencies[test_class.name] = depends_on" }, { "step": 4, "name": "Filtered Discovery", "description": "Tests are filtered based on discovery criteria", "code": "modules = {}\nfor category, module_list in cls._test_modules.items():\n if category_filter and category not in category_filter:\n continue\n \n filtered_modules = []\n for module in module_list:\n if module['importance'] <= max_importance and (include_slow or not module['slow']):\n if not tags or any(tag in module['tags'] for tag in tags):\n filtered_modules.append(module)\n \n if filtered_modules:\n modules[category] = filtered_modules" }, { "step": 5, "name": "Dependency Resolution", "description": "Dependencies are resolved and included if necessary", "code": "if validate_dependencies:\n # Find all test classes that we depend on\n for category, module_list in list(modules.items()):\n for module in module_list:\n cls._resolve_dependencies(module, modules)" } ] }, "log_analysis_pipeline": { "description": "The standard pipeline for log analysis", "steps": [ { "step": 1, "name": "Log Collection", "description": "Log files are collected from the specified directory", "code": "log_files, image_files = collect_all_supported_files(test_dir)" }, { "step": 2, "name": "Log Parsing", "description": "Log files are parsed to extract errors", "code": "errors = parse_logs(log_files)" }, { "step": 3, "name": "OCR Processing", "description": "Images are processed with OCR to extract text", "code": "ocr_data = extract_ocr_data(image_files)" }, { "step": 4, "name": "Error Clustering", "description": "Errors are clustered based on similarity", "code": "clusters = perform_error_clustering(errors + ocr_data)" }, { "step": 5, "name": "Component Analysis", "description": "Components are identified and analyzed", "code": "components = analyze_components(errors, clusters)" }, { "step": 6, "name": "Summary Generation", "description": "Summaries are generated from clusters", "code": "summary = generate_summary_from_clusters(clusters, components)" }, { "step": 7, "name": "Report Generation", "description": "Reports are generated in various formats", "code": "report_paths = write_reports(test_id, summary, clusters, components, output_dir)" }, { "step": 8, "name": "Visualization Generation", "description": "Visualizations are generated for components and errors", "code": "visualization_paths = generate_visualizations(test_id, components, clusters, output_dir)" } ] }, "report_generation_pipeline": { "description": "The pipeline for generating reports", "steps": [ { "step": 1, "name": "Directory Setup", "description": "Output directories are created", "code": "dirs = setup_test_output_directories(test_id)" }, { "step": 2, "name": "Data Preparation", "description": "Data is prepared for reporting", "code": "report_data = prepare_report_data(test_id, summary, clusters, components)" }, { "step": 3, "name": "Excel Report Generation", "description": "Excel report is generated", "code": "excel_path = generate_excel_report(report_data, dirs["base"], test_id)" }, { "step": 4, "name": "DOCX Report Generation", "description": "DOCX report is generated", "code": "docx_path = generate_docx_report(report_data, dirs["base"], test_id)" }, { "step": 5, "name": "HTML Component Report", "description": "HTML component report is generated", "code": "html_path = generate_component_report(report_data, dirs["base"], test_id)" }, { "step": 6, "name": "JSON Data Storage", "description": "JSON data is stored for later use", "code": "json_path = save_json_data(report_data, dirs["json"], test_id)" } ] }, "visualization_generation_pipeline": { "description": "The pipeline for generating visualizations", "steps": [ { "step": 1, "name": "Directory Setup", "description": "Output directories are created", "code": "dirs = setup_test_output_directories(test_id)" }, { "step": 2, "name": "Component Relationships", "description": "Component relationship diagram is generated", "code": "relationship_path = generate_component_relationship_diagram(dirs["images"], test_id, components)" }, { "step": 3, "name": "Error Propagation", "description": "Error propagation visualization is generated", "code": "propagation_path = generate_error_propagation_visualization(dirs["images"], test_id, components, clusters)" }, { "step": 4, "name": "Component Distribution", "description": "Component error distribution visualization is generated", "code": "distribution_path = generate_component_error_distribution(dirs["images"], test_id, components)" }, { "step": 5, "name": "Timeline Visualization", "description": "Timeline visualization is generated", "code": "timeline_path = generate_timeline_visualization(dirs["images"], test_id, errors)" }, { "step": 6, "name": "Cluster Timeline", "description": "Cluster timeline visualization is generated", "code": "cluster_timeline_path = generate_cluster_timeline(dirs["images"], test_id, clusters)" } ] } },
+
+"integration_points": { "test_registry_integration": { "description": "How to integrate with the TestRegistry system", "entry_points": { "register_test_class": { "signature": "@TestRegistry.register(category='example', importance=1, tags=['example_tag'])", "description": "Register a test class with the TestRegistry", "example": "from test_registry import TestRegistry\nimport unittest\n\n@TestRegistry.register(category='component', importance=1, tags=['analyzer'])\nclass TestYourComponent(unittest.TestCase):\n def test_your_function(self):\n # Test implementation\n result = your_function(test_input)\n self.assertEqual(result, expected_output)" }, "discover_tests": { "signature": "TestRegistry.get_modules(category=None, max_importance=3, include_slow=True, tags=None, platform=None, validate_dependencies=True)", "description": "Discover test modules based on filter criteria", "example": "from test_registry import TestRegistry\n\n# Get all core tests with importance <= 2\nmodules = TestRegistry.get_modules(category='core', max_importance=2)\n\n# Get tests with specific tag\nmodules = TestRegistry.get_modules(tags=['analyzer'])\n\n# Skip slow tests\nmodules = TestRegistry.get_modules(include_slow=False)" } }, "interface_contracts": { "test_class": { "description": "Test classes must inherit from unittest.TestCase and use standard unittest methods", "example": "class TestExample(unittest.TestCase):\n def setUp(self):\n # Setup code\n \n def tearDown(self):\n # Cleanup code\n \n def test_example(self):\n # Test code\n self.assertTrue(condition)" }, "test_module": { "description": "Test modules should import TestRegistry and register test classes", "example": "import unittest\nfrom test_registry import TestRegistry\n\n@TestRegistry.register(category='example')\nclass TestExample(unittest.TestCase):\n # Test methods" } }, "configuration_requirements": { "test_categories": { "description": "Tests must use one of the standard categories", "values": ["core", "component", "report", "visualization", "integration", "performance", "structure"] }, "importance_levels": { "description": "Tests must specify an importance level", "values": [ {"level": 1, "description": "Critical tests - always run"}, {"level": 2, "description": "Important tests - run by default"}, {"level": 3, "description": "Optional tests - run for comprehensive testing"} ] } } }, "test_utils_integration": { "description": "How to integrate with the test utilities", "entry_points": { "config_manager": { "signature": "ConfigManager.get(key: str, default: Any = None) -> Any", "description": "Get a configuration value", "example": "from test_utils import ConfigManager\n\n# Get the test timeout (default 60 seconds)\ntimeout = ConfigManager.get("TEST_TIMEOUT", 60)\n\n# Skip slow tests based on configuration\nif ConfigManager.get("SKIP_SLOW_TESTS", False):\n self.skipTest("Skipping slow test based on configuration")" }, "directory_setup": { "signature": "setup_test_output_directories(test_id: str) -> Dict[str, str]", "description": "Set up standardized test output directories", "example": "from test_utils import setup_test_output_directories\n\n# Set up output directories\ndirs = setup_test_output_directories("SXM-123456")\n\n# Generate report in base directory\nreport_path = os.path.join(dirs["base"], "SXM-123456_report.xlsx")\n\n# Store JSON data in json directory\njson_path = os.path.join(dirs["json"], "SXM-123456_data.json")" }, "validation": { "signature": "validate_report_file(file_path: str, required_fields: List[str] = None) -> Tuple[bool, List[str]]", "description": "Validate a report file", "example": "from test_utils import validate_report_file\n\n# Validate a report file\nis_valid, issues = validate_report_file(report_path, required_fields=["test_id", "summary"])\nself.assertTrue(is_valid, f"Report validation failed: {', '.join(issues)}")" } }, "interface_contracts": { "config_values": { "description": "Configuration values should use standard keys", "values": { "TEST_TIMEOUT": "Maximum time in seconds for test execution", "SKIP_SLOW_TESTS": "Whether to skip performance-intensive tests", "TEST_VERBOSITY": "Verbosity level for test output", "FAIL_FAST": "Stop testing on first failure", "TEST_DATA_DIR": "Directory for test data files", "OUTPUT_DIR": "Base directory for test outputs", "LOGS_DIR": "Directory containing log files" } }, "directory_structure": { "description": "Tests should use the standard directory structure", "example": "base_dir = dirs["base"] # /output/SXM-123456\njson_dir = dirs["json"] # /output/SXM-123456/json\nimages_dir = dirs["images"] # /output/SXM-123456/supporting_images\ndebug_dir = dirs["debug"] # /output/SXM-123456/debug" } } }, "run_all_tests_integration": { "description": "How to integrate with the test runner", "entry_points": { "discover_and_run_tests": { "signature": "discover_and_run_tests(categories=None, tags=None, max_importance=3, include_slow=True, validate_dependencies=True)", "description": "Discover and run tests based on filter criteria", "example": "from run_all_tests import discover_and_run_tests\n\n# Run core tests with importance level 1\nsuccess, results = discover_and_run_tests(categories=['core'], max_importance=1)\n\n# Print results\nprint(f"Tests passed: {success}")\nprint(f"Test count: {results['core']['test_count']}")\nprint(f"Failures: {results['core']['failures']}")" }, "run_with_coverage": { "signature": "run_with_coverage(categories=None, tags=None, max_importance=3, include_slow=True, validate_dependencies=True, html_coverage=False, xml_coverage=False, coverage_source=None)", "description": "Run tests with coverage analysis", "example": "from run_all_tests import run_with_coverage\n\n# Run core tests with coverage\nsuccess, results, cov = run_with_coverage(categories=['core'], html_coverage=True)\n\n# Print coverage summary\ncov.report()\n\n# Generate HTML report\ncov.html_report(directory='coverage_html')" } }, "interface_contracts": { "command_line_interface": { "description": "Interface specification for command-line usage", "required_options": { "--category": "Filter tests by category", "--importance": "Filter tests by maximum importance level", "--skip-slow": "Skip slow tests", "--tag": "Filter tests by tag" }, "reporting_options": { "--junit-xml": "Generate JUnit XML report", "--html-report": "Generate HTML report", "--save-results": "Save results to JSON file" }, "coverage_options": { "--coverage": "Run with coverage analysis", "--html-coverage": "Generate HTML coverage report", "--xml-coverage": "Generate XML coverage report", "--coverage-source": "Specify modules to measure coverage for" } } } } } } "test_configuration": { "description": "Configuration management using the ConfigManager", "mechanism": "Configuration values are loaded with a precedence order: environment variables -> config file -> default values", "implementation": { "configuration_loading": { "description": "Loads configuration from various sources", "code": "# Internal implementation of configuration loading\ndef _load_config():\n config = {}\n \n # Load defaults from test_config.py\n for key, value in TEST_CONFIG.items():\n config[key] = value\n \n # Load from config file if present\n config_file = os.path.join(os.path.dirname(file), 'test_config.json')\n if os.path.exists(config_file):\n with open(config_file, 'r') as f:\n file_config = json.load(f)\n config.update(file_config)\n \n # Load from environment variables\n for key in config.keys():\n if key in os.environ:\n config[key] = _convert_value(os.environ[key], config[key])\n \n return config" }, "configuration_access": { "description": "Accesses configuration values", "code": "# Get configuration with default value\ntimeout = ConfigManager.get("TEST_TIMEOUT", 60)\n\n# Set configuration value\nConfigManager.set("SKIP_SLOW_TESTS", True)" } }, "considerations": [ "Environment variables take precedence over config file values", "Config file values take precedence over default values", "Configuration values are typed based on their default value", "Accessing non-existent keys without a default value returns None" ] }, "directory_structure": { "description": "Standardized directory structure for test outputs", "mechanism": "Test outputs are organized in a consistent structure by test ID", "implementation": { "directory_setup": { "description": "Creates standardized output directories", "code": "def setup_test_output_directories(test_id: str) -> Dict[str, str]:\n # Normalize test ID (add SXM- prefix if missing)\n if not test_id.startswith("SXM-") and not test_id.startswith("TEST-"):\n test_id = f"SXM-{test_id}"\n \n # Create base directories\n base_dir = os.path.join(ConfigManager.get("OUTPUT_DIR"), test_id)\n json_dir = os.path.join(base_dir, "json")\n images_dir = os.path.join(base_dir, "supporting_images")\n debug_dir = os.path.join(base_dir, "debug")\n \n # Create all directories\n os.makedirs(base_dir, exist_ok=True)\n os.makedirs(json_dir, exist_ok=True)\n os.makedirs(images_dir, exist_ok=True)\n os.makedirs(debug_dir, exist_ok=True)\n \n return {\n "base": base_dir,\n "json": json_dir,\n "images": images_dir,\n "debug": debug_dir,\n "test_id": test_id\n }" }, "path_generation": { "description": "Generates paths for test outputs", "code": "def get_test_output_path(test_id: str, filename: str, file_type: Optional[str] = None) -> str:\n # Get output directories for the test\n dirs = setup_test_output_directories(test_id)\n \n if file_type == "json":\n return os.path.join(dirs["json"], filename)\n elif file_type == "image":\n return os.path.join(dirs["images"], filename)\n elif file_type == "debug":\n return os.path.join(dirs["debug"], filename)\n else:\n return os.path.join(dirs["base"], filename)" } }, "considerations": [ "Test IDs are normalized to include a prefix (SXM- or TEST-)", "Main reports go in the base directory", "JSON data goes in the json subdirectory", "Visualizations go in the supporting_images subdirectory", "Debug information goes in the debug subdirectory" ] }, "test_execution": { "description": "Test execution and result collection", "mechanism": "Tests are executed by category and module, with results collected and reported", "implementation": { "test_discovery": { "description": "Discovers tests to run", "code": "modules = TestRegistry.get_modules(category=categories, max_importance=max_importance, include_slow=include_slow, tags=tags, validate_dependencies=validate_dependencies)" }, "test_execution": { "description": "Executes tests and collects results", "code": "for category, module_list in sorted(modules.items()):\n suite = unittest.TestSuite()\n for module_info in module_list:\n test_class = module_info['class']\n suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(test_class))\n \n runner = unittest.TextTestRunner(verbosity=verbosity, failfast=fail_fast)\n result = runner.run(suite)" }, "result_collection": { "description": "Collects test results", "code": "results[category] = {\n 'module_count': len(module_list),\n 'test_count': result.testsRun,\n 'failures': len(result.failures),\n 'errors': len(result.errors),\n 'skipped': len(result.skipped),\n 'duration': duration,\n 'success': len(result.failures) == 0 and len(result.errors) == 0\n}" } }, "considerations": [ "Tests are grouped by category for execution", "Test results are collected by category", "Results include counts of tests, failures, errors, and skipped tests", "Duration is tracked for performance analysis" ] }, "error_handling": { "description": "Error handling patterns", "mechanism": "The test system handles errors gracefully and provides detailed information", "implementation": { "exception_handling": { "description": "Handles exceptions during test discovery and execution", "code": "try:\n # Import test module\n module = importlib.import_module(module_name)\n # Find test classes\n # ...\nexcept Exception as e:\n logger.error(f"Error importing module {module_name}: {str(e)}")\n return False, {'error': str(e)}" }, "test_skipping": { "description": "Skips tests based on conditions", "code": "def setUp(self):\n """Set up test environment."""\n # Skip test if module not available\n if ComponentAnalyzer is None:\n self.skipTest("ComponentAnalyzer module not available")\n \n # Skip if slow tests should be skipped\n if ConfigManager.get("SKIP_SLOW_TESTS", False):\n self.skipTest("Skipping slow test based on configuration")" }, "dependency_handling": { "description": "Handles dependencies between tests", "code": "def _resolve_dependencies(cls, module, modules):\n """Resolve dependencies for a module."""\n test_class = module['class']\n class_name = test_class.name\n \n # If this class has dependencies\n if class_name in cls._dependencies:\n dependencies = cls._dependencies[class_name]\n \n for dependency in dependencies:\n # Check if dependency is already included\n if not any(dep_class['class'].name == dependency \n for cat in modules.values() \n for dep_class in cat):\n # Find the dependency\n found = False\n for cat, module_list in cls._test_modules.items():\n for dep_module in module_list:\n if dep_module['class'].name == dependency:\n # Add the dependency to modules\n modules.setdefault(cat, []).append(dep_module)\n # Resolve dependencies of the dependency\n cls._resolve_dependencies(dep_module, modules)\n found = True\n break\n if found:\n break" } }, "considerations": [ "Exceptions during module import are caught and reported", "Tests can be skipped based on conditions", "Dependencies between tests are resolved automatically", "Tests that depend on missing modules are skipped" ] }, "resource_management": { "description": "Resource management strategies", "mechanism": "Resources are properly managed throughout the test lifecycle", "implementation": { "setup_teardown": { "description": "Sets up and tears down test resources", "code": "def setUp(self):\n """Set up test environment."""\n # Create a temporary directory for test outputs\n self.temp_dir = tempfile.mkdtemp()\n \n # Create test files\n self.test_file = os.path.join(self.temp_dir, "test.txt")\n with open(self.test_file, 'w') as f:\n f.write("Test content")\n\ndef tearDown(self):\n """Clean up after tests."""\n # Remove temporary directory\n if hasattr(self, 'temp_dir') and os.path.exists(self.temp_dir):\n shutil.rmtree(self.temp_dir)" }, "context_managers": { "description": "Uses context managers for resource management", "code": "def test_with_environment_variable(self):\n """Test behavior with an environment variable."""\n # Save original value\n original_value = os.environ.get('TEST_MODE')\n \n try:\n # Set temporary value\n os.environ['TEST_MODE'] = 'testing'\n \n # Run test with the environment variable set\n result = get_operating_mode()\n self.assertEqual(result, 'testing')\n finally:\n # Restore original value\n if original_value is None:\n del os.environ['TEST_MODE']\n else:\n os.environ['TEST_MODE'] = original_value" } }, "considerations": [ "Temporary resources should be cleaned up in tearDown", "Context managers should be used for temporary changes", "Resources should be properly closed after use", "Test isolation should be maintained" ] }, "mock_data_generation": { "description": "Generation of mock data for testing", "mechanism": "Mock data is generated when real data is not available", "implementation": { "mock_test_data": { "description": "Creates mock test data", "code": "def create_test_data() -> str:\n """Creates minimal test data if no real data found."""\n test_folder = os.path.join(ConfigManager.get("TEST_DATA_DIR"), "logs")\n os.makedirs(test_folder, exist_ok=True)\n \n # Create a simple log file\n with open(os.path.join(test_folder, "sample.log"), "w") as f:\n f.write("2025-03-26 12:00:00 INFO: Application starting\n")\n f.write("2025-03-26 12:00:05 ERROR: Database connection failed\n")\n f.write("2025-03-26 12:00:10 WARNING: Retrying operation\n")\n f.write("2025-03-26 12:00:15 ERROR: Operation timeout\n")\n \n # Create a fake app_debug.log file for component testing\n with open(os.path.join(test_folder, "app_debug.log"), "w") as f:\n f.write("2025-03-26 12:00:00 INFO: SOA application starting\n")\n f.write("2025-03-26 12:00:05 ERROR: Exception in SOA component\n")\n f.write("2025-03-26 12:00:10 WARNING: SOA network delay\n")\n \n # Create a simple mimosa log file\n with open(os.path.join(test_folder, "mimosa.log"), "w") as f:\n f.write("2025-03-26 12:00:00 INFO: Mimosa starting\n")\n f.write("2025-03-26 12:00:05 ERROR: Data feed error\n")\n \n # Create a test image for OCR testing\n create_test_image(os.path.join(test_folder, "screenshot.png"), "Test Error Screen")\n \n return test_folder" }, "mock_errors": { "description": "Creates mock errors for testing", "code": "def create_mock_errors(count: int = 5, components: List[str] = None) -> List[Dict]:\n """Create a list of mock errors for testing."""\n if components is None:\n components = ['soa', 'android', 'mimosa']\n \n errors = []\n now = datetime.now()\n \n for i in range(count):\n component = components[i % len(components)]\n severity = "High" if i % 3 == 0 else "Medium" if i % 3 == 1 else "Low"\n \n errors.append({\n "file": f"{component}.log",\n "line_num": i + 1,\n "text": f"Test error {i+1} in {component}",\n "severity": severity,\n "timestamp": (now + timedelta(seconds=i*5)).isoformat(),\n "component": component\n })\n \n return errors" }, "mock_objects": { "description": "Creates mock objects for testing", "code": "class MockLogEntry:\n """Mock log entry for testing."""\n def init(self, timestamp=None, is_error=False, file="test.log", line_num=1, \n severity="Medium", text="Test log entry", component=None):\n self.timestamp = timestamp or datetime.now()\n self.is_error = is_error\n self.file = file\n self.line_number = line_num # LogEntry in gherkin_log_correlator uses line_number\n self.line_num = line_num # Error objects use line_num\n self.severity = severity\n self.text = text\n self.component = component" } }, "considerations": [ "Mock data should replicate real data structure", "Mock objects should have the same interface as real objects", "Mock data should cover various test scenarios", "Mock data should be deterministic for reproducible tests" ] } },
+
+"visualization_system": { "visualization_types": { "component_relationship_diagram": { "description": "Displays relationships between components", "generation": "generate_component_relationship_diagram(output_dir, test_id, components)", "output_path_pattern": "{test_id}_component_relationships.png", "parameters": { "output_dir": "Directory to save visualization", "test_id": "Test identifier", "components": "Dictionary of component information" } }, "error_propagation_visualization": { "description": "Displays error propagation between components", "generation": "generate_error_propagation_visualization(output_dir, test_id, components, clusters)", "output_path_pattern": "{test_id}_error_propagation.png", "parameters": { "output_dir": "Directory to save visualization", "test_id": "Test identifier", "components": "Dictionary of component information", "clusters": "Dictionary of error clusters" } }, "component_error_distribution": { "description": "Displays distribution of errors across components", "generation": "generate_component_error_distribution(output_dir, test_id, component_summary, error_counts=None, primary_component=None)", "output_path_pattern": "{test_id}_component_distribution.png", "parameters": { "output_dir": "Directory to save visualization", "test_id": "Test identifier", "component_summary": "Dictionary of component summary information", "error_counts": "Optional dictionary of error counts by component", "primary_component": "Optional primary issue component" } }, "timeline_visualization": { "description": "Displays errors and events on a timeline", "generation": "generate_timeline_visualization(output_dir, test_id, errors)", "output_path_pattern": "{test_id}_timeline.png", "parameters": { "output_dir": "Directory to save visualization", "test_id": "Test identifier", "errors": "List of error dictionaries" } }, "cluster_timeline": { "description": "Displays error clusters on a timeline", "generation": "generate_cluster_timeline(output_dir, test_id, clusters)", "output_path_pattern": "{test_id}_cluster_timeline.png", "parameters": { "output_dir": "Directory to save visualization", "test_id": "Test identifier", "clusters": "Dictionary of error clusters" } } }, "generation_mechanisms": { "matplotlib": { "description": "Uses matplotlib for generating visualizations", "pattern": { "setup": "plt.figure(figsize=(10, 6))", "drawing": "# Generate the visualization using matplotlib functions", "saving": "plt.savefig(output_path, bbox_inches='tight', dpi=150)", "cleanup": "plt.close()" }, "example": "def generate_timeline_visualization(output_dir, test_id, errors):\n # Set up output path\n output_path = os.path.join(output_dir, f"{test_id}_timeline.png")\n \n # Create figure\n plt.figure(figsize=(12, 6))\n \n # Extract timestamps and sort errors chronologically\n sorted_errors = sorted(errors, key=lambda e: e.get('timestamp', '0'))\n \n # Plot timeline\n for i, error in enumerate(sorted_errors):\n timestamp = error.get('timestamp')\n severity = error.get('severity', 'Medium')\n \n # Determine color based on severity\n color = 'red' if severity == 'High' else 'orange' if severity == 'Medium' else 'blue'\n \n # Plot error point\n plt.scatter(timestamp, i, color=color, s=50)\n \n # Add error text\n plt.text(timestamp, i + 0.1, error.get('text', ''), fontsize=8)\n \n # Set labels and title\n plt.xlabel('Time')\n plt.ylabel('Error Index')\n plt.title(f"Error Timeline for {test_id}")\n \n # Save figure\n plt.savefig(output_path, bbox_inches='tight', dpi=150)\n plt.close()\n \n return output_path" }, "networkx": { "description": "Uses networkx for generating graph visualizations", "pattern": { "setup": "G = nx.DiGraph()", "nodes": "# Add nodes to the graph", "edges": "# Add edges to the graph", "layout": "pos = nx.spring_layout(G)", "drawing": "# Draw the graph using networkx and matplotlib", "saving": "plt.savefig(output_path, bbox_inches='tight', dpi=150)", "cleanup": "plt.close()" }, "example": "def generate_component_relationship_diagram(output_dir, test_id, components):\n # Set up output path\n output_path = os.path.join(output_dir, f"{test_id}_component_relationships.png")\n \n # Create graph\n G = nx.DiGraph()\n \n # Add component nodes\n for component_id, component_info in components.items():\n G.add_node(component_id, label=component_info.get('name', component_id))\n \n # Add relationship edges\n for component_id, component_info in components.items():\n for relation in component_info.get('relations', []):\n target = relation.get('target')\n if target and target in components:\n G.add_edge(component_id, target, label=relation.get('type', 'dependency'))\n \n # Create layout\n pos = nx.spring_layout(G)\n \n # Create figure\n plt.figure(figsize=(10, 8))\n \n # Draw nodes\n nx.draw_networkx_nodes(G, pos, node_size=800, node_color='lightblue', alpha=0.8)\n \n # Draw edges\n nx.draw_networkx_edges(G, pos, width=1.5, arrows=True)\n \n # Draw labels\n nx.draw_networkx_labels(G, pos, font_size=10)\n \n # Set title\n plt.title(f"Component Relationships for {test_id}")\n \n # Save figure\n plt.savefig(output_path, bbox_inches='tight', dpi=150)\n plt.close()\n \n return output_path" } }, "configuration_options": { "visualization_flags": { "description": "Feature flags for enabling/disabling visualizations", "flags": { "ENABLE_COMPONENT_DISTRIBUTION": { "type": "bool", "description": "Enable component error distribution visualization", "default": true }, "ENABLE_ERROR_PROPAGATION": { "type": "bool", "description": "Enable error propagation visualization", "default": true }, "ENABLE_COMPONENT_RELATIONSHIPS": { "type": "bool", "description": "Enable component relationship visualization", "default": true }, "ENABLE_TIMELINE": { "type": "bool", "description": "Enable timeline visualization", "default": true }, "ENABLE_CLUSTER_TIMELINE": { "type": "bool", "description": "Enable cluster timeline visualization", "default": true } }, "usage": "@patch('config.Config.ENABLE_COMPONENT_DISTRIBUTION', True)\ndef test_component_error_distribution(self):\n # Test code here..." }, "image_output_settings": { "description": "Settings for image output", "settings": { "DPI": { "type": "int", "description": "Dots per inch for image output", "default": 150 }, "FIGURE_WIDTH": { "type": "int", "description": "Width of the figure in inches", "default": 10 }, "FIGURE_HEIGHT": { "type": "int", "description": "Height of the figure in inches", "default": 6 }, "TIGHT_LAYOUT": { "type": "bool", "description": "Whether to use tight layout", "default": true } }, "usage": "plt.figure(figsize=(ConfigManager.get('FIGURE_WIDTH', 10), ConfigManager.get('FIGURE_HEIGHT', 6)))\n# ...\nplt.savefig(output_path, bbox_inches='tight' if ConfigManager.get('TIGHT_LAYOUT', True) else None, dpi=ConfigManager.get('DPI', 150))" } }, "layout_algorithms": { "spring_layout": { "description": "Uses a force-directed layout algorithm", "usage": "pos = nx.spring_layout(G)", "parameters": { "G": "NetworkX graph", "k": "Optimal distance between nodes", "iterations": "Number of iterations" }, "suitable_for": "General graph visualization" }, "circular_layout": { "description": "Places nodes on a circle", "usage": "pos = nx.circular_layout(G)", "parameters": { "G": "NetworkX graph" }, "suitable_for": "Small graphs with clear relationships" }, "shell_layout": { "description": "Places nodes in concentric circles", "usage": "pos = nx.shell_layout(G, nlist=[primary_components, secondary_components, tertiary_components])", "parameters": { "G": "NetworkX graph", "nlist": "List of lists of nodes in each shell" }, "suitable_for": "Hierarchical component relationships" }, "spectral_layout": { "description": "Places nodes using eigenvectors of the graph Laplacian", "usage": "pos = nx.spectral_layout(G)", "parameters": { "G": "NetworkX graph" }, "suitable_for": "Dense graphs with many connections" } }, "fallback_strategies": { "visualization_fallback": { "description": "Fallback strategy when visualization cannot be generated", "implementation": "def generate_visualization_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n """Generate visualization with fallback."""\n try:\n # Attempt to generate visualization\n return generation_func(output_dir, test_id, *args, **kwargs)\n except Exception as e:\n logger.warning(f"Error generating visualization: {str(e)}")\n \n # Create fallback visualization\n return generate_fallback_visualization(output_dir, test_id, str(e))", "fallback_visualization": "def generate_fallback_visualization(output_dir, test_id, error_message):\n """Generate a fallback visualization."""\n output_path = os.path.join(output_dir, f"{test_id}_fallback.png")\n \n # Create a simple visualization indicating an error\n plt.figure(figsize=(6, 4))\n plt.text(0.5, 0.5, f"Visualization Error: {error_message}", ha='center', va='center')\n plt.axis('off')\n plt.savefig(output_path)\n plt.close()\n \n return output_path" }, "library_fallback": { "description": "Fallback when visualization libraries are not available", "implementation": "def check_visualization_libraries():\n """Check if visualization libraries are available."""\n libraries_available = {\n 'matplotlib': has_required_module('matplotlib'),\n 'networkx': has_required_module('networkx'),\n 'numpy': has_required_module('numpy')\n }\n \n if not all(libraries_available.values()):\n missing = [lib for lib, available in libraries_available.items() if not available]\n logger.warning(f"Visualization libraries not available: {', '.join(missing)}")\n return False\n \n return True", "usage": "if not check_visualization_libraries():\n # Use fallback (e.g., create a text file with description)\n return create_text_description(output_dir, test_id, components)" } } },
+
+"directory_structure": { "output_file_organization": { "base": { "description": "Base directory for test outputs", "path_pattern": "output/{test_id}/", "contents": [ "{test_id}_log_analysis.xlsx", "{test_id}_bug_report.docx", "{test_id}_component_report.html" ] }, "json": { "description": "Directory for JSON data", "path_pattern": "output/{test_id}/json/", "contents": [ "{test_id}_log_analysis.json", "{test_id}_component_analysis.json", "{test_id}_enhanced_clusters.json" ] }, "supporting_images": { "description": "Directory for visualizations", "path_pattern": "output/{test_id}/supporting_images/", "contents": [ "{test_id}_component_relationships.png", "{test_id}_error_propagation.png", "{test_id}timeline.png" ] }, "debug": { "description": "Directory for debug information", "path_pattern": "output/{test_id}/debug/", "contents": [ "{test_id}timeline_debug.txt" ] } }, "source_code_organization": { "tests": { "description": "Root directory for tests", "contents": [ "run_all_tests.py", "test_registry.py", "test_utils.py", "test_config.py", "core_module_tests.py", "component_tests.py", "report_tests.py", "visualization_tests.py", "integration_tests.py", "structure_tests.py", "performance_tests.py", "legacy_test_runner.py" ] }, "test_data": { "description": "Directory for test data", "path_pattern": "tests/test_data/", "contents": [ "logs/", "images/", "performance/", "component_schema.json" ] }, "output": { "description": "Directory for test outputs", "path_pattern": "tests/output/", "contents": [ "{test_id}/", "{test_id}/json/", "{test_id}/supporting_images/", "{test_id}/debug/" ] } }, "critical_file_paths": { "run_all_tests": { "path": "tests/run_all_tests.py", "description": "Main entry point for running tests", "critical": true }, "test_registry": { "path": "tests/test_registry.py", "description": "Test registration and discovery system", "critical": true }, "test_utils": { "path": "tests/test_utils.py", "description": "Common test utilities", "critical": true }, "test_config": { "path": "tests/test_config.py", "description": "Test configuration", "critical": true }, "component_schema": { "path": "tests/test_data/component_schema.json", "description": "Component schema for testing", "critical": true, "fallback": "Will be generated if not found" } }, "naming_conventions": { "test_files": { "description": "Naming conventions for test files", "patterns": [ "{category}tests.py", "{feature}test.py" ], "examples": [ "core_module_tests.py", "component_tests.py", "log_analyzer_test.py" ] }, "test_classes": { "description": "Naming conventions for test classes", "patterns": [ "Test{ModuleName}", "{ModuleName}Test" ], "examples": [ "TestLogAnalyzer", "TestComponentVisualizer", "DirectoryStructureTest" ] }, "test_methods": { "description": "Naming conventions for test methods", "patterns": [ "test{functionality}", "test{functionality}{scenario}" ], "examples": [ "test_log_parsing", "test_identify_component_from_log_file", "test_error_handling_with_invalid_input" ] }, "output_files": { "description": "Naming conventions for output files", "patterns": [ "{test_id}{file_type}.{extension}" ], "examples": [ "SXM-123456_log_analysis.xlsx", "SXM-123456_component_relationships.png", "SXM-123456_enhanced_clusters.json" ] } } },
+
+"component_relationships": { "module_dependencies": { "test_registry": { "description": "Test registration and discovery system", "dependents": [ "run_all_tests", "core_module_tests", "component_tests", "report_tests", "visualization_tests", "integration_tests", "structure_tests", "performance_tests" ], "dependencies": [] }, "test_utils": { "description": "Common test utilities", "dependents": [ "run_all_tests", "core_module_tests", "component_tests", "report_tests", "visualization_tests", "integration_tests", "structure_tests", "performance_tests" ], "dependencies": [ "test_config" ] }, "test_config": { "description": "Test configuration", "dependents": [ "test_utils" ], "dependencies": [] }, "run_all_tests": { "description": "Main entry point for running tests", "dependents": [], "dependencies": [ "test_registry", "test_utils" ] }, "legacy_test_runner": { "description": "Legacy test runner", "dependents": [], "dependencies": [] } }, "test_class_dependencies": { "TestLogSegmenter": { "description": "Tests the identification and collection of log files", "dependents": [ "TestLogAnalyzer" ], "dependencies": [] }, "TestLogAnalyzer": { "description": "Tests the parsing and analysis of log content", "dependents": [ "TestErrorClusterer", "TestComponentAnalyzer" ], "dependencies": [ "TestLogSegmenter" ] }, "TestErrorClusterer": { "description": "Tests the clustering of related errors", "dependents": [ "TestGPTSummarizer", "TestContextAwareClusterer" ], "dependencies": [ "TestLogAnalyzer" ] }, "TestComponentAnalyzer": { "description": "Tests the identification of components from logs", "dependents": [ "TestComponentVisualizer", "TestContextAwareClusterer", "TestDirectComponentAnalyzer" ], "dependencies": [ "TestLogAnalyzer" ] }, "TestController": { "description": "Tests the main controller functionality", "dependents": [], "dependencies": [ "TestLogAnalyzer", "TestErrorClusterer", "TestOcrProcessor", "TestGPTSummarizer", "TestComponentAnalyzer" ] } }, "data_flow_patterns": { "log_analysis_flow": { "description": "Data flow for log analysis", "flow": [ {"from": "log_files", "to": "TestLogSegmenter", "data": "Raw log files"}, {"from": "TestLogSegmenter", "to": "TestLogAnalyzer", "data": "Collected log files"}, {"from": "TestLogAnalyzer", "to": "TestErrorClusterer", "data": "Extracted errors"}, {"from": "TestErrorClusterer", "to": "TestGPTSummarizer", "data": "Error clusters"}, {"from": "TestGPTSummarizer", "to": "reports", "data": "Generated summary"} ] }, "component_analysis_flow": { "description": "Data flow for component analysis", "flow": [ {"from": "log_files", "to": "TestComponentAnalyzer", "data": "Log files with component information"}, {"from": "TestComponentAnalyzer", "to": "TestComponentVisualizer", "data": "Identified components"}, {"from": "TestComponentVisualizer", "to": "visualizations", "data": "Component visualizations"}, {"from": "TestComponentAnalyzer", "to": "TestDirectComponentAnalyzer", "data": "Component relationships"}, {"from": "TestDirectComponentAnalyzer", "to": "reports", "data": "Component analysis results"} ] }, "report_generation_flow": { "description": "Data flow for report generation", "flow": [ {"from": "TestGPTSummarizer", "to": "ReportsPackageTest", "data": "Summary data"}, {"from": "TestComponentAnalyzer", "to": "ReportsPackageTest", "data": "Component data"}, {"from": "ReportsPackageTest", "to": "TestExcelGenerator", "data": "Report data"}, {"from": "ReportsPackageTest", "to": "TestDocxGenerator", "data": "Report data"}, {"from": "ReportsPackageTest", "to": "TestComponentReport", "data": "Component report data"} ] } }, "communication_patterns": { "test_discovery": { "description": "Communication pattern for test discovery", "steps": [ {"component": "run_all_tests", "action": "Calls TestRegistry.get_modules"}, {"component": "TestRegistry", "action": "Filters tests based on criteria"}, {"component": "TestRegistry", "action": "Resolves dependencies"}, {"component": "TestRegistry", "action": "Returns filtered modules"}, {"component": "run_all_tests", "action": "Creates test suite from modules"} ] }, "test_execution": { "description": "Communication pattern for test execution", "steps": [ {"component": "run_all_tests", "action": "Creates unittest.TestSuite"}, {"component": "run_all_tests", "action": "Creates unittest.TextTestRunner"}, {"component": "run_all_tests", "action": "Calls runner.run(suite)"}, {"component": "TextTestRunner", "action": "Executes tests in the suite"}, {"component": "TextTestRunner", "action": "Returns TestResult"}, {"component": "run_all_tests", "action": "Collects results"} ] }, "configuration_management": { "description": "Communication pattern for configuration management", "steps": [ {"component": "ConfigManager", "action": "Loads default configuration from test_config.py"}, {"component": "ConfigManager", "action": "Loads configuration from config file"}, {"component": "ConfigManager", "action": "Loads configuration from environment variables"}, {"component": "Test modules", "action": "Call ConfigManager.get(key, default)"}, {"component": "ConfigManager", "action": "Returns configuration value"} ] } } },
+
+"dependencies": { "external_libraries": { "matplotlib": { "description": "Library for creating visualizations", "version": "3.5.0 or higher", "required": false, "usage": "For generating visualizations of components, errors, and timelines" }, "networkx": { "description": "Library for graph operations", "version": "2.6.0 or higher", "required": false, "usage": "For generating component relationship graphs and visualizations" }, "pandas": { "description": "Library for data manipulation", "version": "1.3.0 or higher", "required": false, "usage": "For generating Excel reports and data manipulation" }, "openpyxl": { "description": "Library for Excel file manipulation", "version": "3.0.0 or higher", "required": false, "usage": "For generating Excel reports" }, "python-docx": { "description": "Library for DOCX file manipulation", "version": "0.8.0 or higher", "required": false, "usage": "For generating DOCX reports" }, "coverage": { "description": "Library for code coverage analysis", "version": "6.0.0 or higher", "required": false, "usage": "For generating code coverage reports" }, "pillow": { "description": "Library for image manipulation", "version": "8.0.0 or higher", "required": false, "usage": "For generating and manipulating test images" }, "keyring": { "description": "Library for secure credential storage", "version": "23.0.0 or higher", "required": false, "usage": "For secure API key handling" } }, "internal_dependencies": { "log_analyzer": { "description": "Module for analyzing log files", "required": true, "provided_by": "Orbit Analyzer application", "functions": [ "parse_logs", "extract_errors", "normalize_timestamp" ] }, "error_clusterer": { "description": "Module for clustering errors", "required": true, "provided_by": "Orbit Analyzer application", "functions": [ "perform_error_clustering", "calculate_similarity", "determine_optimal_clusters" ] }, "components": { "description": "Module for component analysis", "required": true, "provided_by": "Orbit Analyzer application", "submodules": [ "component_analyzer", "component_visualizer", "component_integration" ] }, "reports": { "description": "Module for report generation", "required": true, "provided_by": "Orbit Analyzer application", "submodules": [ "reports_package", "excel_generator", "docx_generator", "component_report" ] }, "ocr_processor": { "description": "Module for OCR processing", "required": true, "provided_by": "Orbit Analyzer application", "functions": [ "extract_ocr_data", "process_image", "filter_text" ] }, "gpt_summarizer": { "description": "Module for AI-powered summary generation", "required": true, "provided_by": "Orbit Analyzer application", "functions": [ "generate_summary_from_clusters", "create_prompt", "extract_root_cause" ] }, "controller": { "description": "Main controller module", "required": true, "provided_by": "Orbit Analyzer application", "functions": [ "run_pipeline", "collect_all_supported_files", "write_reports", "generate_visualizations" ] } }, "fallback_mechanisms": { "module_import_fallbacks": { "description": "Fallback mechanisms for module imports", "implementation": "try:\n from components.component_analyzer import ComponentAnalyzer\nexcept ImportError:\n try:\n from component_analyzer import ComponentAnalyzer\n except ImportError:\n ComponentAnalyzer = None", "usage": "def setUp(self):\n """Set up test fixtures."""\n # Skip test if module not available\n if ComponentAnalyzer is None:\n self.skipTest("ComponentAnalyzer module not available")" }, "visualization_fallbacks": { "description": "Fallback mechanisms for visualization", "implementation": "try:\n import matplotlib.pyplot as plt\n import networkx as nx\n VISUALIZATION_AVAILABLE = True\nexcept ImportError:\n VISUALIZATION_AVAILABLE = False", "usage": "def test_component_visualization(self):\n """Test component visualization."""\n if not VISUALIZATION_AVAILABLE:\n self.skipTest("Visualization libraries not available")" }, "report_generation_fallbacks": { "description": "Fallback mechanisms for report generation", "implementation": "try:\n import pandas as pd\n import openpyxl\n EXCEL_AVAILABLE = True\nexcept ImportError:\n EXCEL_AVAILABLE = False", "usage": "def test_excel_report(self):\n """Test Excel report generation."""\n if not EXCEL_AVAILABLE:\n self.skipTest("Excel libraries not available")" } }, "minimum_requirements": { "python_version": { "description": "Minimum Python version required", "version": "3.7", "reason": "Uses f-strings, type annotations, and other Python 3.7+ features" }, "operating_system": { "description": "Supported operating systems", "systems": ["Windows", "Linux", "macOS"], "notes": "Path handling is platform-independent" }, "disk_space": { "description": "Disk space requirements", "minimum": "100 MB for test system", "recommended": "1 GB for test system and output files" }, "memory": { "description": "Memory requirements", "minimum": "512 MB", "recommended": "2 GB for large test runs with visualizations" } } } }
+

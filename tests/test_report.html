@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit Analyzer Test Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .category { border: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px; overflow: hidden; }
+        .category-header { padding: 10px 15px; background-color: #f5f5f5; }
+        .category-body { padding: 15px; }
+        .passed { color: #4CAF50; }
+        .failed { color: #F44336; }
+        .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-card { background-color: #f5f5f5; padding: 20px; border-radius: 5px; text-align: center; flex: 1; margin: 0 10px; }
+        .stat-value { font-size: 2em; font-weight: bold; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Orbit Analyzer Test Results</h1>
+        
+        <div class="summary">
+            <p><strong>Date:</strong> 2025-04-30 15:46:03</p>
+            <p><strong>Total Categories:</strong> 1</p>
+            <p><strong>Overall Status:</strong> <span class="passed">PASSED</span></p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Categories</h3>
+                <div class="stat-value">1</div>
+            </div>
+            <div class="stat-card">
+                <h3>Passed Categories</h3>
+                <div class="stat-value passed">1</div>
+            </div>
+            <div class="stat-card">
+                <h3>Failed Categories</h3>
+                <div class="stat-value failed">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Duration</h3>
+                <div class="stat-value">0.02s</div>
+            </div>
+        </div>
+        
+        <h2>Category Results</h2>
+        
+        <div class="category">
+            <div class="category-header">
+                <h3><span class="passed">PASSED</span> - structure</h3>
+            </div>
+            <div class="category-body">
+                <p><strong>Duration:</strong> 0.02s</p>
+                <p><strong>Failures:</strong> 0</p>
+                <p><strong>Errors:</strong> 0</p>
+                <p><strong>Skipped:</strong> 0</p>
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>

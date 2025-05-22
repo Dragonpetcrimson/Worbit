@@ -1,0 +1,124 @@
+# tests/report_writer_test.py
+import os
+import sys
+from test_config import TEST_CONFIG
+
+# Add parent directory to path to import the core modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from log_segmenter import collect_all_supported_files
+from log_analyzer import parse_logs
+from ocr_processor import extract_ocr_data
+from error_clusterer import cluster_errors
+from gpt_summarizer import generate_summary_from_clusters
+from test_utils import get_test_folder
+from reports import write_reports  # Import directly from the reports package
+
+def test_report_writer():
+    """Test the report generation functionality using the reports package."""
+    test_dir = get_test_folder()
+    print(f"Testing with folder: {test_dir}")
+    
+    # Extract the test ID from the folder path
+    test_id = os.path.basename(test_dir) if "SXM-" in test_dir else "TEST-123"
+    
+    output_dir = os.path.join(TEST_CONFIG["OUTPUT_DIR"], test_id)
+    
+    # Clean previous test results if they exist
+    for filename in ["log_analysis.xlsx", "log_analysis.json", "log_analysis.md"]:
+        full_path = os.path.join(output_dir, filename)
+        if os.path.exists(full_path):
+            try:
+                os.remove(full_path)
+                print(f"Cleaned up previous test file: {full_path}")
+            except Exception as e:
+                print(f"⚠️ Couldn't remove previous file {full_path}: {e}")
+    
+    logs, images = collect_all_supported_files(test_dir)
+    
+    if not logs:
+        print("⚠️ No logs found - using minimal test data")
+        # Create minimal test data
+        errors = [
+            {'file': 'test.log', 'line_num': 1, 'text': 'Test error', 'severity': 'High', 
+             'timestamp': '2023-01-01 12:00:00', 'context': ['Line 1: context line']}
+        ]
+        clusters = {0: errors}
+    else:
+        errors = parse_logs(logs)
+        clusters = cluster_errors(errors)
+        
+    ocr = extract_ocr_data(images) if images else []
+    summary = generate_summary_from_clusters(clusters, ocr, test_id, use_gpt=False)
+
+    # Write reports using the reports package
+    try:
+        results = write_reports(
+            output_dir=output_dir,
+            test_id=test_id,
+            summary=summary,
+            errors=errors,
+            ocr_data=ocr,
+            clusters=clusters,
+            ymir_flag=True,
+            background_text="(TEST) Background block placeholder",
+            scenario_text="(TEST) Scenario block placeholder"
+        )
+        
+        # Check the results structure
+        if not isinstance(results, dict):
+            print("❌ write_reports did not return a dictionary")
+            return False
+            
+        print("✅ Got results dictionary from write_reports")
+        
+        # Check primary issue component
+        if "primary_issue_component" in results:
+            print(f"🔍 Primary issue component: {results['primary_issue_component']}")
+        else:
+            print("⚠️ No primary_issue_component in results")
+        
+        # Check for report files in the results
+        if "reports" in results and isinstance(results["reports"], dict):
+            for report_type, report_path in results["reports"].items():
+                if isinstance(report_path, str) and os.path.exists(report_path):
+                    print(f"✅ Found {report_type} report at: {os.path.basename(report_path)}")
+                else:
+                    print(f"⚠️ Report path missing or invalid for {report_type}")
+        else:
+            print("⚠️ No reports dictionary in results")
+    except Exception as e:
+        print(f"❌ Error calling write_reports: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    
+    # Verify files were created
+    expected_files = ["log_analysis.xlsx", "log_analysis.json", "log_analysis.md"]
+    missing_files = []
+    
+    for filename in expected_files:
+        full_path = os.path.join(output_dir, filename)
+        if not os.path.exists(full_path):
+            missing_files.append(filename)
+            
+    if missing_files:
+        print(f"❌ Missing output files: {missing_files}")
+        return False
+        
+    # Check file sizes to ensure they have content
+    for filename in expected_files:
+        full_path = os.path.join(output_dir, filename)
+        size = os.path.getsize(full_path)
+        print(f"✓ {filename}: {size} bytes")
+        
+        if size < 100:
+            print(f"❌ File suspiciously small: {filename}")
+            return False
+            
+    print("✅ All report files created successfully")
+    return True
+
+if __name__ == "__main__":
+    result = test_report_writer()
+    print(f"\nTest {'PASSED' if result else 'FAILED'}")

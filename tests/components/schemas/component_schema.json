@@ -1,0 +1,56 @@
+{
+  "components": [
+    {
+      "id": "soa",
+      "name": "SOA",
+      "description": "SiriusXM application built on Android",
+      "type": "application",
+      "logSources": ["app_debug.log", "appium.log"],
+      "errorPatterns": ["error.*soa", "exception"]
+    },
+    {
+      "id": "mimosa",
+      "name": "Mimosa",
+      "description": "Provides fake testing data (Satellite/IP channel)",
+      "type": "test_data_provider",
+      "logSources": ["mimosa.log", "mimosa_debug.log"],
+      "errorPatterns": ["error.*data", "unavailable"]
+    },
+    {
+      "id": "arecibo",
+      "name": "Arecibo",
+      "description": "Monitors traffic from Phoebe",
+      "type": "monitor",
+      "logSources": ["arecibo.log"],
+      "errorPatterns": ["error.*arecibo", "warning"]
+    },
+    {
+      "id": "phoebe",
+      "name": "Phoebe",
+      "description": "Proxy to run data to SOA",
+      "type": "proxy",
+      "logSources": ["phoebe.log", "phoebe_service.log"],
+      "errorPatterns": ["error.*proxy", "failed"]
+    }
+  ],
+  "dataFlows": [
+    {
+      "source": "mimosa",
+      "target": "soa",
+      "description": "Test data flow",
+      "dataType": "test_data"
+    },
+    {
+      "source": "phoebe",
+      "target": "soa",
+      "description": "Proxy flow",
+      "dataType": "proxy_data"
+    },
+    {
+      "source": "arecibo",
+      "target": "phoebe",
+      "description": "Monitoring flow",
+      "dataType": "monitor_data"
+    }
+  ]
+}

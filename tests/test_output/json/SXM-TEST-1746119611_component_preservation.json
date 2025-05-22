@@ -1,0 +1,14 @@
+{
+  "test_id": "SXM-TEST-1746119611",
+  "primary_issue_component": "soa",
+  "final_component_counts": {
+    "soa": 1,
+    "translator": 1,
+    "mimosa": 1,
+    "unknown": 1
+  },
+  "component_source_counts": {},
+  "source_component_alignment": true,
+  "primary_component_presence": 0,
+  "component_fields_preserved": true
+}

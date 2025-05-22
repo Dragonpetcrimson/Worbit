@@ -1,0 +1,92 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reports Package Test Results: TEST-1746119611</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; }
+                .container { max-width: 1200px; margin: 0 auto; }
+                h1, h2, h3 { color: #444; }
+                h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                .module { border: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px; overflow: hidden; }
+                .module-header { padding: 10px 15px; background-color: #f5f5f5; }
+                .module-body { padding: 15px; }
+                .test-result { margin-bottom: 15px; padding: 10px; border-radius: 5px; }
+                .passed { background-color: #e6ffe6; }
+                .failed { background-color: #ffe6e6; }
+                .pass-badge { background-color: #4CAF50; color: white; padding: 5px 10px; border-radius: 3px; }
+                .fail-badge { background-color: #F44336; color: white; padding: 5px 10px; border-radius: 3px; }
+                .details { margin-top: 5px; font-size: 0.9em; color: #666; }
+                .error { margin-top: 5px; color: #D32F2F; font-family: monospace; }
+                .output-files { margin-top: 10px; }
+                .output-file { display: inline-block; background-color: #e0e0e0; padding: 5px 10px; margin-right: 5px; 
+                             margin-bottom: 5px; border-radius: 3px; font-size: 0.9em; }
+                .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+                .stat-card { background-color: #f5f5f5; padding: 20px; border-radius: 5px; text-align: center; flex: 1; margin: 0 10px; }
+                .stat-value { font-size: 2em; font-weight: bold; margin: 10px 0; }
+                .overall-pass { color: #4CAF50; }
+                .overall-fail { color: #F44336; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Reports Package Test Results</h1>
+                
+                <div class="summary">
+                    <p><strong>Test ID:</strong> TEST-1746119611</p>
+                    <p><strong>Date:</strong> 2025-05-01 13:13:32</p>
+                    <p><strong>Output Directory:</strong> test_output\</p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Total Tests</h3>
+                        <div class="stat-value">1</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Passed Tests</h3>
+                        <div class="stat-value overall-pass">1</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Failed Tests</h3>
+                        <div class="stat-value overall-fail">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Overall Status</h3>
+                        <div class="stat-value overall-pass">
+                            100%
+                        </div>
+                    </div>
+                </div>
+                
+                <h2>Module Results</h2>
+        
+                <div class="module">
+                    <div class="module-header">
+                        <h3>
+                            <span class="pass-badge">PASSED</span>
+                            report_manager - 1/1 tests passed
+                        </h3>
+                    </div>
+                    <div class="module-body">
+            
+                        <div class="test-result passed">
+                            <h4>
+                                <span class="pass-badge">PASSED</span>
+                                report_manager
+                            </h4>
+                
+                            <div class="details">ReportManager called all necessary methods</div>
+                    
+                        </div>
+                
+                    </div>
+                </div>
+            
+            </div>
+        </body>
+        </html>
+        

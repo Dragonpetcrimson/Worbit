@@ -1,0 +1,988 @@
+.DiGraph()\n \n # Add component nodes\n for component_id, component_info in components.items():\n G.add_node(component_id, label=component_info.get('name', component_id))\n \n # Add relationship edges\n for component_id, component_info in components.items():\n for relation in component_info.get('relations', []):\n target = relation.get('target')\n if target and target in components:\n G.add_edge(component_id, target, label=relation.get('type', 'dependency'))\n \n # Create layout\n pos = nx.spring_layout(G)\n \n # Create figure\n plt.figure(figsize=(10, 8))\n \n # Draw nodes\n nx.draw_networkx_nodes(G, pos, node_size=800, node_color='lightblue', alpha=0.8)\n \n # Draw edges\n nx.draw_networkx_edges(G, pos, width=1.5, arrows=True)\n \n # Draw labels\n nx.draw_networkx_labels(G, pos, font_size=10)\n \n # Set title\n plt.title(f\"Component Relationships for {test_id}\")\n \n # Save figure\n plt.savefig(output_path, bbox_inches='tight', dpi=150)\n plt.close()\n \n return output_path" 
+    } 
+  }, 
+  "configuration_options": { 
+    "visualization_flags": { 
+      "description": "Feature flags for enabling/disabling visualizations", 
+      "flags": { 
+        "ENABLE_COMPONENT_DISTRIBUTION": { 
+          "type": "bool", 
+          "description": "Enable component error distribution visualization", 
+          "default": true 
+        }, 
+        "ENABLE_ERROR_PROPAGATION": { 
+          "type": "bool", 
+          "description": "Enable error propagation visualization", 
+          "default": true 
+        }, 
+        "ENABLE_COMPONENT_RELATIONSHIPS": { 
+          "type": "bool", 
+          "description": "Enable component relationship visualization", 
+          "default": true 
+        }, 
+        "ENABLE_TIMELINE": { 
+          "type": "bool", 
+          "description": "Enable timeline visualization", 
+          "default": true 
+        }, 
+        "ENABLE_CLUSTER_TIMELINE": { 
+          "type": "bool", 
+          "description": "Enable cluster timeline visualization", 
+          "default": true 
+        } 
+      }, 
+      "usage": "@patch('config.Config.ENABLE_COMPONENT_DISTRIBUTION', True)\ndef test_component_error_distribution(self):\n # Test code here..." 
+    }, 
+    "image_output_settings": { 
+      "description": "Settings for image output", 
+      "settings": { 
+        "DPI": { 
+          "type": "int", 
+          "description": "Dots per inch for image output", 
+          "default": 150 
+        }, 
+        "FIGURE_WIDTH": { 
+          "type": "int", 
+          "description": "Width of the figure in inches", 
+          "default": 10 
+        }, 
+        "FIGURE_HEIGHT": { 
+          "type": "int", 
+          "description": "Height of the figure in inches", 
+          "default": 6 
+        }, 
+        "TIGHT_LAYOUT": { 
+          "type": "bool", 
+          "description": "Whether to use tight layout", 
+          "default": true 
+        } 
+      }, 
+      "usage": "plt.figure(figsize=(ConfigManager.get('FIGURE_WIDTH', 10), ConfigManager.get('FIGURE_HEIGHT', 6)))\n# ...\nplt.savefig(output_path, bbox_inches='tight' if ConfigManager.get('TIGHT_LAYOUT', True) else None, dpi=ConfigManager.get('DPI', 150))" 
+    } 
+  }, 
+  "layout_algorithms": { 
+    "spring_layout": { 
+      "description": "Uses a force-directed layout algorithm", 
+      "usage": "pos = nx.spring_layout(G)", 
+      "parameters": { 
+        "G": "NetworkX graph", 
+        "k": "Optimal distance between nodes", 
+        "iterations": "Number of iterations" 
+      }, 
+      "suitable_for": "General graph visualization" 
+    }, 
+    "circular_layout": { 
+      "description": "Places nodes on a circle", 
+      "usage": "pos = nx.circular_layout(G)", 
+      "parameters": { 
+        "G": "NetworkX graph" 
+      }, 
+      "suitable_for": "Small graphs with clear relationships" 
+    }, 
+    "shell_layout": { 
+      "description": "Places nodes in concentric circles", 
+      "usage": "pos = nx.shell_layout(G, nlist=[primary_components, secondary_components, tertiary_components])", 
+      "parameters": { 
+        "G": "NetworkX graph", 
+        "nlist": "List of lists of nodes in each shell" 
+      }, 
+      "suitable_for": "Hierarchical component relationships" 
+    }, 
+    "spectral_layout": { 
+      "description": "Places nodes using eigenvectors of the graph Laplacian", 
+      "usage": "pos = nx.spectral_layout(G)", 
+      "parameters": { 
+        "G": "NetworkX graph" 
+      }, 
+      "suitable_for": "Dense graphs with many connections" 
+    } 
+  }, 
+  "fallback_strategies": { 
+    "visualization_fallback": { 
+      "description": "Fallback strategy when visualization cannot be generated", 
+      "implementation": "def generate_visualization_with_fallback(generation_func, output_dir, test_id, *args, **kwargs):\n \"\"\"Generate visualization with fallback.\"\"\"\n try:\n # Attempt to generate visualization\n return generation_func(output_dir, test_id, *args, **kwargs)\n except Exception as e:\n logger.warning(f\"Error generating visualization: {str(e)}\")\n \n # Create fallback visualization\n return generate_fallback_visualization(output_dir, test_id, str(e))", 
+      "fallback_visualization": "def generate_fallback_visualization(output_dir, test_id, error_message):\n \"\"\"Generate a fallback visualization.\"\"\"\n output_path = os.path.join(output_dir, f\"{test_id}_fallback.png\")\n \n # Create a simple visualization indicating an error\n plt.figure(figsize=(6, 4))\n plt.text(0.5, 0.5, f\"Visualization Error: {error_message}\", ha='center', va='center')\n plt.axis('off')\n plt.savefig(output_path)\n plt.close()\n \n return output_path" 
+    }, 
+    "library_fallback": { 
+      "description": "Fallback when visualization libraries are not available", 
+      "implementation": "def check_visualization_libraries():\n \"\"\"Check if visualization libraries are available.\"\"\"\n libraries_available = {\n 'matplotlib': has_required_module('matplotlib'),\n 'networkx': has_required_module('networkx'),\n 'numpy': has_required_module('numpy')\n }\n \n if not all(libraries_available.values()):\n missing = [lib for lib, available in libraries_available.items() if not available]\n logger.warning(f\"Visualization libraries not available: {', '.join(missing)}\")\n return False\n \n return True", 
+      "usage": "if not check_visualization_libraries():\n # Use fallback (e.g., create a text file with description)\n return create_text_description(output_dir, test_id, components)" 
+    },
+    "path_sanitization": {
+      "description": "Prevents creating nested subdirectories in output paths",
+      "implementation": "def sanitize_path(base_dir, output_type):\n    # Check if path already contains a subdirectory\n    if output_type == OutputType.JSON_DATA and '/json/' in base_dir.replace('\\\\', '/'):\n        # Extract parent directory\n        base_dir = base_dir.replace('\\\\', '/').split('/json/')[0]\n    elif output_type == OutputType.VISUALIZATION and '/supporting_images/' in base_dir.replace('\\\\', '/'):\n        # Extract parent directory\n        base_dir = base_dir.replace('\\\\', '/').split('/supporting_images/')[0]\n    return base_dir",
+      "usage": "# Sanitize base directory before constructing output path\nbase_dir = sanitize_path(base_dir, output_type)\noutput_path = os.path.join(base_dir, subdirectory, filename)"
+    }
+  }
+},
+
+"directory_structure": { 
+  "output_file_organization": { 
+    "base": { 
+      "description": "Base directory for test outputs", 
+      "path_pattern": "output/{test_id}/", 
+      "contents": [ 
+        "{test_id}_log_analysis.xlsx", 
+        "{test_id}_bug_report.docx", 
+        "{test_id}_component_report.html" 
+      ] 
+    }, 
+    "json": { 
+      "description": "Directory for JSON data", 
+      "path_pattern": "output/{test_id}/json/", 
+      "contents": [ 
+        "{test_id}_log_analysis.json", 
+        "{test_id}_component_analysis.json", 
+        "{test_id}_enhanced_clusters.json" 
+      ] 
+    }, 
+    "supporting_images": { 
+      "description": "Directory for visualizations", 
+      "path_pattern": "output/{test_id}/supporting_images/", 
+      "contents": [ 
+        "{test_id}_component_relationships.png", 
+        "{test_id}_error_propagation.png", 
+        "{test_id}timeline.png" 
+      ] 
+    }, 
+    "debug": { 
+      "description": "Directory for debug information", 
+      "path_pattern": "output/{test_id}/debug/", 
+      "contents": [ 
+        "{test_id}timeline_debug.txt" 
+      ] 
+    } 
+  }, 
+  "source_code_organization": { 
+    "tests": { 
+      "description": "Root directory for tests", 
+      "contents": [ 
+        "run_all_tests.py", 
+        "test_registry.py", 
+        "test_utils.py", 
+        "test_config.py", 
+        "core_module_tests.py", 
+        "component_tests.py", 
+        "report_tests.py", 
+        "visualization_tests.py", 
+        "integration_tests.py", 
+        "structure_tests.py", 
+        "performance_tests.py", 
+        "legacy_test_runner.py" 
+      ] 
+    }, 
+    "test_data": { 
+      "description": "Directory for test data", 
+      "path_pattern": "tests/test_data/", 
+      "contents": [ 
+        "logs/", 
+        "images/", 
+        "performance/", 
+        "component_schema.json" 
+      ] 
+    }, 
+    "output": { 
+      "description": "Directory for test outputs", 
+      "path_pattern": "tests/output/", 
+      "contents": [ 
+        "{test_id}/", 
+        "{test_id}/json/", 
+        "{test_id}/supporting_images/", 
+        "{test_id}/debug/" 
+      ] 
+    },
+    "utils": {
+      "description": "Directory for utility modules",
+      "path_pattern": "utils/",
+      "contents": [
+        "path_utils.py",
+        "path_validator.py",
+        "component_verification.py",
+        "json_utils.py"
+      ]
+    }
+  }, 
+  "critical_file_paths": { 
+    "run_all_tests": { 
+      "path": "tests/run_all_tests.py", 
+      "description": "Main entry point for running tests", 
+      "critical": true 
+    }, 
+    "test_registry": { 
+      "path": "tests/test_registry.py", 
+      "description": "Test registration and discovery system", 
+      "critical": true 
+    }, 
+    "test_utils": { 
+      "path": "tests/test_utils.py", 
+      "description": "Common test utilities", 
+      "critical": true 
+    }, 
+    "test_config": { 
+      "path": "tests/test_config.py", 
+      "description": "Test configuration", 
+      "critical": true 
+    }, 
+    "component_schema": { 
+      "path": "tests/test_data/component_schema.json", 
+      "description": "Component schema for testing", 
+      "critical": true, 
+      "fallback": "Will be generated if not found" 
+    } 
+  }, 
+  "naming_conventions": { 
+    "test_files": { 
+      "description": "Naming conventions for test files", 
+      "patterns": [ 
+        "{category}_tests.py", 
+        "{feature}_test.py" 
+      ], 
+      "examples": [ 
+        "core_module_tests.py", 
+        "component_tests.py", 
+        "log_analyzer_test.py" 
+      ] 
+    }, 
+    "test_classes": { 
+      "description": "Naming conventions for test classes", 
+      "patterns": [ 
+        "Test{ModuleName}", 
+        "{ModuleName}Test" 
+      ], 
+      "examples": [ 
+        "TestLogAnalyzer", 
+        "TestComponentVisualizer", 
+        "DirectoryStructureTest" 
+      ] 
+    }, 
+    "test_methods": { 
+      "description": "Naming conventions for test methods", 
+      "patterns": [ 
+        "test_{functionality}", 
+        "test_{functionality}_{scenario}" 
+      ], 
+      "examples": [ 
+        "test_log_parsing", 
+        "test_identify_component_from_log_file", 
+        "test_error_handling_with_invalid_input" 
+      ] 
+    }, 
+    "output_files": { 
+      "description": "Naming conventions for output files", 
+      "patterns": [ 
+        "{test_id}_{file_type}.{extension}" 
+      ], 
+      "examples": [ 
+        "SXM-123456_log_analysis.xlsx", 
+        "SXM-123456_component_relationships.png", 
+        "SXM-123456_enhanced_clusters.json" 
+      ] 
+    },
+    "path_sanitization": {
+      "description": "Patterns for detecting and sanitizing nested directory paths",
+      "patterns": [
+        "supporting_images/supporting_images", 
+        "json/json", 
+        "debug/debug"
+      ],
+      "examples": [
+        "/path/to/supporting_images/supporting_images/image.png -> /path/to/supporting_images/image.png",
+        "/path/to/json/json/data.json -> /path/to/json/data.json"
+      ]
+    }
+  } 
+},
+
+"component_relationships": { 
+  "module_dependencies": { 
+    "test_registry": { 
+      "description": "Test registration and discovery system", 
+      "dependents": [ 
+        "run_all_tests", 
+        "core_module_tests", 
+        "component_tests", 
+        "report_tests", 
+        "visualization_tests", 
+        "integration_tests", 
+        "structure_tests", 
+        "performance_tests" 
+      ], 
+      "dependencies": [] 
+    }, 
+    "test_utils": { 
+      "description": "Common test utilities", 
+      "dependents": [ 
+        "run_all_tests", 
+        "core_module_tests", 
+        "component_tests", 
+        "report_tests", 
+        "visualization_tests", 
+        "integration_tests", 
+        "structure_tests", 
+        "performance_tests" 
+      ], 
+      "dependencies": [ 
+        "test_config" 
+      ] 
+    }, 
+    "test_config": { 
+      "description": "Test configuration", 
+      "dependents": [ 
+        "test_utils" 
+      ], 
+      "dependencies": [] 
+    }, 
+    "run_all_tests": { 
+      "description": "Main entry point for running tests", 
+      "dependents": [], 
+      "dependencies": [ 
+        "test_registry", 
+        "test_utils" 
+      ] 
+    }, 
+    "legacy_test_runner": { 
+      "description": "Legacy test runner", 
+      "dependents": [], 
+      "dependencies": [] 
+    },
+    "path_utils": {
+      "description": "Path handling utilities",
+      "dependents": [
+        "structure_tests",
+        "visualization_tests",
+        "reports"
+      ],
+      "dependencies": []
+    },
+    "path_validator": {
+      "description": "Path validation and fixing utilities",
+      "dependents": [
+        "structure_tests"
+      ],
+      "dependencies": [
+        "path_utils"
+      ]
+    },
+    "component_verification": {
+      "description": "Component preservation verification utilities",
+      "dependents": [
+        "structure_tests",
+        "component_tests",
+        "reports"
+      ],
+      "dependencies": []
+    }
+  }, 
+  "test_class_dependencies": { 
+    "TestLogSegmenter": { 
+      "description": "Tests the identification and collection of log files", 
+      "dependents": [ 
+        "TestLogAnalyzer" 
+      ], 
+      "dependencies": [] 
+    }, 
+    "TestLogAnalyzer": { 
+      "description": "Tests the parsing and analysis of log content", 
+      "dependents": [ 
+        "TestErrorClusterer", 
+        "TestComponentAnalyzer" 
+      ], 
+      "dependencies": [ 
+        "TestLogSegmenter" 
+      ] 
+    }, 
+    "TestErrorClusterer": { 
+      "description": "Tests the clustering of related errors", 
+      "dependents": [ 
+        "TestGPTSummarizer", 
+        "TestContextAwareClusterer" 
+      ], 
+      "dependencies": [ 
+        "TestLogAnalyzer" 
+      ] 
+    }, 
+    "TestComponentAnalyzer": { 
+      "description": "Tests the identification of components from logs", 
+      "dependents": [ 
+        "TestComponentVisualizer", 
+        "TestContextAwareClusterer", 
+        "TestDirectComponentAnalyzer" 
+      ], 
+      "dependencies": [ 
+        "TestLogAnalyzer" 
+      ] 
+    }, 
+    "TestController": { 
+      "description": "Tests the main controller functionality", 
+      "dependents": [], 
+      "dependencies": [ 
+        "TestLogAnalyzer", 
+        "TestErrorClusterer", 
+        "TestOcrProcessor", 
+        "TestGPTSummarizer", 
+        "TestComponentAnalyzer" 
+      ] 
+    },
+    "DirectoryStructureTest": {
+      "description": "Tests directory structure and path handling",
+      "dependents": [
+        "PathSanitizationTest",
+        "DirectoryFixingTest"
+      ],
+      "dependencies": []
+    },
+    "TestJsonUtils": {
+      "description": "Tests JSON serialization and deserialization",
+      "dependents": [],
+      "dependencies": []
+    },
+    "ComponentPreservationTest": {
+      "description": "Tests component preservation verification",
+      "dependents": [],
+      "dependencies": []
+    }
+  }, 
+  "data_flow_patterns": { 
+    "log_analysis_flow": { 
+      "description": "Data flow for log analysis", 
+      "flow": [ 
+        {"from": "log_files", "to": "TestLogSegmenter", "data": "Raw log files"}, 
+        {"from": "TestLogSegmenter", "to": "TestLogAnalyzer", "data": "Collected log files"}, 
+        {"from": "TestLogAnalyzer", "to": "TestErrorClusterer", "data": "Extracted errors"}, 
+        {"from": "TestErrorClusterer", "to": "TestGPTSummarizer", "data": "Error clusters"}, 
+        {"from": "TestGPTSummarizer", "to": "reports", "data": "Generated summary"} 
+      ] 
+    }, 
+    "component_analysis_flow": { 
+      "description": "Data flow for component analysis", 
+      "flow": [ 
+        {"from": "log_files", "to": "TestComponentAnalyzer", "data": "Log files with component information"}, 
+        {"from": "TestComponentAnalyzer", "to": "TestComponentVisualizer", "data": "Identified components"}, 
+        {"from": "TestComponentVisualizer", "to": "visualizations", "data": "Component visualizations"}, 
+        {"from": "TestComponentAnalyzer", "to": "TestDirectComponentAnalyzer", "data": "Component relationships"}, 
+        {"from": "TestDirectComponentAnalyzer", "to": "reports", "data": "Component analysis results"} 
+      ] 
+    }, 
+    "report_generation_flow": { 
+      "description": "Data flow for report generation", 
+      "flow": [ 
+        {"from": "TestGPTSummarizer", "to": "ReportsPackageTest", "data": "Summary data"}, 
+        {"from": "TestComponentAnalyzer", "to": "ReportsPackageTest", "data": "Component data"}, 
+        {"from": "ReportsPackageTest", "to": "TestExcelGenerator", "data": "Report data"}, 
+        {"from": "ReportsPackageTest", "to": "TestDocxGenerator", "data": "Report data"}, 
+        {"from": "ReportsPackageTest", "to": "TestComponentReport", "data": "Component report data"} 
+      ] 
+    },
+    "path_sanitization_flow": {
+      "description": "Data flow for path sanitization",
+      "flow": [
+        {"from": "base_directory", "to": "sanitize_base_directory", "data": "Input path"},
+        {"from": "sanitize_base_directory", "to": "get_output_path", "data": "Sanitized base path"},
+        {"from": "get_output_path", "to": "output_file", "data": "Final output path"}
+      ]
+    }
+  }, 
+  "communication_patterns": { 
+    "test_discovery": { 
+      "description": "Communication pattern for test discovery", 
+      "steps": [ 
+        {"component": "run_all_tests", "action": "Calls TestRegistry.get_modules"}, 
+        {"component": "TestRegistry", "action": "Filters tests based on criteria"}, 
+        {"component": "TestRegistry", "action": "Resolves dependencies"}, 
+        {"component": "TestRegistry", "action": "Returns filtered modules"}, 
+        {"component": "run_all_tests", "action": "Creates test suite from modules"} 
+      ] 
+    }, 
+    "test_execution": { 
+      "description": "Communication pattern for test execution", 
+      "steps": [ 
+        {"component": "run_all_tests", "action": "Creates unittest.TestSuite"}, 
+        {"component": "run_all_tests", "action": "Creates unittest.TextTestRunner"}, 
+        {"component": "run_all_tests", "action": "Calls runner.run(suite)"}, 
+        {"component": "TextTestRunner", "action": "Executes tests in the suite"}, 
+        {"component": "TextTestRunner", "action": "Returns TestResult"}, 
+        {"component": "run_all_tests", "action": "Collects results"} 
+      ] 
+    }, 
+    "configuration_management": { 
+      "description": "Communication pattern for configuration management", 
+      "steps": [ 
+        {"component": "ConfigManager", "action": "Loads default configuration from test_config.py"}, 
+        {"component": "ConfigManager", "action": "Loads configuration from config file"}, 
+        {"component": "ConfigManager", "action": "Loads configuration from environment variables"}, 
+        {"component": "Test modules", "action": "Call ConfigManager.get(key, default)"}, 
+        {"component": "ConfigManager", "action": "Returns configuration value"} 
+      ] 
+    },
+    "path_sanitization": {
+      "description": "Communication pattern for path sanitization",
+      "steps": [
+        {"component": "Test/Report functions", "action": "Call sanitize_base_directory with input path"},
+        {"component": "sanitize_base_directory", "action": "Checks path for subdirectory patterns"},
+        {"component": "sanitize_base_directory", "action": "Strips subdirectory part if found"},
+        {"component": "sanitize_base_directory", "action": "Returns sanitized path"},
+        {"component": "get_output_path", "action": "Uses sanitized path to construct final output path"}
+      ]
+    }
+  } 
+},
+
+"dependencies": { 
+  "external_libraries": { 
+    "matplotlib": { 
+      "description": "Library for creating visualizations", 
+      "version": "3.5.0 or higher", 
+      "required": false, 
+      "usage": "For generating visualizations of components, errors, and timelines" 
+    }, 
+    "networkx": { 
+      "description": "Library for graph operations", 
+      "version": "2.6.0 or higher", 
+      "required": false, 
+      "usage": "For generating component relationship graphs and visualizations" 
+    }, 
+    "pandas": { 
+      "description": "Library for data manipulation", 
+      "version": "1.3.0 or higher", 
+      "required": false, 
+      "usage": "For generating Excel reports and data manipulation" 
+    }, 
+    "openpyxl": { 
+      "description": "Library for Excel file manipulation", 
+      "version": "3.0.0 or higher", 
+      "required": false, 
+      "usage": "For generating Excel reports" 
+    }, 
+    "python-docx": { 
+      "description": "Library for DOCX file manipulation", 
+      "version": "0.8.0 or higher", 
+      "required": false, 
+      "usage": "For generating DOCX reports" 
+    }, 
+    "coverage": { 
+      "description": "Library for code coverage analysis", 
+      "version": "6.0.0 or higher", 
+      "required": false, 
+      "usage": "For generating code coverage reports" 
+    }, 
+    "pillow": { 
+      "description": "Library for image manipulation", 
+      "version": "8.0.0 or higher", 
+      "required": false, 
+      "usage": "For generating and manipulating test images" 
+    }, 
+    "keyring": { 
+      "description": "Library for secure credential storage", 
+      "version": "23.0.0 or higher", 
+      "required": false, 
+      "usage": "For secure API key handling" 
+    } 
+  }, 
+  "internal_dependencies": { 
+    "log_analyzer": { 
+      "description": "Module for analyzing log files", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "functions": [ 
+        "parse_logs", 
+        "extract_errors", 
+        "normalize_timestamp" 
+      ] 
+    }, 
+    "error_clusterer": { 
+      "description": "Module for clustering errors", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "functions": [ 
+        "perform_error_clustering", 
+        "calculate_similarity", 
+        "determine_optimal_clusters" 
+      ] 
+    }, 
+    "components": { 
+      "description": "Module for component analysis", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "submodules": [ 
+        "component_analyzer", 
+        "component_visualizer", 
+        "component_integration" 
+      ] 
+    }, 
+    "reports": { 
+      "description": "Module for report generation", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "submodules": [ 
+        "reports_package", 
+        "excel_generator", 
+        "docx_generator", 
+        "component_report" 
+      ] 
+    }, 
+    "ocr_processor": { 
+      "description": "Module for OCR processing", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "functions": [ 
+        "extract_ocr_data", 
+        "process_image", 
+        "filter_text" 
+      ] 
+    }, 
+    "gpt_summarizer": { 
+      "description": "Module for AI-powered summary generation", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "functions": [ 
+        "generate_summary_from_clusters", 
+        "create_prompt", 
+        "extract_root_cause" 
+      ] 
+    }, 
+    "controller": { 
+      "description": "Main controller module", 
+      "required": true, 
+      "provided_by": "Orbit Analyzer application", 
+      "functions": [ 
+        "run_pipeline", 
+        "collect_all_supported_files", 
+        "write_reports", 
+        "generate_visualizations" 
+      ] 
+    },
+    "path_utils": {
+      "description": "Path utilities module",
+      "required": true,
+      "provided_by": "Orbit Analyzer application",
+      "functions": [
+        "setup_output_directories",
+        "get_output_path",
+        "get_standardized_filename",
+        "normalize_test_id",
+        "sanitize_base_directory"
+      ]
+    },
+    "path_validator": {
+      "description": "Path validation module",
+      "required": false,
+      "provided_by": "Orbit Analyzer application",
+      "functions": [
+        "fix_directory_structure",
+        "fix_html_references"
+      ]
+    },
+    "component_verification": {
+      "description": "Component verification module",
+      "required": false,
+      "provided_by": "Orbit Analyzer application",
+      "functions": [
+        "verify_component_preservation",
+        "verify_component_fields_in_list"
+      ]
+    }
+  }, 
+  "fallback_mechanisms": { 
+    "module_import_fallbacks": { 
+      "description": "Fallback mechanisms for module imports", 
+      "implementation": "try:\n from components.component_analyzer import ComponentAnalyzer\nexcept ImportError:\n try:\n from component_analyzer import ComponentAnalyzer\n except ImportError:\n ComponentAnalyzer = None", 
+      "usage": "def setUp(self):\n \"\"\"Set up test fixtures.\"\"\"\n # Skip test if module not available\n if ComponentAnalyzer is None:\n self.skipTest(\"ComponentAnalyzer module not available\")" 
+    }, 
+    "visualization_fallbacks": { 
+      "description": "Fallback mechanisms for visualization", 
+      "implementation": "try:\n import matplotlib.pyplot as plt\n import networkx as nx\n VISUALIZATION_AVAILABLE = True\nexcept ImportError:\n VISUALIZATION_AVAILABLE = False", 
+      "usage": "def test_component_visualization(self):\n \"\"\"Test component visualization.\"\"\"\n if not VISUALIZATION_AVAILABLE:\n self.skipTest(\"Visualization libraries not available\")" 
+    }, 
+    "report_generation_fallbacks": { 
+      "description": "Fallback mechanisms for report generation", 
+      "implementation": "try:\n import pandas as pd\n import openpyxl\n EXCEL_AVAILABLE = True\nexcept ImportError:\n EXCEL_AVAILABLE = False", 
+      "usage": "def test_excel_report(self):\n \"\"\"Test Excel report generation.\"\"\"\n if not EXCEL_AVAILABLE:\n self.skipTest(\"Excel libraries not available\")" 
+    },
+    "path_utils_fallbacks": {
+      "description": "Fallback mechanisms for path utilities",
+      "implementation": "try:\n    from utils.path_utils import setup_output_directories, get_output_path, OutputType\nexcept ImportError:\n    # Define minimal functions\n    def setup_output_directories(base_dir, test_id):\n        test_id = test_id.strip()\n        if not test_id.startswith(\"SXM-\"):\n            test_id = f\"SXM-{test_id}\"\n        # Create base directories\n        base_path = os.path.join(base_dir, test_id)\n        json_path = os.path.join(base_path, \"json\")\n        images_path = os.path.join(base_path, \"supporting_images\")\n        debug_path = os.path.join(base_path, \"debug\")\n        # Create all directories\n        os.makedirs(base_path, exist_ok=True)\n        os.makedirs(json_path, exist_ok=True)\n        os.makedirs(images_path, exist_ok=True)\n        os.makedirs(debug_path, exist_ok=True)\n        return {\n            \"base\": base_path,\n            \"json\": json_path,\n            \"images\": images_path,\n            \"debug\": debug_path,\n            \"test_id\": test_id\n        }",
+      "usage": "# Use with try/except to handle missing module\ntry:\n    from utils.path_utils import setup_output_directories\nexcept ImportError:\n    # Use fallback implementation\n    logger.warning(\"path_utils module not available, using minimal fallbacks\")"
+    }
+  }, 
+  "minimum_requirements": { 
+    "python_version": { 
+      "description": "Minimum Python version required", 
+      "version": "3.7", 
+      "reason": "Uses f-strings, type annotations, and other Python 3.7+ features" 
+    }, 
+    "operating_system": { 
+      "description": "Supported operating systems", 
+      "systems": ["Windows", "Linux", "macOS"], 
+      "notes": "Path handling is platform-independent" 
+    }, 
+    "disk_space": { 
+      "description": "Disk space requirements", 
+      "minimum": "100 MB for test system", 
+      "recommended": "1 GB for test system and output files" 
+    }, 
+    "memory": { 
+      "description": "Memory requirements", 
+      "minimum": "512 MB", 
+      "recommended": "2 GB for large test runs with visualizations" 
+    } 
+  } 
+} }
+"get_test_by_name": {
+  "signature": "@classmethod def get_test_by_name(cls, test_name)",
+  "description": "Get a specific test class by name",
+  "parameters": {
+    "test_name": {
+      "type": "str",
+      "description": "Name of the test class to retrieve"
+    }
+  },
+  "returns": {
+    "type": "class or None",
+    "description": "Test class if found, None otherwise"
+  },
+  "example": "test_class = TestRegistry.get_test_by_name('TestLogAnalyzer')"
+}
+"timeit": {
+  "signature": "def timeit(func)",
+  "description": "Decorator to time function execution",
+  "parameters": {
+    "func": {
+      "type": "function",
+      "description": "Function to time"
+    }
+  },
+  "returns": {
+    "type": "function",
+    "description": "Wrapped function that logs execution time"
+  },
+  "side_effects": "Logs execution time",
+  "example": "@timeit\ndef test_log_parser_performance(self):\n    errors = parse_logs([self.large_log])"
+},
+"has_required_module": {
+  "signature": "def has_required_module(module_name: str) -> bool",
+  "description": "Check if a required module is available",
+  "parameters": {
+    "module_name": {
+      "type": "str",
+      "description": "Name of the module to check"
+    }
+  },
+  "returns": {
+    "type": "bool",
+    "description": "True if module is available, False otherwise"
+  },
+  "example": "if has_required_module('PIL'):\n    # Use PIL functionality\nelse:\n    # Fallback implementation"
+},
+"skip_if_module_missing": {
+  "signature": "def skip_if_module_missing(module_name: str)",
+  "description": "Decorator to skip test if module is missing",
+  "parameters": {
+    "module_name": {
+      "type": "str",
+      "description": "Name of module to check"
+    }
+  },
+  "returns": {
+    "type": "function",
+    "description": "Decorator function"
+  },
+  "example": "@skip_if_module_missing('PIL')\ndef test_image_processing(self):\n    # Test that requires PIL"
+},
+"sanitize_base_directory": {
+  "signature": "def sanitize_base_directory(base_dir: str, expected_subdir: Optional[str] = None) -> str",
+  "description": "Sanitize base directory to prevent nested subdirectories",
+  "parameters": {
+    "base_dir": {
+      "type": "str",
+      "description": "Base directory path to sanitize"
+    },
+    "expected_subdir": {
+      "type": "Optional[str]",
+      "description": "Expected subdirectory name (if known)",
+      "default": null
+    }
+  },
+  "returns": {
+    "type": "str",
+    "description": "Sanitized base directory path"
+  },
+  "example": "base_dir = sanitize_base_directory(path, 'json')"
+},
+"cleanup_nested_directories": {
+  "signature": "def cleanup_nested_directories(base_dir: str) -> Dict[str, int]",
+  "description": "Clean up nested directories by moving files to parent directories",
+  "parameters": {
+    "base_dir": {
+      "type": "str",
+      "description": "Base directory to clean up"
+    }
+  },
+  "returns": {
+    "type": "Dict[str, int]",
+    "description": "Dictionary with counts of fixed directories"
+  },
+  "example": "results = cleanup_nested_directories(output_dir)"
+}
+"path_validator": {
+  "file_location": "utils/path_validator.py",
+  "purpose": "Utilities for validating and fixing directory structure",
+  "functions": {
+    "fix_directory_structure": {
+      "signature": "def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]",
+      "description": "Fix directory structure issues like misplaced files",
+      "parameters": {
+        "base_dir": {
+          "type": "str",
+          "description": "Base directory to check"
+        },
+        "test_id": {
+          "type": "str",
+          "description": "Test identifier"
+        }
+      },
+      "returns": {
+        "type": "Dict[str, List[str]]",
+        "description": "Dictionary with lists of fixed issues"
+      },
+      "example": "issues = fix_directory_structure(output_dir, test_id)"
+    },
+    "fix_html_references": {
+      "signature": "def fix_html_references(html_path: str, base_dir: str) -> List[str]",
+      "description": "Fix HTML references to support correct image paths",
+      "parameters": {
+        "html_path": {
+          "type": "str",
+          "description": "Path to HTML file"
+        },
+        "base_dir": {
+          "type": "str",
+          "description": "Base directory"
+        }
+      },
+      "returns": {
+        "type": "List[str]",
+        "description": "List of fixes made"
+      },
+      "example": "fixes = fix_html_references(report_path, output_dir)"
+    }
+  }
+}
+"component_verification": {
+  "file_location": "utils/component_verification.py",
+  "purpose": "Utilities for verifying component information preservation",
+  "functions": {
+    "verify_component_preservation": {
+      "signature": "def verify_component_preservation(source_path: str, target_path: str) -> bool",
+      "description": "Verify that component information is preserved between files",
+      "parameters": {
+        "source_path": {
+          "type": "str",
+          "description": "Path to source file"
+        },
+        "target_path": {
+          "type": "str",
+          "description": "Path to target file"
+        }
+      },
+      "returns": {
+        "type": "bool",
+        "description": "True if component information is preserved, False otherwise"
+      },
+      "example": "is_preserved = verify_component_preservation(source_json, target_json)"
+    },
+    "verify_component_fields_in_list": {
+      "signature": "def verify_component_fields_in_list(source_list: List[Dict], target_list: List[Dict]) -> bool",
+      "description": "Verify component fields in lists of dictionaries",
+      "parameters": {
+        "source_list": {
+          "type": "List[Dict]",
+          "description": "Source list of dictionaries"
+        },
+        "target_list": {
+          "type": "List[Dict]",
+          "description": "Target list of dictionaries"
+        }
+      },
+      "returns": {
+        "type": "bool",
+        "description": "True if component fields match, False otherwise"
+      },
+      "example": "is_preserved = verify_component_fields_in_list(source_errors, target_errors)"
+    }
+  }
+}
+"configuration_options": {
+  "visualization_flags": {
+    "description": "Feature flags for enabling/disabling visualizations",
+    "flags": {
+      "ENABLE_COMPONENT_DISTRIBUTION": {
+        "type": "bool",
+        "description": "Enable component error distribution visualization",
+        "default": true
+      },
+      "ENABLE_ERROR_PROPAGATION": {
+        "type": "bool",
+        "description": "Enable error propagation visualization",
+        "default": true
+      },
+      "ENABLE_COMPONENT_RELATIONSHIPS": {
+        "type": "bool",
+        "description": "Enable component relationship visualization",
+        "default": true
+      },
+      "ENABLE_TIMELINE": {
+        "type": "bool",
+        "description": "Enable timeline visualization",
+        "default": true
+      },
+      "ENABLE_CLUSTER_TIMELINE": {
+        "type": "bool",
+        "description": "Enable cluster timeline visualization",
+        "default": true
+      }
+    },
+    "usage": "@patch('config.Config.ENABLE_COMPONENT_DISTRIBUTION', True)\ndef test_component_error_distribution(self):\n    # Test code here..."
+  }
+}
+"PathSanitizationTest": {
+  "description": "Tests path sanitization functions",
+  "category": "structure",
+  "tests": [
+    "test_sanitize_base_directory",
+    "test_path_generation_with_sanitization",
+    "test_cleanup_nested_directories"
+  ]
+},
+"DirectoryFixingTest": {
+  "description": "Tests directory structure fixing functions",
+  "category": "structure",
+  "tests": [
+    "test_fix_directory_structure",
+    "test_fix_html_references"
+  ]
+},
+"ComponentPreservationTest": {
+  "description": "Tests component preservation verification",
+  "category": "structure",
+  "tests": [
+    "test_component_verification",
+    "test_verify_component_fields_in_list"
+  ]
+}
+"path_sanitization": {
+  "description": "Patterns for detecting and sanitizing nested directory paths",
+  "patterns": [
+    "supporting_images/supporting_images", 
+    "json/json", 
+    "debug/debug"
+  ],
+  "examples": [
+    "/path/to/supporting_images/supporting_images/image.png -> /path/to/supporting_images/image.png",
+    "/path/to/json/json/data.json -> /path/to/json/data.json"
+  ]
+}
+"path_sanitization": {
+  "description": "Prevents creating nested subdirectories in output paths",
+  "implementation": "def sanitize_path(base_dir, output_type):\n    # Check if path already contains a subdirectory\n    if output_type == OutputType.JSON_DATA and '/json/' in base_dir.replace('\\\\', '/'):\n        # Extract parent directory\n        base_dir = base_dir.replace('\\\\', '/').split('/json/')[0]\n    elif output_type == OutputType.VISUALIZATION and '/supporting_images/' in base_dir.replace('\\\\', '/'):\n        # Extract parent directory\n        base_dir = base_dir.replace('\\\\', '/').split('/supporting_images/')[0]\n    return base_dir",
+  "usage": "# Sanitize base directory before constructing output path\nbase_dir = sanitize_path(base_dir, output_type)\noutput_path = os.path.join(base_dir, subdirectory, filename)"
+}

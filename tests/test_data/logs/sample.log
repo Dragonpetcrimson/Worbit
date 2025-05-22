@@ -1,0 +1,4 @@
+2025-03-26 12:00:00 INFO: Application starting
+2025-03-26 12:00:05 ERROR: Database connection failed
+2025-03-26 12:00:10 WARNING: Retrying operation
+2025-03-26 12:00:15 ERROR: Operation timeout

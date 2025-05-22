@@ -1,0 +1,97 @@
+{
+  "test_id": "TEST-1746119611",
+  "summary": "Test summary",
+  "errors": [
+    {
+      "file": "app_debug.log",
+      "line_num": 123,
+      "text": "ERROR: Failed to connect to channel",
+      "severity": "High",
+      "timestamp": "2025-05-01T13:13:31.958821",
+      "component": "soa"
+    },
+    {
+      "file": "translator.log",
+      "line_num": 456,
+      "text": "ERROR: Command translation failed",
+      "severity": "Medium",
+      "timestamp": "2025-05-01T13:13:31.958821",
+      "component": "translator"
+    },
+    {
+      "file": "mimosa.log",
+      "line_num": 789,
+      "text": "ERROR: Data simulation error",
+      "severity": "Low",
+      "timestamp": "2025-05-01T13:13:31.958821",
+      "component": "mimosa"
+    },
+    {
+      "file": "unknown.log",
+      "line_num": 101,
+      "text": "Something went wrong",
+      "severity": "Low",
+      "timestamp": "2025-05-01T13:13:31.958821",
+      "component": "unknown"
+    }
+  ],
+  "ocr": [
+    {
+      "file": "screenshot1.png",
+      "text": "Connection error. Please try again."
+    },
+    {
+      "file": "screenshot2.png",
+      "text": "Unable to connect to service."
+    }
+  ],
+  "clusters": {
+    "0": [
+      {
+        "file": "app_debug.log",
+        "line_num": 123,
+        "text": "ERROR: Failed to connect to channel",
+        "severity": "High",
+        "timestamp": "2025-05-01T13:13:31.958821",
+        "component": "soa"
+      }
+    ],
+    "1": [
+      {
+        "file": "translator.log",
+        "line_num": 456,
+        "text": "ERROR: Command translation failed",
+        "severity": "Medium",
+        "timestamp": "2025-05-01T13:13:31.958821",
+        "component": "translator"
+      }
+    ],
+    "2": [
+      {
+        "file": "mimosa.log",
+        "line_num": 789,
+        "text": "ERROR: Data simulation error",
+        "severity": "Low",
+        "timestamp": "2025-05-01T13:13:31.958821",
+        "component": "mimosa"
+      },
+      {
+        "file": "unknown.log",
+        "line_num": 101,
+        "text": "Something went wrong",
+        "severity": "Low",
+        "timestamp": "2025-05-01T13:13:31.958821",
+        "component": "unknown"
+      }
+    ]
+  },
+  "background": "",
+  "scenario": "",
+  "ymir": false,
+  "primary_issue_component": "soa",
+  "component_distribution": {
+    "soa": 1,
+    "translator": 1,
+    "mimosa": 1
+  }
+}
