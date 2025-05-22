@@ -176,6 +176,18 @@ def build_step_dict(step_to_logs, feature_file):
                 logging.warning(f"Step {step_num} has suspiciously short duration: {duration:.6f}s")
         else:
             logging.warning(f"No valid timestamps for step {step_num}, cannot calculate duration")
+
+            # Still include the step with basic metadata so that a timeline can
+            # be generated even when timestamps are missing. This ensures that
+            # scenarios with sparse logging still produce a visualization.
+
+            step_name = extract_step_name(step_num, feature_file)
+            step_dict[step_num] = {
+                "step_name": step_name,
+                "start_time": None,
+                "end_time": None,
+                "duration": 0,
+            }
     
     if not step_dict:
         logging.warning("No step metadata could be extracted. Timeline visualization will fail.")
