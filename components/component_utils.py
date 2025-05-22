@@ -49,8 +49,8 @@ def apply_component_fields(data: Dict, component_fields: Dict) -> Dict:
     """
     # Properly handle the case where data is None or not a dictionary
     if data is None:
-        data = {}
-    elif not isinstance(data, dict):
+        return None
+    if not isinstance(data, dict):
         return data
         
     # Handle the case where component_fields is None or empty
