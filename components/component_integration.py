@@ -173,7 +173,7 @@ class ComponentIntegration:
             
             # Step 3: Analyze component errors
             component_analysis = self.analyzer.analyze_component_failures(errors)
-            
+
             # Extract primary issue component
             primary_issue_component = component_analysis.get("root_cause_component")
             if primary_issue_component:
@@ -184,6 +184,13 @@ class ComponentIntegration:
             # Store analysis in results
             results["component_analysis"] = component_analysis
             results["metrics"].update(component_analysis.get("metrics", {}))
+
+            # Add basic tagging metrics if missing
+            if "component_tagged_logs" not in results["metrics"]:
+                results["metrics"]["component_tagged_logs"] = len(log_entries)
+            if "component_tagged_errors" not in results["metrics"]:
+                tagged_errors = [e for e in errors if e.get("component") != "unknown"]
+                results["metrics"]["component_tagged_errors"] = len(tagged_errors)
             
             # Step 4: Generate error propagation visualization
             if self._is_feature_enabled("ENABLE_ERROR_PROPAGATION", True):
@@ -320,7 +327,14 @@ class ComponentIntegration:
         # Convert timestamp to string if it's a datetime
         if isinstance(result.get('timestamp'), datetime):
             result['timestamp'] = result['timestamp'].isoformat()
-            
+
+        # Convert any non-serializable values to strings
+        for key, value in list(result.items()):
+            try:
+                json.dumps({key: value}, cls=DateTimeEncoder)
+            except Exception:
+                result[key] = str(value)
+
         return result
     
     def _serialize_clusters(self, clusters: Dict[int, List[Dict]]) -> Dict[str, List[Dict]]:
@@ -354,7 +368,8 @@ class ComponentIntegration:
                 "available": False,
                 "root_cause_errors": [],
                 "causality_paths": []
-            }
+            },
+            "component_analysis": None
         }
         
         # Add component diagrams
@@ -386,7 +401,9 @@ class ComponentIntegration:
                 enhancements["enhanced_clustering"]["root_cause_errors"] = analysis_results["root_cause_errors"]
             if "causality_paths" in analysis_results:
                 enhancements["enhanced_clustering"]["causality_paths"] = analysis_results["causality_paths"]
-        
+
+        enhancements["component_analysis"] = analysis_results.get("component_analysis")
+
         return enhancements
 
 # Define DateTimeEncoder for JSON serialization

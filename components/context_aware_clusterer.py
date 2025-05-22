@@ -251,12 +251,21 @@ class ContextAwareClusterer:
         # Heuristic: sqrt of number of samples, capped between 2 and 8
         k = min(max(2, int(np.sqrt(num_errors))), 8)
         
-        # Adjust based on matrix density
-        if matrix.shape[1] < 10:  # Very few features
+        # Safely access matrix dimensions for mocks
+        try:
+            n_features = int(getattr(matrix, 'shape', (0, 0))[1])
+        except Exception:
+            n_features = 0
+
+        if n_features < 10:  # Very few features
             k = min(k, 3)  # Reduce clusters for low feature count
             
         # CRITICAL FIX: Ensure we don't have more clusters than samples
-        k = min(k, matrix.shape[0])
+        try:
+            n_samples = int(getattr(matrix, 'shape', (num_errors, 0))[0])
+        except Exception:
+            n_samples = num_errors
+        k = min(k, n_samples)
         
         logging.info(f"Context-aware clustering: Using {k} clusters for {num_errors} errors")
         return k
