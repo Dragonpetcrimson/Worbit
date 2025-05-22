@@ -501,12 +501,10 @@ def discover_and_run_tests(categories: Optional[List[str]] = None,
                 if cat_modules:
                     modules.update(cat_modules)
         else:
-            modules = TestRegistry.get_modules(
-                max_importance=max_importance,
-                include_slow=include_slow,
-                tags=tags,
-                validate_dependencies=validate_dependencies
-            )
+            # When no categories are specified, gather every registered
+            # category without applying additional filters. This ensures the
+            # default run executes the full test suite.
+            modules = TestRegistry.get_modules()
     except Exception as e:
         logger.error(f"Error getting test modules: {e}")
         return False, {}
