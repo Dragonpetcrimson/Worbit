@@ -105,6 +105,8 @@ DEFAULT_MODEL=gpt-3.5-turbo
 LOG_BASE_DIR=path/to/logs
 OUTPUT_BASE_DIR=path/to/output
 ENABLE_OCR=True
+ENABLE_STEP_REPORT=True
+ENABLE_STEP_REPORT_IMAGES=True
 ```
 
 > If you don't set an API key, Orbit will run in **offline mode** (no AI summary, but everything else still works).
@@ -146,6 +148,13 @@ Or analyze all tests in your logs directory:
 orbit_analyzer.exe --batch --all
 ```
 
+### Step-Aware Analysis (Optional)
+
+1. Include the matching `.feature` file in your `logs\SXM-xxxxxxx` folder.
+2. By default a step report will be created showing each log entry by Gherkin step.
+3. Set `ENABLE_STEP_REPORT=false` to disable the report, or `ENABLE_STEP_REPORT_IMAGES=false` to skip timeline images.
+4. Open `output\SXM-xxxxxxx\SXM-xxxxxxx_step_report.html` to view the results.
+
 ---
 
 ## 📊 Output Location
@@ -158,6 +167,7 @@ output/
     ├── SXM-2302295_log_analysis.xlsx       # Main Excel report
     ├── SXM-2302295_bug_report.docx         # Bug report document
     ├── SXM-2302295_log_analysis.md         # Markdown report
+    ├── SXM-2302295_step_report.html        # Full step report
     ├── SXM-2302295_component_report.html   # Component analysis report
     │
     ├── json/                               # Detailed data files

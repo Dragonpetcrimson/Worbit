@@ -100,12 +100,23 @@ python batch_processor.py --all
 python batch_processor.py --all --parallel
 ```
 
+### Step-Aware Analysis
+
+To generate a detailed step report:
+
+1. Place the corresponding `.feature` file in your log folder (`logs\SXM-xxxxxxx`).
+2. The analyzer will correlate each log entry with the matching Gherkin step.
+3. Set `ENABLE_STEP_REPORT=false` to skip creating the report.
+4. Set `ENABLE_STEP_REPORT_IMAGES=false` to omit timeline images.
+
+The resulting file is saved as `output\SXM-xxxxxxx\SXM-xxxxxxx_step_report.html`.
+
 ### Output Reports
 
 All reports are generated in the `output\SXM-xxxxxxx` folder:
 - `log_analysis.html` - Main HTML report
 - `SXM-xxxxxxx_bug_report.docx` - Ready-to-submit bug report
-- `SXM-xxxxxxx_step_report.html` - Step-aware analysis (if feature file found)
+- `SXM-xxxxxxx_step_report.html` - Full step report located in `output\SXM-xxxxxxx`
 - `SXM-xxxxxxx_component_report.html` - Component relationship analysis
 - Various visualization files (PNG)
 
@@ -196,6 +207,8 @@ Configure by editing `config.py` or setting environment variables:
 * `OPENAI_API_KEY`: API key for GPT analysis (set as environment variable)
 * `DEFAULT_MODEL`: GPT model to use (default: `gpt-3.5-turbo`)
 * `ENABLE_OCR`: Whether to extract text from images (default: `True`)
+* `ENABLE_STEP_REPORT`: Generate the step-aware HTML report (default: `True`)
+* `ENABLE_STEP_REPORT_IMAGES`: Include timeline images in the step report (default: `True`)
 
 For secure API key storage, you can use the Windows Credential Manager:
 
