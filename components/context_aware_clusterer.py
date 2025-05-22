@@ -702,12 +702,12 @@ class ContextAwareClusterer:
         # Sort by weight and return top 10 paths
         return [p[0] for p in sorted(weighted_paths, key=lambda x: x[1], reverse=True)[:10]]
     
-    def export_error_graph(self, output_path: str, test_id: str = "Unknown") -> str:
+    def export_error_graph(self, output_dir: str, test_id: str = "Unknown") -> str:
         """
         Export error graph as a JSON file for visualization.
         
         Args:
-            output_path: Directory to save the JSON file
+            output_dir: Base directory to save the JSON file
             test_id: Test ID for filename
             
         Returns:
@@ -715,9 +715,14 @@ class ContextAwareClusterer:
         """
         if not self.error_graph:
             return None
-            
-        os.makedirs(output_path, exist_ok=True)
-        json_path = os.path.join(output_path, f"{test_id}_error_graph.json")
+
+        sanitized_dir = sanitize_base_directory(output_dir, "json")
+        json_path = get_output_path(
+            sanitized_dir,
+            test_id,
+            get_standardized_filename(test_id, "error_graph", "json"),
+            OutputType.JSON_DATA,
+        )
         
         # Convert graph to dictionary
         graph_dict = {
