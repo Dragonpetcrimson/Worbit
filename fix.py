@@ -180,38 +180,8 @@ def check_directories_and_files(test_id: str):
 def check_visualization_module():
     """Check visualization module functionality."""
     logging.info("=== CHECKING VISUALIZATION MODULE ===")
-    
-    try:
-        from reports import visualizations
-        
-        # Log timestamp to verify module import
-        now = datetime.datetime.now().isoformat()
-        logging.info(f"Reports module initialized successfully at {now}")
-        
-        # Check for relevant functions
-        logging.info("Successfully imported visualization functions")
-        
-        # Inspect generate_timeline_image function
-        timeline_sig = str(inspect.signature(visualizations.generate_timeline_image))
-        logging.info(f"generate_timeline_image signature: {timeline_sig}")
-        
-        # Inspect generate_cluster_timeline_image function
-        cluster_timeline_sig = str(inspect.signature(visualizations.generate_cluster_timeline_image))
-        logging.info(f"generate_cluster_timeline_image signature: {cluster_timeline_sig}")
-        
-        # Inspect generate_visualization_placeholder function
-        placeholder_sig = str(inspect.signature(visualizations.generate_visualization_placeholder))
-        logging.info(f"generate_visualization_placeholder signature: {placeholder_sig}")
-        
-        # Get function source code
-        timeline_source = inspect.getsource(visualizations.generate_timeline_image)
-        logging.info(f"generate_timeline_image source code length: {len(timeline_source)}")
-        
-        return True
-    except Exception as e:
-        logging.error(f"Error checking visualization module: {str(e)}")
-        traceback.print_exc()
-        return False
+    logging.warning("reports.visualizations module is not available")
+    return False
 
 def check_step_aware_analyzer():
     """Check step-aware analyzer module."""
@@ -338,7 +308,6 @@ def create_fixed_timeline(test_id: str, step_dict: Dict[int, Dict], step_to_logs
     try:
         # Import required modules - include os import to avoid UnboundLocalError
         import os  # Import os here to fix the UnboundLocalError
-        from reports.visualizations import generate_timeline_image
         from utils.path_utils import OutputType, get_output_path, get_standardized_filename
         
         # Define output directory

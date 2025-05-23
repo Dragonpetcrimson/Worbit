@@ -25,7 +25,6 @@ from reports.json_generator import JsonReportGenerator
 from reports.markdown_generator import MarkdownReportGenerator
 from reports.excel_generator import ExcelReportGenerator
 from reports.docx_generator import DocxReportGenerator
-from reports.visualizations import VisualizationGenerator
 from utils.component_verification import verify_component_preservation, count_component_fields
 # Import the new json_utils module for component-aware serialization
 from json_utils import serialize_with_component_awareness, serialize_to_json_file
@@ -63,7 +62,7 @@ class ReportManager:
         
         # Initialize report generators based on enabled flags
         self.json_generator = JsonReportGenerator(config) if config.enable_json else None
-        self.visualization_generator = VisualizationGenerator(config) if config.enable_component_report else None
+        self.visualization_generator = None
         self.markdown_generator = MarkdownReportGenerator(config) if config.enable_markdown else None
         self.excel_generator = ExcelReportGenerator(config) if config.enable_excel else None
         self.docx_generator = DocxReportGenerator(config) if config.enable_docx else None

@@ -103,15 +103,10 @@ except ImportError:
         VISUALIZATION = "image"
         DEBUGGING = "debug"
 
-try:
-    from reports.visualizations import (
-        generate_component_error_distribution,
-        generate_cluster_timeline_image,
-        generate_timeline_image
-    )
-except ImportError:
-    logging.warning("Visualization modules not available, tests will be skipped")
-    generate_component_error_distribution = generate_cluster_timeline_image = generate_timeline_image = None
+# Visualization module removed
+generate_component_error_distribution = None
+generate_cluster_timeline_image = None
+generate_timeline_image = None
 
 try:
     from reports.component_report import generate_component_visualization
@@ -410,7 +405,7 @@ class TestVisualizations(unittest.TestCase):
             self.assertIsNone(image_path, "Visualization should return None when feature disabled")
 
     @patch('config.Config.ENABLE_CLUSTER_TIMELINE', True)
-    @patch('reports.visualizations.get_output_path')
+    @patch('utils.path_utils.get_output_path')
     def test_cluster_timeline_image(self, mock_get_output_path):
         """
         Test the cluster timeline image generation.
@@ -454,7 +449,7 @@ class TestVisualizations(unittest.TestCase):
             self.assertIsNone(result, "Function should return None when feature is disabled")
 
     @patch('config.Config.ENABLE_CLUSTER_TIMELINE', True)
-    @patch('reports.visualizations.get_output_path')
+    @patch('utils.path_utils.get_output_path')
     def test_cluster_timeline_with_empty_data(self, mock_get_output_path):
         """
         Test behavior with empty data.
@@ -511,7 +506,7 @@ class TestVisualizations(unittest.TestCase):
             self.assertIsNone(result, "Function should return None when feature is disabled")
         
     @patch('config.Config.ENABLE_CLUSTER_TIMELINE', True)
-    @patch('reports.visualizations.get_output_path')
+    @patch('utils.path_utils.get_output_path')
     def test_cluster_timeline_without_timestamps(self, mock_get_output_path):
         """
         Test behavior when logs don't have timestamps.
@@ -572,7 +567,7 @@ class TestVisualizations(unittest.TestCase):
         
         # Test with empty step logs
         try:
-            with patch('reports.visualizations.get_output_path') as mock_path:
+            with patch('utils.path_utils.get_output_path') as mock_path:
                 # Setup mock to return a valid path
                 test_image_path = os.path.join(dirs["images"], f"{test_id}_timeline.png")
                 mock_path.return_value = test_image_path
@@ -894,7 +889,7 @@ class TestTimelineGenerator(unittest.TestCase):
         dirs = setup_output_directories(self.test_dir, test_id)
         
         # Test generate_cluster_timeline_image in test mode
-        with patch('reports.visualizations.get_output_path') as mock_get_output_path:
+        with patch('utils.path_utils.get_output_path') as mock_get_output_path:
             # Setup the mock to return a path
             test_image_path = os.path.join(dirs["images"], f"{test_id}_cluster_timeline.png")
             test_debug_path = os.path.join(dirs["debug"], f"{test_id}_timeline_debug.txt")
@@ -946,7 +941,7 @@ class TestTimelineGenerator(unittest.TestCase):
         dirs = setup_output_directories(self.test_dir, test_id)
         
         # Test generate_timeline_image in test mode
-        with patch('reports.visualizations.get_output_path') as mock_get_output_path:
+        with patch('utils.path_utils.get_output_path') as mock_get_output_path:
             # Setup the mock to return a path
             test_image_path = os.path.join(dirs["images"], f"{test_id}_timeline.png")
             mock_get_output_path.return_value = test_image_path
@@ -983,7 +978,7 @@ class TestTimelineGenerator(unittest.TestCase):
         dirs = setup_output_directories(self.test_dir, prod_id)
         
         # Test generate_cluster_timeline_image in production mode
-        with patch('reports.visualizations.get_output_path') as mock_get_output_path:
+        with patch('utils.path_utils.get_output_path') as mock_get_output_path:
             # Setup the mock to return a path
             prod_image_path = os.path.join(dirs["images"], f"{prod_id}_cluster_timeline.png")
             prod_debug_path = os.path.join(dirs["debug"], f"{prod_id}_timeline_debug.txt")
@@ -1037,7 +1032,7 @@ class TestTimelineGenerator(unittest.TestCase):
         dirs = setup_output_directories(self.test_dir, prod_id)
         
         # Test generate_timeline_image in production mode
-        with patch('reports.visualizations.get_output_path') as mock_get_output_path:
+        with patch('utils.path_utils.get_output_path') as mock_get_output_path:
             # Setup the mock to return a path
             prod_image_path = os.path.join(dirs["images"], f"{prod_id}_timeline.png")
             mock_get_output_path.return_value = prod_image_path
@@ -1079,7 +1074,7 @@ class TestTimelineGenerator(unittest.TestCase):
         dirs = setup_output_directories(self.test_dir, test_id)
         
         # Test generate_timeline_image with path validation
-        with patch('reports.visualizations.get_output_path') as mock_get_output_path:
+        with patch('utils.path_utils.get_output_path') as mock_get_output_path:
             # Set up return values for mock
             image_path = os.path.join(dirs["images"], f"{test_id}_timeline.png")
             mock_get_output_path.return_value = image_path

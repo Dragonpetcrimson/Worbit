@@ -52,11 +52,8 @@ def verify_image_file(path):
     """Simple fallback for image verification."""
     return os.path.exists(path) and os.path.getsize(path) > 0
 
-# Import placeholder generator for fallback images
-try:
-    from reports.visualizations import generate_visualization_placeholder
-except Exception:
-    generate_visualization_placeholder = None
+# Placeholder generator no longer imported from reports.visualizations
+generate_visualization_placeholder = None
 
 # Jinja2 environment for HTML templates
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
