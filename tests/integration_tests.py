@@ -80,18 +80,15 @@ except ImportError:
     def setup_test_output_directories(test_id):
         base_dir = os.path.join(os.path.dirname(__file__), "output", test_id)
         json_dir = os.path.join(base_dir, "json")
-        images_dir = os.path.join(base_dir, "supporting_images")
         debug_dir = os.path.join(base_dir, "debug")
         
         os.makedirs(base_dir, exist_ok=True)
         os.makedirs(json_dir, exist_ok=True)
-        os.makedirs(images_dir, exist_ok=True)
         os.makedirs(debug_dir, exist_ok=True)
         
         return {
             "base": base_dir,
             "json": json_dir,
-            "images": images_dir,
             "debug": debug_dir,
             "test_id": test_id
         }
@@ -112,18 +109,15 @@ except ImportError:
         test_id = normalize_test_id(test_id)
         base_dir = os.path.join(base_dir, test_id)
         json_dir = os.path.join(base_dir, "json")
-        images_dir = os.path.join(base_dir, "supporting_images")
         debug_dir = os.path.join(base_dir, "debug")
-        
+
         os.makedirs(base_dir, exist_ok=True)
         os.makedirs(json_dir, exist_ok=True)
-        os.makedirs(images_dir, exist_ok=True)
         os.makedirs(debug_dir, exist_ok=True)
         
         return {
             "base": base_dir,
             "json": json_dir,
-            "images": images_dir,
             "debug": debug_dir,
             "test_id": test_id
         }
@@ -646,17 +640,14 @@ class TestController(unittest.TestCase):
         
         # Check directories are created
         json_dir = os.path.join(self.temp_dir, "json")
-        images_dir = os.path.join(self.temp_dir, "supporting_images")
         debug_dir = os.path.join(self.temp_dir, "debug")  # New directory in updated version
         
         self.assertTrue(os.path.exists(json_dir), "JSON directory was not created")
-        self.assertTrue(os.path.exists(images_dir), "Supporting images directory was not created")
         self.assertTrue(os.path.exists(debug_dir), "Debug directory was not created")
         
         # Check paths in returned dictionary
         self.assertEqual(output_paths["base"], self.temp_dir)
         self.assertEqual(output_paths["json"], json_dir)
-        self.assertEqual(output_paths["images"], images_dir)
         self.assertEqual(output_paths["debug"], debug_dir)
         
         # Test without SXM- prefix
@@ -733,12 +724,10 @@ class TestController(unittest.TestCase):
         # Set up temporary directories to prevent path errors
         base_dir = self.temp_dir
         json_dir = os.path.join(base_dir, "json")
-        images_dir = os.path.join(base_dir, "supporting_images")
         debug_dir = os.path.join(base_dir, "debug")
         
         # Create directories to prevent path errors
         os.makedirs(json_dir, exist_ok=True)
-        os.makedirs(images_dir, exist_ok=True)
         os.makedirs(debug_dir, exist_ok=True)
         
         # Set up log filter to suppress expected component diagram errors
@@ -762,7 +751,6 @@ class TestController(unittest.TestCase):
             mock_setup.return_value = {
                 "base": base_dir,
                 "json": json_dir,
-                "images": images_dir,
                 "debug": debug_dir,
                 "test_id": "SXM-123456"
             }
@@ -814,7 +802,6 @@ class TestController(unittest.TestCase):
             mock_setup.return_value = {
                 "base": self.temp_dir,
                 "json": os.path.join(self.temp_dir, "json"),
-                "images": os.path.join(self.temp_dir, "supporting_images"),
                 "debug": os.path.join(self.temp_dir, "debug"),
                 "test_id": "SXM-123456"
             }
@@ -857,7 +844,6 @@ class TestController(unittest.TestCase):
             mock_setup.return_value = {
                 "base": self.temp_dir,
                 "json": os.path.join(self.temp_dir, "json"),
-                "images": os.path.join(self.temp_dir, "supporting_images"),
                 "debug": os.path.join(self.temp_dir, "debug"),
                 "test_id": "SXM-123456"
             }
@@ -996,9 +982,8 @@ class TestStepAwareAnalyzer(unittest.TestCase):
         self.output_dir = os.path.join(self.test_dir, "output")
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # Create supporting_images directory
-        self.images_dir = os.path.join(self.output_dir, "supporting_images")
-        os.makedirs(self.images_dir, exist_ok=True)
+        # Output images will be written directly to base directory
+        self.images_dir = self.output_dir
         
         # Test ID
         self.test_id = "SXM-123456"
@@ -1088,8 +1073,8 @@ class TestStepAwareAnalyzer(unittest.TestCase):
         with open(report_path, "r", encoding="utf-8") as f:
             html_content = f.read()
 
-        # Verify that image path uses supporting_images prefix
-        self.assertIn('src="supporting_images/timeline.png"', html_content)
+        # Verify that timeline image reference exists
+        self.assertIn('timeline.png', html_content)
         # Ensure a real timeline image was referenced
         self.assertNotIn('visualization_placeholder', html_content)
         
@@ -1150,8 +1135,8 @@ class TestStepAwareAnalyzer(unittest.TestCase):
             with open(report_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
-            # Verify that image path uses supporting_images prefix
-            self.assertIn('src="supporting_images/cluster_timeline.png"', html_content)
+            # Verify that cluster timeline image is referenced
+            self.assertIn('cluster_timeline.png', html_content)
             # Ensure no placeholder image is referenced
             self.assertNotIn('visualization_placeholder', html_content)
             
@@ -1327,11 +1312,11 @@ class TestStepAwareAnalyzer(unittest.TestCase):
             with open(report_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
-            expected_img = f'src="supporting_images/{test_id}_timeline.png"'
+            expected_img = f'{test_id}_timeline.png'
             self.assertIn(expected_img, html_content)
             self.assertNotIn("placeholder", html_content.lower())
 
-            image_path = os.path.join(output_dir, "supporting_images", f"{test_id}_timeline.png")
+            image_path = os.path.join(output_dir, f"{test_id}_timeline.png")
             self.assertTrue(os.path.exists(image_path))
             self.assertGreater(os.path.getsize(image_path), 0)
             self.assertNotIn("placeholder", os.path.basename(image_path))

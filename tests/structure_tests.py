@@ -134,14 +134,13 @@ class DirectoryStructureTest(unittest.TestCase):
         Test the directory setup function.
         
         Verifies that the expected directory structure is created,
-        including base, json, images, and debug directories.
+        including base, json, and debug directories.
         """
         dirs = setup_output_directories(self.temp_dir, self.test_id)
         
         # Check all directories were created
         self.assertTrue(os.path.exists(dirs["base"]), "Base directory not created")
         self.assertTrue(os.path.exists(dirs["json"]), "JSON directory not created")
-        self.assertTrue(os.path.exists(dirs["images"]), "Images directory not created")
         self.assertTrue(os.path.exists(dirs["debug"]), "Debug directory not created")
         
         # Check test_id is normalized
@@ -181,7 +180,7 @@ class DirectoryStructureTest(unittest.TestCase):
         self.assertEqual(json_path, expected_json_path,
                       f"JSON path incorrect: {json_path} != {expected_json_path}")
         
-        # Image (supporting_images subdirectory)
+        # Image in base directory
         image_filename = get_standardized_filename(self.test_id, "test", "png")
         image_path = get_output_path(
             self.temp_dir,
@@ -275,7 +274,7 @@ class DirectoryStructureTest(unittest.TestCase):
         # Create files in their respective directories
         excel_path = os.path.join(dirs["base"], excel_filename)
         json_path = os.path.join(dirs["json"], json_filename)
-        image_path = os.path.join(dirs["images"], image_filename)
+        image_path = os.path.join(dirs["base"], image_filename)
         
         # Write some test content
         with open(excel_path, 'w') as f:
@@ -297,8 +296,8 @@ class DirectoryStructureTest(unittest.TestCase):
                       "Excel file not in base directory")
         self.assertTrue(os.path.exists(os.path.join(dirs["json"], json_filename)), 
                       "JSON file not in json directory")
-        self.assertTrue(os.path.exists(os.path.join(dirs["images"], image_filename)), 
-                      "Image file not in images directory")
+        self.assertTrue(os.path.exists(os.path.join(dirs["base"], image_filename)),
+                      "Image file not in base directory")
         
         # Make sure no files are in the wrong directories
         json_files_in_base = [f for f in os.listdir(dirs["base"]) if f.endswith('.json')]
@@ -310,10 +309,8 @@ class DirectoryStructureTest(unittest.TestCase):
                       f"Image files found in JSON directory: {image_files_in_json}")
         
         # Verify no nested directories
-        supporting_images_dirs = [d for d in os.listdir(dirs["images"])
-                               if os.path.isdir(os.path.join(dirs["images"], d))
-                               and d == "supporting_images"]
-        self.assertEqual(len(supporting_images_dirs), 0,
+        supporting_images_dir = os.path.join(dirs["base"], "supporting_images")
+        self.assertFalse(os.path.isdir(supporting_images_dir),
                       "Nested supporting_images directory found")
 
     def test_template_directory(self):
@@ -552,11 +549,9 @@ class PathSanitizationTest(unittest.TestCase):
         
         # Create subdirectories
         self.json_dir = os.path.join(self.temp_dir, "json")
-        self.images_dir = os.path.join(self.temp_dir, "supporting_images")
         self.debug_dir = os.path.join(self.temp_dir, "debug")
-        
+
         os.makedirs(self.json_dir, exist_ok=True)
-        os.makedirs(self.images_dir, exist_ok=True)
         os.makedirs(self.debug_dir, exist_ok=True)
         
         logger.info(f"Test directory: {self.temp_dir}")
@@ -589,7 +584,7 @@ class PathSanitizationTest(unittest.TestCase):
                       "Json subdirectory not properly sanitized")
         
         # Test with supporting_images subdirectory
-        images_path = self.images_dir
+        images_path = os.path.join(self.temp_dir, "supporting_images")
         self.assertEqual(sanitize_base_directory(images_path), self.temp_dir,
                       "Images subdirectory not properly sanitized")
         
@@ -631,7 +626,7 @@ class PathSanitizationTest(unittest.TestCase):
         
         # Problematic case - supporting_images subdirectory
         image_filename = get_standardized_filename(self.test_id, "test", "png")
-        path = get_output_path(self.images_dir, self.test_id, image_filename, OutputType.PRIMARY_REPORT)
+        path = get_output_path(self.temp_dir, self.test_id, image_filename, OutputType.PRIMARY_REPORT)
         expected_image_path = os.path.join(self.temp_dir, image_filename)
         self.assertEqual(path, expected_image_path, "Path sanitization failed for images subdirectory")
         self.assertNotIn("supporting_images/supporting_images", path.replace("\\", "/"),
@@ -649,7 +644,7 @@ class PathSanitizationTest(unittest.TestCase):
             
         # Create nested directories
         nested_json = os.path.join(self.json_dir, "json")
-        nested_images = os.path.join(self.images_dir, "supporting_images")
+        nested_images = os.path.join(self.temp_dir, "supporting_images", "supporting_images")
         nested_debug = os.path.join(self.debug_dir, "debug")
         
         os.makedirs(nested_json, exist_ok=True)
