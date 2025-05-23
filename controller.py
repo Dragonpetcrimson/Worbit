@@ -41,7 +41,7 @@ logging.basicConfig(level=logging.INFO, handlers=[handler])
 # Import Gherkin log correlation modules with improved error handling
 try:
     from gherkin_log_correlator import GherkinParser, correlate_logs_with_steps
-    from step_aware_analyzer import generate_step_report, run_step_aware_analysis, validate_timestamps
+    from step_aware_analyzer import validate_timestamps
     GHERKIN_AVAILABLE = True
 except ImportError as e:
     GHERKIN_AVAILABLE = False
@@ -215,10 +215,11 @@ def extract_background_and_scenario(feature_file):
         logging.error(f"Error extracting background/scenario from {feature_file}: {str(e)}")
         return "", ""
 
-def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors=None, error_clusters=None, component_analysis=None, enable_step_report=None):
+def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors=None, error_clusters=None, component_analysis=None):
     """
-    Run the Gherkin log correlation and generate step-aware report with cluster visualization.
-    Returns a tuple of (report_path, step_to_logs).
+    Run the Gherkin log correlation and return correlated logs.
+    Returns a tuple of (report_path, step_to_logs). The report path is always
+    None as step-aware reports have been removed.
     """
     if not GHERKIN_AVAILABLE:
         logging.warning("Skipping Gherkin correlation - modules not available")
@@ -232,11 +233,6 @@ def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors
         logging.warning("Skipping Gherkin correlation - no log files provided")
         return None, None
         
-    # Determine if step report generation is enabled
-    if enable_step_report is None:
-        env_flag = os.getenv("ENABLE_STEP_REPORT")
-        enable_step_report = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
-
     try:
         # Create output directories using the new utility function
         output_paths = setup_output_directories(output_dir, test_id)
@@ -260,18 +256,7 @@ def run_gherkin_correlation(feature_file, log_files, output_dir, test_id, errors
         # Enhanced cluster visualization handling with fallback
         try:
             report_path = None
-            if enable_step_report:
-                report_path = generate_step_report(
-                    feature_file=feature_file,
-                    logs_dir=os.path.dirname(log_files[0]) if log_files else "Unknown",
-                    step_to_logs=step_to_logs,
-                    output_dir=output_paths["base"],
-                    test_id=output_paths["test_id"],
-                    clusters=error_clusters,
-                    component_analysis=component_analysis
-                )
-            
-            logging.info(f"Generated step-aware HTML report: {report_path}")
+            logging.info("Gherkin correlation completed")
             
             # Log cluster visualization status in a more resilient way
             # Check if the feature is available rather than if clusters exist

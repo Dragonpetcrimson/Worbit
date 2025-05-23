@@ -22,7 +22,6 @@ A comprehensive tool for analyzing test logs, clustering errors, and generating 
 * **Log Analysis**: Extract errors and warnings from various log formats (appium, app_debug, charles, and more)
 * **Error Clustering**: Group similar errors to identify patterns
 * **Component Analysis**: Automatically identify which components (SOA, Android, etc.) are causing issues
-* **Step-Aware Analysis**: Correlate logs with Gherkin test steps for more precise debugging
 * **Timeline Visualization**: See when errors occurred during test execution
 * **GPT-Powered Summaries**: Get AI-generated analysis of errors and root causes
 * **Bug Reports**: Generate ready-to-submit bug report documents for Jira
@@ -100,23 +99,14 @@ python batch_processor.py --all
 python batch_processor.py --all --parallel
 ```
 
-### Step-Aware Analysis
 
-To generate a detailed step report:
 
-1. Place the corresponding `.feature` file in your log folder (`logs\SXM-xxxxxxx`).
-2. The analyzer will correlate each log entry with the matching Gherkin step.
-3. Set `ENABLE_STEP_REPORT=false` to skip creating the report.
-4. Set `ENABLE_STEP_REPORT_IMAGES=false` to omit timeline images.
-
-The resulting file is saved as `output\SXM-xxxxxxx\SXM-xxxxxxx_step_report.html`.
 
 ### Output Reports
 
 All reports are generated in the `output\SXM-xxxxxxx` folder:
 - `log_analysis.html` - Main HTML report
 - `SXM-xxxxxxx_bug_report.docx` - Ready-to-submit bug report
-- `SXM-xxxxxxx_step_report.html` - Full step report located in `output\SXM-xxxxxxx`
 - `SXM-xxxxxxx_component_report.html` - Component relationship analysis
 - Various visualization files (PNG)
 
@@ -138,12 +128,7 @@ The main HTML report provides a comprehensive analysis including:
 
 Orbit analyzes components and generates visualizations showing error distribution and relationships.
 
-### Step-Aware Analysis
 
-The step report correlates logs with test steps:
-- Timeline visualization showing when errors occurred
-- Error distribution across test steps
-- Component errors by step
 
 ### Bug Report Document
 
@@ -204,7 +189,6 @@ Configure by editing `config.py` or setting environment variables:
 * `DEFAULT_MODEL`: GPT model to use (default: `gpt-3.5-turbo`)
 * `ENABLE_OCR`: Whether to extract text from images (default: `True`)
 * `ENABLE_STEP_REPORT`: Generate the step-aware HTML report (default: `True`)
-* `ENABLE_STEP_REPORT_IMAGES`: Include timeline images in the step report (default: `True`)
 
 For secure API key storage, you can use the Windows Credential Manager:
 
