@@ -602,7 +602,7 @@ if __name__ == "__main__":
     feature_file = sys.argv[1]
     log_files = sys.argv[2:]
     
-    logging.basicConfig(level=logging.INFO)
+    Config.setup_logging()
     results = correlate_logs_with_steps(feature_file, log_files)
     
     # Print summary

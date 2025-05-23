@@ -1290,7 +1290,7 @@ def test_token_management(test_id="SXM-3690790"):
     """
     try:
         # Set up logging
-        logging.basicConfig(level=logging.INFO)
+        Config.setup_logging()
         
         # Import necessary modules
         from log_analyzer import parse_logs
