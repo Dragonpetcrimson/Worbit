@@ -26,7 +26,6 @@ class OutputType(Enum):
     """Enumeration of output file types with their destinations"""
     PRIMARY_REPORT = "primary"  # Goes in root directory (Excel, DOCX, HTML)
     JSON_DATA = "json"          # Goes in json/ subdirectory
-    VISUALIZATION = "image"     # Goes in supporting_images/ subdirectory
     DEBUGGING = "debug"         # Goes in debug/ subdirectory (optional)
 
 def normalize_test_id(test_id: str) -> str:
@@ -63,7 +62,7 @@ def sanitize_base_directory(base_dir: str, expected_subdir: str = None) -> str:
     parts = norm_path.replace('\\', '/').split('/')
     
     # Check if last part is a known subdirectory
-    known_subdirs = ["json", "supporting_images", "debug"]
+    known_subdirs = ["json", "debug"]
     
     if expected_subdir and parts and parts[-1] == expected_subdir:
         # Directory already contains the expected subdirectory
@@ -107,8 +106,6 @@ def get_output_path(
     expected_subdir = None
     if output_type == OutputType.JSON_DATA:
         expected_subdir = "json"
-    elif output_type == OutputType.VISUALIZATION:
-        expected_subdir = "supporting_images"
     elif output_type == OutputType.DEBUGGING:
         expected_subdir = "debug"
         
@@ -117,8 +114,6 @@ def get_output_path(
     # Determine the output directory based on type
     if output_type == OutputType.JSON_DATA:
         output_dir = os.path.join(base_dir, "json")
-    elif output_type == OutputType.VISUALIZATION:
-        output_dir = os.path.join(base_dir, "supporting_images")
     elif output_type == OutputType.DEBUGGING:
         output_dir = os.path.join(base_dir, "debug")
     else:  # PRIMARY_REPORT - root directory
@@ -157,7 +152,6 @@ def setup_output_directories(base_dir: str, test_id: str) -> Dict[str, str]:
     
     # Define directory paths
     json_dir = os.path.join(base_dir, "json")
-    images_dir = os.path.join(base_dir, "supporting_images")
     debug_dir = os.path.join(base_dir, "debug")
     
     # Create directories
@@ -168,9 +162,6 @@ def setup_output_directories(base_dir: str, test_id: str) -> Dict[str, str]:
         
         os.makedirs(json_dir, exist_ok=True)
         created_dirs.append(json_dir)
-        
-        os.makedirs(images_dir, exist_ok=True)
-        created_dirs.append(images_dir)
         
         os.makedirs(debug_dir, exist_ok=True)
         created_dirs.append(debug_dir)
@@ -184,7 +175,6 @@ def setup_output_directories(base_dir: str, test_id: str) -> Dict[str, str]:
     return {
         "base": base_dir,
         "json": json_dir,
-        "images": images_dir,
         "debug": debug_dir,
         "test_id": test_id
     }
@@ -222,7 +212,7 @@ def get_visualization_path(output_dir: str, test_id: str, viz_type: str, extensi
         Full path to the visualization file
     """
     filename = get_standardized_filename(test_id, viz_type, extension)
-    return get_output_path(output_dir, test_id, filename, OutputType.VISUALIZATION)
+    return get_output_path(output_dir, test_id, filename, OutputType.PRIMARY_REPORT)
 
 def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
     """
@@ -239,7 +229,6 @@ def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
     """
     results = {
         "json_dirs_fixed": 0,
-        "images_dirs_fixed": 0,
         "debug_dirs_fixed": 0,
         "dirs_removed": 0,
     }
@@ -268,26 +257,6 @@ def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
         except Exception as e:
             logging.error(f"Error removing nested json directory: {str(e)}")
     
-    # Check for nested supporting_images directory
-    nested_images = os.path.join(base_dir, "supporting_images", "supporting_images")
-    if os.path.exists(nested_images):
-        for filename in os.listdir(nested_images):
-            source_path = os.path.join(nested_images, filename)
-            if os.path.isfile(source_path):
-                target_path = os.path.join(base_dir, "supporting_images", filename)
-                try:
-                    if not os.path.exists(target_path):
-                        shutil.move(source_path, target_path)
-                    else:
-                        os.remove(source_path)
-                    results["images_dirs_fixed"] += 1
-                except Exception as e:
-                    logging.error(f"Error fixing nested image file: {str(e)}")
-        try:
-            shutil.rmtree(nested_images)
-            results["dirs_removed"] += 1
-        except Exception as e:
-            logging.error(f"Error removing nested supporting_images directory: {str(e)}")
     
     # Check for nested debug directory
     nested_debug = os.path.join(base_dir, "debug", "debug")
@@ -311,7 +280,7 @@ def cleanup_nested_directories(base_dir: str) -> Dict[str, int]:
             logging.error(f"Error removing nested debug directory: {str(e)}")
     
     # Log results
-    total_fixed = results["json_dirs_fixed"] + results["images_dirs_fixed"] + results["debug_dirs_fixed"]
+    total_fixed = results["json_dirs_fixed"] + results["debug_dirs_fixed"]
     if total_fixed > 0 or results["dirs_removed"] > 0:
         logging.info(
             f"Moved {total_fixed} files and removed {results['dirs_removed']} nested directories"
@@ -345,8 +314,6 @@ def get_path_reference(path: str, base_dir: str, reference_type: str = "html") -
     # Determine output type from path
     if "/json/" in path.replace("\\", "/") or "\\json\\" in path.replace("/", "\\"):
         output_type = "json"
-    elif "/supporting_images/" in path.replace("\\", "/") or "\\supporting_images\\" in path.replace("/", "\\"):
-        output_type = "supporting_images"
     elif "/debug/" in path.replace("\\", "/") or "\\debug\\" in path.replace("/", "\\"):
         output_type = "debug"
     else:
@@ -354,9 +321,7 @@ def get_path_reference(path: str, base_dir: str, reference_type: str = "html") -
     
     # Create appropriate reference
     if reference_type == "html":
-        if output_type == "supporting_images":
-            ref_path = f"supporting_images/{filename}"
-        elif output_type == "json":
+        if output_type == "json":
             ref_path = f"json/{filename}"
         elif output_type == "debug":
             ref_path = f"debug/{filename}"
@@ -383,42 +348,33 @@ def get_path_reference(path: str, base_dir: str, reference_type: str = "html") -
 
 def verify_visualization_directory(base_dir: str) -> bool:
     """
-    Verify that the supporting_images directory exists and is accessible.
-    
-    This is specifically for ensuring visualization images can be saved.
-    
+    Verify that the output directory exists and is writable.
+
     Args:
         base_dir: Base directory for the output structure
-        
+
     Returns:
         True if directory exists and is accessible, False otherwise
     """
-    # Sanitize the base directory
     base_dir = sanitize_base_directory(base_dir)
-    
-    # Get the visualization directory path
-    viz_dir = os.path.join(base_dir, "supporting_images")
-    
-    # Check if directory exists
-    if not os.path.exists(viz_dir):
+
+    if not os.path.exists(base_dir):
         try:
-            os.makedirs(viz_dir, exist_ok=True)
-            logging.info(f"Created visualization directory: {viz_dir}")
+            os.makedirs(base_dir, exist_ok=True)
+            logging.info(f"Created output directory: {base_dir}")
         except Exception as e:
-            logging.error(f"Failed to create visualization directory {viz_dir}: {str(e)}")
+            logging.error(f"Failed to create output directory {base_dir}: {str(e)}")
             return False
-    
-    # Check if directory is writable
+
     try:
-        # Try to create a test file
-        test_file = os.path.join(viz_dir, ".test_file")
-        with open(test_file, 'w') as f:
+        test_file = os.path.join(base_dir, ".test_file")
+        with open(test_file, "w") as f:
             f.write("test")
         os.remove(test_file)
-        logging.debug(f"Verified visualization directory is writable: {viz_dir}")
+        logging.debug(f"Verified output directory is writable: {base_dir}")
         return True
     except Exception as e:
-        logging.error(f"Visualization directory exists but is not writable: {viz_dir}: {str(e)}")
+        logging.error(f"Output directory exists but is not writable: {base_dir}: {str(e)}")
         return False
 
 def ensure_test_dirs(test_id: str) -> Dict[str, str]:
@@ -429,7 +385,6 @@ def ensure_test_dirs(test_id: str) -> Dict[str, str]:
     - logs/{test_id}/ - For log files
     - output/{test_id}/ - For output files
       - output/{test_id}/json/ - For JSON data
-      - output/{test_id}/supporting_images/ - For visualizations
       - output/{test_id}/debug/ - For debug information
     
     Args:

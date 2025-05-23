@@ -58,17 +58,14 @@ class TestPathUtils(unittest.TestCase):
         
         # Check directories are created
         json_dir = os.path.join(self.temp_dir, "json")
-        images_dir = os.path.join(self.temp_dir, "supporting_images")
         debug_dir = os.path.join(self.temp_dir, "debug")
         
         self.assertTrue(os.path.exists(json_dir), "JSON directory was not created")
-        self.assertTrue(os.path.exists(images_dir), "Supporting images directory was not created")
         self.assertTrue(os.path.exists(debug_dir), "Debug directory was not created")
         
         # Check paths in returned dictionary
         self.assertEqual(output_paths["base"], self.temp_dir)
         self.assertEqual(output_paths["json"], json_dir)
-        self.assertEqual(output_paths["images"], images_dir)
         self.assertEqual(output_paths["debug"], debug_dir)
         
         # Test without SXM- prefix
@@ -91,10 +88,6 @@ class TestPathUtils(unittest.TestCase):
         self.assertEqual(json_path, os.path.join(self.temp_dir, "json", filename))
         self.assertTrue(os.path.exists(os.path.dirname(json_path)))
         
-        # Test VISUALIZATION
-        viz_path = get_output_path(self.temp_dir, self.test_id, filename, OutputType.VISUALIZATION)
-        self.assertEqual(viz_path, os.path.join(self.temp_dir, "supporting_images", filename))
-        self.assertTrue(os.path.exists(os.path.dirname(viz_path)))
         
         # Test DEBUGGING
         debug_path = get_output_path(self.temp_dir, self.test_id, filename, OutputType.DEBUGGING)
@@ -160,16 +153,12 @@ def test_path_utils():
                 return False
                 
             json_dir = os.path.join(temp_dir, "json")
-            images_dir = os.path.join(temp_dir, "supporting_images")
             debug_dir = os.path.join(temp_dir, "debug")
             
             if not os.path.exists(json_dir):
                 print("❌ setup_output_directories failed to create json directory")
                 return False
                 
-            if not os.path.exists(images_dir):
-                print("❌ setup_output_directories failed to create supporting_images directory")
-                return False
                 
             if not os.path.exists(debug_dir):
                 print("❌ setup_output_directories failed to create debug directory")
@@ -198,11 +187,6 @@ def test_path_utils():
                 print(f"❌ get_output_path returned incorrect path for JSON_DATA: {json_path}")
                 return False
                 
-            # Test VISUALIZATION
-            viz_path = get_output_path(temp_dir, test_id, filename, OutputType.VISUALIZATION)
-            if viz_path != os.path.join(temp_dir, "supporting_images", filename):
-                print(f"❌ get_output_path returned incorrect path for VISUALIZATION: {viz_path}")
-                return False
                 
             # Test DEBUGGING
             debug_path = get_output_path(temp_dir, test_id, filename, OutputType.DEBUGGING)
@@ -241,7 +225,7 @@ if __name__ == "__main__":
     success = test_path_utils()
     if success:
         print("✅ All path_utils tests passed!")
-        sys.exit(0)
     else:
         print("❌ path_utils tests failed!")
         sys.exit(1)
+

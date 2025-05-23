@@ -71,7 +71,7 @@ def generate_visualization_placeholder(output_dir, test_id, message):
             output_dir,
             test_id,
             get_standardized_filename(test_id, "visualization_placeholder", "png"),
-            OutputType.VISUALIZATION
+            OutputType.PRIMARY_REPORT
         )
         
         plt.figure(figsize=(8, 6))

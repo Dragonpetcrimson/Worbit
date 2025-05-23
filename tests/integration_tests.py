@@ -131,7 +131,6 @@ except ImportError:
     class OutputType:
         PRIMARY_REPORT = "primary"
         JSON_DATA = "json"
-        VISUALIZATION = "image"
         DEBUGGING = "debug"
     
     def get_output_path(base_dir, test_id, filename, output_type=OutputType.PRIMARY_REPORT, create_dirs=True):
@@ -139,8 +138,6 @@ except ImportError:
         
         if output_type == OutputType.JSON_DATA:
             return os.path.join(dirs["json"], filename)
-        elif output_type == OutputType.VISUALIZATION:
-            return os.path.join(dirs["images"], filename)
         elif output_type == OutputType.DEBUGGING:
             return os.path.join(dirs["debug"], filename)
         else:

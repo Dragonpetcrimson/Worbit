@@ -328,14 +328,14 @@ def get_visualization_path(output_dir, test_id, visualization_type, extension="p
         Standardized path for the visualization
     """
     # Sanitize output directory to prevent nested directories
-    output_dir = sanitize_base_directory(output_dir, "supporting_images")
+    output_dir = sanitize_base_directory(output_dir)
     
     # Use path utilities consistently
     return get_output_path(
         output_dir,
         test_id,
         get_standardized_filename(test_id, visualization_type, extension),
-        OutputType.VISUALIZATION
+        OutputType.PRIMARY_REPORT
     )
 
 def get_path_reference(path, base_dir, reference_type="html"):

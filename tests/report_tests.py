@@ -1000,13 +1000,13 @@ class TestReportsIntegration(unittest.TestCase):
                 TEST_CONFIG["OUTPUT_DIR"],
                 self.test_id,
                 "",
-                OutputType.VISUALIZATION
+                OutputType.PRIMARY_REPORT
             ).rstrip(os.sep)
         else:
             # Set up output directory with standard structure
             self.output_dir = os.path.join(TEST_CONFIG["OUTPUT_DIR"], self.test_id)
             self.json_dir = os.path.join(self.output_dir, "json")
-            self.images_dir = os.path.join(self.output_dir, "supporting_images")
+            self.images_dir = self.output_dir
         
         # Create directories
         os.makedirs(self.output_dir, exist_ok=True)
