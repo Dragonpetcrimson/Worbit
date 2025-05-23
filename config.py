@@ -63,7 +63,8 @@ class Config:
     # Defaults are set to provide the most useful visualizations while maintaining backwards compatibility
     ENABLE_CLUSTER_TIMELINE = os.getenv("ENABLE_CLUSTER_TIMELINE", "False").lower() in ("true", "1", "yes")
     ENABLE_COMPONENT_DISTRIBUTION = os.getenv("ENABLE_COMPONENT_DISTRIBUTION", "True").lower() in ("true", "1", "yes")
-    ENABLE_COMPONENT_RELATIONSHIPS = os.getenv("ENABLE_COMPONENT_RELATIONSHIPS", "True").lower() in ("true", "1", "yes")
+    # Disable component relationship diagrams by default
+    ENABLE_COMPONENT_RELATIONSHIPS = os.getenv("ENABLE_COMPONENT_RELATIONSHIPS", "False").lower() in ("true", "1", "yes")
     ENABLE_ERROR_PROPAGATION = os.getenv("ENABLE_ERROR_PROPAGATION", "False").lower() in ("true", "1", "yes")
     
     # Step report and timeline visualizations

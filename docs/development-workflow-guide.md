@@ -772,7 +772,7 @@ Feature flags in `config.py` can be used to control behavior:
 | `ENABLE_ERROR_PROPAGATION` | Enable error propagation visualization | `False` |
 | `ENABLE_STEP_REPORT_IMAGES` | Enable step report visualizations | `False` |
 | `ENABLE_COMPONENT_REPORT_IMAGES` | Enable component report visualizations | `True` |
-| `ENABLE_COMPONENT_RELATIONSHIPS` | Enable component relationship diagrams | `True` |
+| `ENABLE_COMPONENT_RELATIONSHIPS` | Enable component relationship diagrams | `False` |
 
 ### Debugging Tools
 

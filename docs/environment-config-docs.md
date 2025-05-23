@@ -56,7 +56,7 @@ class Config:
     # Visualization enablement flags
     ENABLE_CLUSTER_TIMELINE = False
     ENABLE_COMPONENT_DISTRIBUTION = True
-    ENABLE_COMPONENT_RELATIONSHIPS = True
+    ENABLE_COMPONENT_RELATIONSHIPS = False
     ENABLE_ERROR_PROPAGATION = False
     ENABLE_STEP_REPORT_IMAGES = False
     ENABLE_COMPONENT_REPORT_IMAGES = True
@@ -176,7 +176,7 @@ The system implements several feature flags in the `Config` class to control vis
 # Visualization enablement flags
 ENABLE_CLUSTER_TIMELINE = False         # Enable cluster timeline visualization
 ENABLE_COMPONENT_DISTRIBUTION = True    # Enable component distribution charts
-ENABLE_COMPONENT_RELATIONSHIPS = True   # Enable component relationship diagrams
+ENABLE_COMPONENT_RELATIONSHIPS = False  # Enable component relationship diagrams
 ENABLE_ERROR_PROPAGATION = False        # Enable error propagation visualization
 ENABLE_STEP_REPORT_IMAGES = False       # Enable step report images
 ENABLE_COMPONENT_REPORT_IMAGES = True   # Enable all component report visualizations

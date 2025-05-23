@@ -910,13 +910,9 @@ class TestComponentVisualizer(unittest.TestCase):
         test_id = "TEST-VIZ-123"
         dirs = setup_test_output_directories(test_id)
         diagram_path = self.visualizer.generate_component_relationship_diagram(dirs["images"])
-        
-        # Verify the diagram was created
-        self.assertIsNotNone(diagram_path)
-        
-        # Validate the visualization
-        is_valid, issues = validate_visualization(diagram_path)
-        self.assertTrue(is_valid, f"Visualization validation failed: {', '.join(issues)}")
+
+        # Diagram generation is disabled by default; expect None
+        self.assertIsNone(diagram_path)
     
     def test_generate_error_propagation_diagram(self):
         """
