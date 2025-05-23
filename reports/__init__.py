@@ -14,31 +14,9 @@ from reports.base import ReportConfig, ReportData
 from reports.report_manager import ReportManager
 from reports.component_analyzer import generate_component_report
 
-# Import visualization functions directly
-from reports.visualizations import generate_cluster_timeline_image, generate_timeline_image
-
 # Import component utilities for consistent handling
 from utils.path_utils import normalize_test_id, sanitize_base_directory
 from utils.path_validator import fix_directory_structure
-
-# Create dummy modules for backward compatibility
-class DummyModule:
-    def __getattr__(self, name):
-        # If the missing attribute is one of our timeline functions,
-        # return the real implementation from visualizations.py
-        if name == 'generate_timeline_image':
-            from reports.visualizations import generate_timeline_image
-            return generate_timeline_image
-        elif name == 'generate_cluster_timeline_image':
-            from reports.visualizations import generate_cluster_timeline_image
-            return generate_cluster_timeline_image
-        return None
-
-# Register dummy modules to prevent import errors
-sys.modules['timeline_image_generator'] = DummyModule()
-sys.modules['cluster_timeline_generator'] = DummyModule()
-sys.modules['reports.timeline_image_generator'] = DummyModule()
-sys.modules['reports.cluster_timeline_generator'] = DummyModule()
 
 # Log successful initialization
 logging.info(f"Reports module initialized successfully at {datetime.now().isoformat()}")

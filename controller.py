@@ -11,7 +11,6 @@ from error_clusterer import perform_error_clustering  # Fixed import to use rena
 from gpt_summarizer import generate_summary_from_clusters, enrich_logs_with_errors, build_gpt_prompt
 from reports import write_reports
 from reports.docx_generator import generate_bug_document
-from reports.visualizations import generate_cluster_timeline_image, generate_placeholder
 from components.direct_component_analyzer import assign_components_and_relationships
 from log_analyzer import parse_logs, parse_log_entries
 from config import Config
@@ -47,19 +46,10 @@ except ImportError as e:
     GHERKIN_AVAILABLE = False
     logging.warning(f"Gherkin log correlation modules not available - step-aware analysis disabled: {str(e)}")
 
-# Enhanced check for cluster timeline generator with robust fallback
-try:
-    from reports.visualizations import (
-        generate_cluster_timeline_image, 
-        generate_visualization_placeholder,
-        validate_timeline_in_report
-    )
-    CLUSTER_TIMELINE_AVAILABLE = True
-except ImportError as e:
-    CLUSTER_TIMELINE_AVAILABLE = False
-    
-    # Define fallback function for visualization generation
-    def generate_visualization_placeholder(output_dir, test_id, message):
+# Cluster timeline generator is not available; fallback implementations are used.
+CLUSTER_TIMELINE_AVAILABLE = False
+
+def generate_visualization_placeholder(output_dir, test_id, message):
         """
         Generate a placeholder image with informative text.
         
@@ -71,46 +61,46 @@ except ImportError as e:
         Returns:
             Path to the generated placeholder image
         """
-        try:
-            import matplotlib.pyplot as plt
-            # Sanitize output directory to prevent nested directories
-            output_dir = sanitize_base_directory(output_dir, "supporting_images")
-            
-            # Get standardized path for visualization placeholder
-            placeholder_path = get_output_path(
-                output_dir,
-                test_id,
-                get_standardized_filename(test_id, "visualization_placeholder", "png"),
-                OutputType.VISUALIZATION
-            )
-            
-            plt.figure(figsize=(8, 6))
-            plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)
-            plt.axis('off')
-            plt.savefig(placeholder_path, dpi=100)
-            plt.close()
-            
-            return placeholder_path
-        except Exception as e:
-            logging.error(f"Error creating visualization placeholder: {str(e)}")
-            return None
-    
-    # Define fallback function for cluster timeline
-    def generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id):
-        """Fallback function when cluster timeline visualization is not available"""
-        return generate_visualization_placeholder(
-            output_dir, 
-            test_id, 
-            "Cluster timeline visualization is not available"
-        )
-    
-    # Define fallback function for timeline validation
-    def validate_timeline_in_report(output_dir, test_id):
-        """Fallback function for timeline validation when visualization is not available"""
-        logging.warning("Timeline validation not available - visualization modules not loaded")
-        return False
+    try:
+        import matplotlib.pyplot as plt
+        # Sanitize output directory to prevent nested directories
+        output_dir = sanitize_base_directory(output_dir, "supporting_images")
         
-    logging.warning(f"Cluster timeline generator not available - will use placeholder: {str(e)}")
+        # Get standardized path for visualization placeholder
+        placeholder_path = get_output_path(
+            output_dir,
+            test_id,
+            get_standardized_filename(test_id, "visualization_placeholder", "png"),
+            OutputType.VISUALIZATION
+        )
+        
+        plt.figure(figsize=(8, 6))
+        plt.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, wrap=True)
+        plt.axis('off')
+        plt.savefig(placeholder_path, dpi=100)
+        plt.close()
+        
+        return placeholder_path
+    except Exception as e:
+        logging.error(f"Error creating visualization placeholder: {str(e)}")
+        return None
+    
+# Define fallback function for cluster timeline
+def generate_cluster_timeline_image(step_to_logs, step_dict, clusters, output_dir, test_id):
+    """Fallback function when cluster timeline visualization is not available"""
+    return generate_visualization_placeholder(
+        output_dir, 
+        test_id, 
+        "Cluster timeline visualization is not available"
+    )
+
+# Define fallback function for timeline validation
+def validate_timeline_in_report(output_dir, test_id):
+    """Fallback function for timeline validation when visualization is not available"""
+    logging.warning("Timeline validation not available - visualization modules not loaded")
+    return False
+    
+logging.warning("Cluster timeline generator not available - using placeholder implementation")
 
 # Try to import the component integration module with enhanced error handling
 try:
