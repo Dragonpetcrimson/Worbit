@@ -96,7 +96,8 @@ def generate_bug_document(
     background_text: str = "",
     scenario_text: str = "",
     component_analysis: Optional[Dict[str, Any]] = None,
-    primary_issue_component: str = "unknown"
+    primary_issue_component: str = "unknown",
+    component_report_path: Optional[str] = None
 ) -> str:
     """
     Generate a DOCX file formatted for Jira bug submission.
@@ -112,6 +113,7 @@ def generate_bug_document(
         scenario_text: Scenario section from feature file
         component_analysis: Optional component relationship analysis results
         primary_issue_component: Primary component identified as causing issues
+        component_report_path: Path to component report file if available
         
     Returns:
         Path to the generated document
@@ -215,6 +217,16 @@ def generate_bug_document(
                         p.add_run(" → ".join([comp.upper() for comp in path]))
             except Exception as e:
                 logging.warning(f"Error adding component analysis to document: {str(e)}")
+
+        # Add link to component report if provided
+        if component_report_path:
+            try:
+                report_name = os.path.basename(component_report_path)
+                p = doc.add_paragraph()
+                p.add_run("Component Analysis Report: ").bold = True
+                p.add_run(report_name)
+            except Exception as e:
+                logging.warning(f"Error adding component report link: {str(e)}")
         
         # Section 3: Log Snippet
         doc.add_heading("Log Snippet:", 1)
@@ -294,7 +306,9 @@ class DocxReportGenerator(ReportGenerator):
                 background_text=data.background_text,
                 scenario_text=data.scenario_text,
                 component_analysis=data.component_analysis,
-                primary_issue_component=self.config.primary_issue_component
+                primary_issue_component=self.config.primary_issue_component,
+                component_report_path=(data.component_analysis.get("report_path")
+                                      if isinstance(data.component_analysis, dict) else None)
             )
             
             logging.info(f"Bug report document written to: {docx_path}")

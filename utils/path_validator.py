@@ -175,7 +175,8 @@ def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
         "images_dir_json": [],
         "nested_directories": [],
         "misplaced_visualizations": [],
-        "fixed_files": []
+        "fixed_files": [],
+        "expected_but_missing": []
     }
     
     # First, clean up nested directories
