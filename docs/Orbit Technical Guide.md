@@ -359,7 +359,7 @@ class OutputType(Enum):
     """Enumeration of output file types with their destinations"""
     PRIMARY_REPORT = "primary"  # Goes in root directory (Excel, DOCX, HTML)
     JSON_DATA = "json"          # Goes in json/ subdirectory
-    VISUALIZATION = "image"     # Goes in supporting_images/ subdirectory
+    VISUALIZATION = "image"
     DEBUGGING = "debug"         # Goes in debug/ subdirectory (optional)
 
 def normalize_test_id(test_id: str) -> str:
@@ -624,21 +624,13 @@ output/
 |   |-- SXM-123456_log_analysis.xlsx   # Main Excel report
 |   |-- SXM-123456_bug_report.docx     # Bug report document
 |   |-- SXM-123456_log_analysis.md     # Markdown report
-|   |-- SXM-123456_component_report.html # Component analysis report
-|   |
 |   +-- json/                          # JSON data subdirectory
 |   |   |-- SXM-123456_log_analysis.json # Main analysis data
 |   |   |-- SXM-123456_component_analysis.json # Component analysis data
 |   |   |-- SXM-123456_error_graph.json # Error relationship graph
 |   |   +-- SXM-123456_component_preservation.json # Component preservation data
 |   |
-|   +-- supporting_images/             # Visualizations subdirectory
-|   |   |-- SXM-123456_timeline.png    # Standard timeline visualization
-|   |   |-- SXM-123456_cluster_timeline.png # Cluster timeline visualization
-|   |   |-- SXM-123456_component_relationships.png # Component relationship diagram
-|   |   |-- SXM-123456_error_propagation.png # Error propagation diagram
-|   |   +-- SXM-123456_component_distribution.png # Component error distribution
-|   |
+|
 |   +-- debug/                         # Debug information
 |       |-- SXM-123456_timeline_debug.txt # Timeline generation debug log
 |       +-- SXM-123456_component_debug.txt # Component analysis debug log
@@ -745,7 +737,7 @@ Config.setup_logging()
 Config.validate()
 
 # Run analysis
-result, step_report = run_pipeline(
+result, _ = run_pipeline(
     test_id="SXM-1234567",
     gpt_model="gpt-3.5-turbo",
     enable_ocr=True,
@@ -754,8 +746,6 @@ result, step_report = run_pipeline(
 
 # Access results
 print(f"Analysis completed: {result}")
-if step_report:
-    print(f"Step report generated at: {step_report}")
 ```
 
 ### Batch Processing
@@ -874,7 +864,7 @@ print_validation_results("output/SXM-1234567", "SXM-1234567")
 
 # Check HTML references
 from utils.path_validator import check_html_references
-issues = check_html_references("output/SXM-1234567/SXM-1234567_component_report.html")
+issues = check_html_references("output/SXM-1234567/log_analysis.html")
 print(issues)
 ```
 
@@ -962,8 +952,7 @@ def process_large_logs(log_files, chunk_size=1000):
    - Use `get_standardized_filename()` for consistent naming
 
 5. **HTML References**
-   - Always use `supporting_images/` prefix in HTML
-   - Use relative paths for better portability
+   - Use relative paths for portability
    - Validate HTML references with `check_html_references()`
 
 ## Extending Orbit

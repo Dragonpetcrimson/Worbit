@@ -107,8 +107,6 @@ python batch_processor.py --all --parallel
 All reports are generated in the `output\SXM-xxxxxxx` folder:
 - `log_analysis.html` - Main HTML report
 - `SXM-xxxxxxx_bug_report.docx` - Ready-to-submit bug report
-- `SXM-xxxxxxx_component_report.html` - Component relationship analysis
-- Various visualization files (PNG)
 
 HTML reports are rendered using **Jinja2** templates located in `reports/templates`.
 
@@ -188,7 +186,6 @@ Configure by editing `config.py` or setting environment variables:
 * `OPENAI_API_KEY`: API key for GPT analysis (set as environment variable)
 * `DEFAULT_MODEL`: GPT model to use (default: `gpt-3.5-turbo`)
 * `ENABLE_OCR`: Whether to extract text from images (default: `True`)
-* `ENABLE_STEP_REPORT`: Generate the step-aware HTML report (default: `True`)
 
 For secure API key storage, you can use the Windows Credential Manager:
 

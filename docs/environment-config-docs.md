@@ -243,7 +243,7 @@ class OutputType(Enum):
     """Enumeration of output file types with their destinations"""
     PRIMARY_REPORT = "primary"  # Goes in root directory (Excel, DOCX, HTML)
     JSON_DATA = "json"          # Goes in json/ subdirectory
-    VISUALIZATION = "image"     # Goes in supporting_images/ subdirectory
+    VISUALIZATION = "image"
     DEBUGGING = "debug"         # Goes in debug/ subdirectory (optional)
 
 def normalize_test_id(test_id: str) -> str:
@@ -282,21 +282,12 @@ output/
 |   |-- SXM-123456_log_analysis.xlsx   # Main Excel report
 |   |-- SXM-123456_bug_report.docx     # Bug report document
 |   |-- SXM-123456_log_analysis.md     # Markdown report
-|   |-- SXM-123456_component_report.html # Component analysis report
-|   |
 |   +-- json/                          # JSON data subdirectory
 |   |   |-- SXM-123456_log_analysis.json # Main analysis data
 |   |   |-- SXM-123456_component_analysis.json # Component analysis data
 |   |   +-- SXM-123456_component_preservation.json # Component preservation data
 |   |
-|   +-- supporting_images/             # Visualizations subdirectory
-|   |   |-- SXM-123456_timeline.png    # Standard timeline visualization
-|   |   |-- SXM-123456_cluster_timeline.png # Cluster timeline visualization
-|   |   |-- SXM-123456_component_errors.png # Component error distribution visualization
-|   |   |-- SXM-123456_component_distribution.png # Alias for component_errors.png
-|   |   |-- SXM-123456_component_relationships.png # Component relationship diagram
-|   |   |-- SXM-123456_error_propagation.png # Error propagation visualization
-|   |
+|
 |   +-- debug/                         # Debug information
 |       |-- SXM-123456_timeline_debug.txt # Timeline generation debug log
 ```
@@ -882,17 +873,14 @@ class ReportManager:
         
         # Create output directory structures
         self.base_dir = config.output_dir
-        self.json_dir = os.path.join(config.output_dir, "json") 
-        self.images_dir = os.path.join(config.output_dir, "supporting_images")
+        self.json_dir = os.path.join(config.output_dir, "json")
         
         # Create directories
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(self.json_dir, exist_ok=True)
-        os.makedirs(self.images_dir, exist_ok=True)
         
         # Initialize report generators
         self.json_generator = JsonReportGenerator(self._create_config_for_dir(self.json_dir)) if config.enable_json else None
-        self.visualization_generator = VisualizationGenerator(self._create_config_for_dir(self.images_dir)) if config.enable_component_report else None
         self.markdown_generator = MarkdownReportGenerator(config) if config.enable_markdown else None
         self.excel_generator = ExcelReportGenerator(config) if config.enable_excel else None
         self.docx_generator = DocxReportGenerator(config) if config.enable_docx else None

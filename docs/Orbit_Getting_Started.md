@@ -161,17 +161,10 @@ output/
     ├── SXM-2302295_log_analysis.xlsx       # Main Excel report
     ├── SXM-2302295_bug_report.docx         # Bug report document
     ├── SXM-2302295_log_analysis.md         # Markdown report
-    ├── SXM-2302295_component_report.html   # Component analysis report
-    │
     ├── json/                               # Detailed data files
     │   ├── SXM-2302295_log_analysis.json
     │   └── SXM-2302295_component_analysis.json
     │
-    └── supporting_images/                  # Visualizations
-        ├── SXM-2302295_timeline.png
-        ├── SXM-2302295_cluster_timeline.png
-        ├── SXM-2302295_component_relationships.png
-        └── SXM-2302295_component_distribution.png
 ```
 
 ---
@@ -188,20 +181,6 @@ The most comprehensive report with multiple tabs:
 - **Cluster Summary**: Overview of each error cluster
 - **Images extraction**: Text extracted from screenshots
 
-### Component Report (SXM-2302295_component_report.html)
-
-An interactive report showing:
-- Which components are experiencing issues
-- How components relate to each other
-- Error distribution across components
-- Possible error propagation paths
-
-### Visualizations (in supporting_images/)
-
-- **Timeline**: When errors occurred during test execution
-- **Cluster Timeline**: Error clusters over time with color coding
-- **Component Relationships**: How different components interact
-- **Component Distribution**: Which components have the most errors
 
 ---
 
@@ -231,7 +210,6 @@ See:
 
 - **Include diverse logs**: Logs from different components provide better analysis of relationships and root causes
 - **Organize by test ID**: Use the standard SXM-#### format for your test ID folders
-- **Review visualizations**: The timeline and component visualizations often make patterns obvious at a glance
 - **Use batch processing**: When analyzing multiple test failures, use batch processing to save time
 
 ---
