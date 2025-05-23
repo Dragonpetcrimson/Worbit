@@ -184,12 +184,12 @@ class DirectoryStructureTest(unittest.TestCase):
         # Image (supporting_images subdirectory)
         image_filename = get_standardized_filename(self.test_id, "test", "png")
         image_path = get_output_path(
-            self.temp_dir, 
-            self.test_id, 
-            image_filename, 
-            OutputType.VISUALIZATION
+            self.temp_dir,
+            self.test_id,
+            image_filename,
+            OutputType.PRIMARY_REPORT
         )
-        expected_image_path = os.path.join(self.temp_dir, "supporting_images", image_filename)
+        expected_image_path = os.path.join(self.temp_dir, image_filename)
         self.assertEqual(image_path, expected_image_path,
                       f"Image path incorrect: {image_path} != {expected_image_path}")
         
@@ -631,10 +631,10 @@ class PathSanitizationTest(unittest.TestCase):
         
         # Problematic case - supporting_images subdirectory
         image_filename = get_standardized_filename(self.test_id, "test", "png")
-        path = get_output_path(self.images_dir, self.test_id, image_filename, OutputType.VISUALIZATION)
-        expected_image_path = os.path.join(self.temp_dir, "supporting_images", image_filename)
+        path = get_output_path(self.images_dir, self.test_id, image_filename, OutputType.PRIMARY_REPORT)
+        expected_image_path = os.path.join(self.temp_dir, image_filename)
         self.assertEqual(path, expected_image_path, "Path sanitization failed for images subdirectory")
-        self.assertNotIn("supporting_images/supporting_images", path.replace("\\", "/"), 
+        self.assertNotIn("supporting_images/supporting_images", path.replace("\\", "/"),
                       "Nested supporting_images directory detected")
     
     def test_cleanup_nested_directories(self):

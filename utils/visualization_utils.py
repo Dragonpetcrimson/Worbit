@@ -247,29 +247,21 @@ def get_visualization_path(output_dir: str, test_id: str,
     """
     if HAS_PATH_UTILS:
         # Sanitize output directory to prevent nested directories
-        output_dir = sanitize_base_directory(output_dir, "supporting_images")
-        
+        output_dir = sanitize_base_directory(output_dir)
+
         # Use path utilities consistently
         return get_output_path(
             output_dir,
             test_id,
             get_standardized_filename(test_id, visualization_type, extension),
-            OutputType.VISUALIZATION
+            OutputType.PRIMARY_REPORT
         )
     else:
         # Basic sanitization
         if test_id and not test_id.startswith("SXM-"):
             test_id = f"SXM-{test_id}"
         
-        # Check for nested directories
-        if "supporting_images" in output_dir:
-            # Already has supporting_images, don't nest further
-            viz_dir = output_dir
-        else:
-            # Add supporting_images subdirectory
-            viz_dir = os.path.join(output_dir, "supporting_images")
-        
-        # Create directory
+        viz_dir = output_dir
         os.makedirs(viz_dir, exist_ok=True)
         
         # Create filename and path

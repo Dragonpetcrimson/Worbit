@@ -119,7 +119,7 @@ def generate_component_visualization(
             output_dir,
             test_id,
             get_standardized_filename(test_id, "component_errors", "png"),
-            OutputType.VISUALIZATION
+            OutputType.PRIMARY_REPORT
         )
         
         # Verify we have valid data for visualization
@@ -207,7 +207,7 @@ def generate_component_visualization(
                 output_dir,
                 test_id,
                 get_standardized_filename(test_id, "component_distribution", "png"),
-                OutputType.VISUALIZATION
+                OutputType.PRIMARY_REPORT
             )
             
             # Copy the file instead of regenerating the figure

@@ -98,7 +98,6 @@ try:
                     """Minimal OutputType enumeration."""
                     PRIMARY_REPORT = "primary"
                     JSON_DATA = "json"
-                    VISUALIZATION = "image"
                     DEBUGGING = "debug"
                 
                 def normalize_test_id(test_id):
@@ -199,11 +198,7 @@ try:
                         return path
                     
                     # Determine subdirectory based on output type
-                    if output_type == OutputType.VISUALIZATION:
-                        # CRITICAL FIX: Create supporting_images subdirectory directly under test_dir, not nested
-                        # This avoids the double supporting_images path issue
-                        subdir = os.path.join(test_dir, "supporting_images")
-                    elif output_type == OutputType.DEBUGGING:
+                    if output_type == OutputType.DEBUGGING:
                         subdir = os.path.join(test_dir, "debug")
                     else:
                         subdir = test_dir

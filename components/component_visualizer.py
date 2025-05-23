@@ -216,15 +216,7 @@ def _get_visualization_path_internal(output_dir, test_id, visualization_type, ex
     if test_id and not test_id.startswith("SXM-"):
         test_id = f"SXM-{test_id}"
     
-    # Check for nested directories
-    if "supporting_images" in output_dir:
-        # Already has supporting_images, don't nest further
-        viz_dir = output_dir
-    else:
-        # Add supporting_images subdirectory
-        viz_dir = os.path.join(output_dir, "supporting_images")
-    
-    # Create directory
+    viz_dir = output_dir
     os.makedirs(viz_dir, exist_ok=True)
     
     # Create filename and path
@@ -818,12 +810,12 @@ class ComponentVisualizer:
             
             # Sanitize output directory and use path utilities
             if HAS_PATH_UTILS:
-                output_dir = sanitize_base_directory(output_dir, "supporting_images")
+                output_dir = sanitize_base_directory(output_dir)
                 image_path = get_output_path(
-                    output_dir, 
-                    test_id or "default", 
+                    output_dir,
+                    test_id or "default",
                     get_standardized_filename(test_id or "default", "component_relationships", "png"),
-                    OutputType.VISUALIZATION
+                    OutputType.PRIMARY_REPORT
                 )
             else:
                 image_path = _get_visualization_path_internal(
@@ -983,20 +975,20 @@ class ComponentVisualizer:
             
             # Sanitize output directory and use path utilities
             if HAS_PATH_UTILS:
-                output_dir = sanitize_base_directory(output_dir, "supporting_images")
+                output_dir = sanitize_base_directory(output_dir)
                 # Both visualization filenames for backward compatibility
                 distribution_path = get_output_path(
                     output_dir, 
                     test_id, 
                     get_standardized_filename(test_id, "component_distribution", "png"),
-                    OutputType.VISUALIZATION
+                    OutputType.PRIMARY_REPORT
                 )
                 
                 errors_path = get_output_path(
                     output_dir, 
                     test_id, 
                     get_standardized_filename(test_id, "component_errors", "png"),
-                    OutputType.VISUALIZATION
+                    OutputType.PRIMARY_REPORT
                 )
             else:
                 distribution_path = _get_visualization_path_internal(
@@ -1210,12 +1202,12 @@ class ComponentVisualizer:
             
             # Sanitize output directory and use path utilities
             if HAS_PATH_UTILS:
-                output_dir = sanitize_base_directory(output_dir, "supporting_images")
+                output_dir = sanitize_base_directory(output_dir)
                 image_path = get_output_path(
-                    output_dir, 
-                    test_id, 
+                    output_dir,
+                    test_id,
                     get_standardized_filename(test_id, "error_propagation", "png"),
-                    OutputType.VISUALIZATION
+                    OutputType.PRIMARY_REPORT
                 )
             else:
                 image_path = _get_visualization_path_internal(
