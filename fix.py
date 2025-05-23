@@ -168,13 +168,6 @@ def check_directories_and_files(test_id: str):
         os.makedirs(supporting_images_dir, exist_ok=True)
         logging.info(f"Created supporting_images directory: {supporting_images_dir}")
     
-    # Check for HTML report
-    html_report_path = os.path.join(output_dir, f"{test_id}_step_report.html")
-    if os.path.exists(html_report_path):
-        logging.info(f"HTML report exists: {html_report_path}")
-    else:
-        logging.warning(f"HTML report does not exist: {html_report_path}")
-    
     return True
 
 def check_visualization_module():
@@ -190,12 +183,6 @@ def check_step_aware_analyzer():
     try:
         import step_aware_analyzer
         logging.info("Successfully imported step_aware_analyzer module")
-        available_attrs = dir(step_aware_analyzer)
-        deprecated = [name for name in ("generate_step_report", "run_step_aware_analysis") if name in available_attrs]
-        if deprecated:
-            logging.warning(f"Deprecated functions present: {deprecated}")
-        
-        
         return True
     except Exception as e:
         logging.error(f"Error checking step-aware analyzer: {str(e)}")
@@ -333,16 +320,11 @@ def create_fixed_timeline(test_id: str, step_dict: Dict[int, Dict], step_to_logs
             test_id=test_id
         )
         
-        if timeline_path and os.path.exists(timeline_path):
-            logging.info(f"Timeline visualization generated successfully: {timeline_path}")
-            logging.info(f"File size: {os.path.getsize(timeline_path)} bytes")
+        if timeline_path:
+            logging.info(f"Timeline visualization generated at: {timeline_path}")
             return timeline_path
-        else:
-            if timeline_path:
-                logging.error(f"Timeline path returned but file does not exist: {timeline_path}")
-            else:
-                logging.error("Timeline generation function returned None or empty path")
-            return None
+        logging.error("Timeline generation function returned None or empty path")
+        return None
     except Exception as e:
         logging.error(f"Error creating timeline visualization: {str(e)}")
         traceback.print_exc()
@@ -523,10 +505,6 @@ def run_diagnostic():
     # Print final output locations
     if timeline_path:
         logging.info(f"\nTimeline visualization: {timeline_path}")
-    
-    html_report_path = os.path.join(OUTPUT_DIR, TEST_ID, f"{TEST_ID}_step_report.html")
-    if os.path.exists(html_report_path):
-        logging.info(f"HTML report: {html_report_path}")
     
     logging.info("\nFix script completed. Check logs for details.")
 
