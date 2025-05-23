@@ -137,17 +137,10 @@ Orbit/
 │       ├── SXM-1234567_log_analysis.xlsx        # Main Excel report
 │       ├── SXM-1234567_bug_report.docx          # Bug report document
 │       ├── SXM-1234567_log_analysis.md          # Markdown report
-│       ├── SXM-1234567_component_report.html    # Component analysis report
-│       │
 │       ├── json/                                # Detailed data files
 │       │   ├── SXM-1234567_log_analysis.json
 │       │   └── SXM-1234567_component_analysis.json
 │       │
-│       └── supporting_images/                   # Visualizations
-│           ├── SXM-1234567_timeline.png
-│           ├── SXM-1234567_cluster_timeline.png
-│           ├── SXM-1234567_component_relationships.png
-│           └── SXM-1234567_component_distribution.png
 ```
 
 ## Understanding the Output
@@ -167,14 +160,6 @@ The most comprehensive report with multiple tabs:
 | Cluster Summary | Overview of each error cluster |
 | Images extraction | Text extracted from screenshots |
 
-### Component Report (SXM-1234567_component_report.html)
-
-An interactive report showing:
-* Which components are experiencing issues
-* How components relate to each other
-* Error distribution across components
-* Possible error propagation paths
-
 ### Markdown Summary (SXM-1234567_log_analysis.md)
 
 A simple text summary that can be easily copied into:
@@ -191,14 +176,6 @@ A formatted document ready for Jira submission with:
 * Log snippets
 * Expected vs. actual behavior
 
-### Visualizations (in supporting_images/)
-
-| Visualization | Shows |
-|---------------|-------|
-| Timeline | When errors occurred during test execution |
-| Cluster Timeline | Error clusters over time with color coding |
-| Component Relationships | How different components interact |
-| Component Distribution | Which components have the most errors |
 
 ## Common Issues and Solutions
 
@@ -216,7 +193,6 @@ A formatted document ready for Jira submission with:
 
 * **Include diverse logs**: Logs from different components provide better analysis of relationships and root causes
 * **Organize by test ID**: Use the standard SXM-#### format for your test ID folders
-* **Review visualizations**: The timeline and component visualizations often make patterns obvious at a glance
 * **Use batch processing**: When analyzing multiple test failures, use batch processing to save time
 
 ## Need More Help?

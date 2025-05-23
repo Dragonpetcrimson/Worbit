@@ -870,7 +870,7 @@ class OutputType(Enum):
     """Enumeration of output file types with their destinations"""
     PRIMARY_REPORT = "primary"  # Goes in root directory (Excel, DOCX, HTML)
     JSON_DATA = "json"          # Goes in json/ subdirectory
-    VISUALIZATION = "image"     # Goes in supporting_images/ subdirectory
+    VISUALIZATION = "image"
     DEBUGGING = "debug"         # Goes in debug/ subdirectory (optional)
 
 def get_output_path(
@@ -905,7 +905,7 @@ def get_output_path(
     if output_type == OutputType.JSON_DATA:
         subdir = os.path.join(test_dir, "json")
     elif output_type == OutputType.VISUALIZATION:
-        subdir = os.path.join(test_dir, "supporting_images")
+        subdir = os.path.join(test_dir, "images")
     elif output_type == OutputType.DEBUGGING:
         subdir = os.path.join(test_dir, "debug")
     else:  # PRIMARY_REPORT
@@ -922,7 +922,7 @@ def get_output_path(
 This system ensures that:
 - Primary reports are stored in the root test directory
 - JSON data files are stored in the `json/` subdirectory
-- Visualizations are stored in the `supporting_images/` subdirectory
+- Visualization assets are stored in a dedicated `images/` subdirectory
 - Debug information is stored in the `debug/` subdirectory
 
 ## GPT-Powered Root Cause Analysis

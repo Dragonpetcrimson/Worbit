@@ -256,14 +256,8 @@ Based on the current codebase patterns:
    ```
 
 2. **HTML Path References**
-   - Always use `supporting_images/` prefix for image references in HTML
    - Validate HTML references using `utils.path_validator`
    - Use relative paths for better portability
-
-   ```html
-   <!-- Correct HTML image reference -->
-   <img src="supporting_images/SXM-123456_component_distribution.png" alt="Component Distribution">
-   ```
 
 ### Error Handling Practices
 
@@ -369,8 +363,6 @@ python -c "import json; print(json.load(open('output/SXM-123456/json/SXM-123456_
 # Diagnose output structure
 python -c "from controller import diagnose_output_structure; diagnose_output_structure('SXM-123456')"
 
-# Verify visualization images
-python -c "from PIL import Image; Image.open('output/SXM-123456/supporting_images/SXM-123456_component_errors.png').verify()"
 ```
 
 #### Building Executable
@@ -967,11 +959,9 @@ logs/
 2. **Directory Structure Compliance**
    - Keep main reports in root directory
    - JSON data files in `json/` subdirectory
-   - Visualizations in `supporting_images/` subdirectory
    - Debug information in `debug/` subdirectory
 
 3. **HTML References**
-   - Always use `supporting_images/` prefix in HTML
    - Use relative paths for better portability
    - Validate HTML references with `check_html_references()`
 
