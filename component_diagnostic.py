@@ -1,20 +1,13 @@
 # component_diagnostic.py
 import os
 import logging
+from config import Config
 import json
 import re
 from collections import defaultdict
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename='component_diagnostic.log',
-    filemode='w'
-)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logging.getLogger('').addHandler(console)
+Config.setup_logging()
 
 # Enhanced component model
 COMPONENT_MODEL = {
