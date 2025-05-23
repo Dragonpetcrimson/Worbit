@@ -233,8 +233,7 @@ def setup_test_output_directories(test_id: str) -> Dict[str, str]:
     Set up standardized test output directories.
     
     Creates a standard directory structure for test outputs including
-    base directory, json subdirectory, images subdirectory, and debug
-    subdirectory.
+    base directory, json subdirectory, and debug subdirectory.
     
     Args:
         test_id: Test identifier
@@ -249,19 +248,16 @@ def setup_test_output_directories(test_id: str) -> Dict[str, str]:
     # Create base directories
     base_dir = os.path.join(ConfigManager.get("OUTPUT_DIR"), test_id)
     json_dir = os.path.join(base_dir, "json")
-    images_dir = os.path.join(base_dir, "supporting_images")
     debug_dir = os.path.join(base_dir, "debug")
-    
+
     # Create all directories
     os.makedirs(base_dir, exist_ok=True)
     os.makedirs(json_dir, exist_ok=True)
-    os.makedirs(images_dir, exist_ok=True)
     os.makedirs(debug_dir, exist_ok=True)
-    
+
     return {
         "base": base_dir,
         "json": json_dir,
-        "images": images_dir,
         "debug": debug_dir,
         "test_id": test_id
     }
@@ -286,8 +282,6 @@ def get_test_output_path(test_id: str, filename: str, file_type: Optional[str] =
     
     if file_type == "json":
         return os.path.join(dirs["json"], filename)
-    elif file_type == "image":
-        return os.path.join(dirs["images"], filename)
     elif file_type == "debug":
         return os.path.join(dirs["debug"], filename)
     else:
@@ -309,17 +303,19 @@ def validate_directory_structure(test_id: str) -> Dict[str, List[str]]:
     dirs = setup_test_output_directories(test_id)
     
     issues = {
-        "json_in_images": [],  # JSON files in images directory
+        "json_in_images": [],  # JSON files in images directory (legacy)
         "images_in_json": [],  # Image files in JSON directory
         "json_in_base": [],    # JSON files in base directory
         "images_in_base": [],  # Image files in base directory
         "other_issues": []
     }
-    
-    # Check files in images directory
-    for filename in os.listdir(dirs["images"]):
-        if filename.endswith(".json"):
-            issues["json_in_images"].append(filename)
+
+    # Legacy check: images directory no longer used
+    images_dir = os.path.join(dirs["base"], "supporting_images")
+    if os.path.isdir(images_dir):
+        for filename in os.listdir(images_dir):
+            if filename.endswith(".json"):
+                issues["json_in_images"].append(filename)
     
     # Check files in JSON directory
     for filename in os.listdir(dirs["json"]):
@@ -397,9 +393,11 @@ def validate_visualization(image_path: str, min_size: int = 1000) -> Tuple[bool,
     if os.path.getsize(image_path) < min_size:
         issues.append(f"Image file is too small: {image_path}")
     
-    # Check the path doesn't have duplicated directories
+    # Check for accidental nested directories from legacy structure
     if "supporting_images/supporting_images" in image_path.replace("\\", "/"):
-        issues.append(f"Image path contains nested supporting_images directories: {image_path}")
+        issues.append(
+            f"Image path contains legacy supporting_images nesting: {image_path}"
+        )
     
     return len(issues) == 0, issues
 

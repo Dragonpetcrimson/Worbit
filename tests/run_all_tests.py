@@ -117,18 +117,15 @@ try:
                     norm_id = normalize_test_id(test_id)
                     base_path = os.path.join(base_dir, norm_id)
                     json_dir = os.path.join(base_path, "json")
-                    images_dir = os.path.join(base_path, "supporting_images")
                     debug_dir = os.path.join(base_path, "debug")
                     
                     os.makedirs(base_path, exist_ok=True)
                     os.makedirs(json_dir, exist_ok=True)
-                    os.makedirs(images_dir, exist_ok=True)
                     os.makedirs(debug_dir, exist_ok=True)
                     
                     return {
                         "base": base_path,
                         "json": json_dir,
-                        "images": images_dir,
                         "debug": debug_dir,
                         "test_id": norm_id
                     }
@@ -318,7 +315,6 @@ def import_test_modules():
     module_names = [
         'component_tests',
         'report_tests',
-        'visualization_tests',
         'core_module_tests',
         'integration_tests',
         'structure_tests',
