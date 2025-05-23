@@ -62,36 +62,10 @@ def validate_file_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
     ]
     
     # Calculate standard paths
-    normalized_test_id = test_id
-    component_error_path = os.path.join(images_dir, f"{normalized_test_id}_component_errors.png")
-    component_dist_path = os.path.join(images_dir, f"{normalized_test_id}_component_distribution.png")
-    
-    # Check existing files
-    has_error_file = os.path.exists(component_error_path)
-    has_dist_file = os.path.exists(component_dist_path)
-    
-    # Handle standardization needs
-    if not has_error_file and has_dist_file:
-        # Copy from distribution to error (the standard we want to enforce)
-        try:
-            shutil.copy2(component_dist_path, component_error_path)
-            logging.info(f"Created {component_error_path} from {component_dist_path} for standardization")
-            has_error_file = True  # We've created it now
-        except Exception as e:
-            logging.error(f"Failed to copy {component_dist_path} to {component_error_path}: {str(e)}")
-    
-    # During transition, we want both files to exist for backward compatibility
-    # Copy from error to distribution if needed
-    if has_error_file and not has_dist_file:
-        try:
-            shutil.copy2(component_error_path, component_dist_path)
-            logging.info(f"Created {component_dist_path} from {component_error_path} for backward compatibility")
-        except Exception as e:
-            logging.error(f"Failed to copy {component_error_path} to {component_dist_path}: {str(e)}")
-    
-    # Handle expected file checking for component_errors.png only
-    # component_distribution.png is maintained only for compatibility
-    if not has_error_file and not has_dist_file:
+    component_error_path = os.path.join(images_dir, f"{test_id}_component_errors.png")
+
+    # Report missing component_errors.png
+    if not os.path.exists(component_error_path):
         issues["expected_but_missing"].append(component_error_path)
     
     # Check the other expected files
@@ -144,24 +118,10 @@ def check_html_references(html_file: str) -> Dict[str, List[str]]:
         for img_src in img_refs:
             if not img_src.startswith("supporting_images/") and not img_src.startswith("data:"):
                 issues["missing_supporting_images_prefix"].append(img_src)
-            
-            # Check if referenced file exists
+
+            # Report missing referenced files
             if not img_src.startswith("data:"):
                 file_path = os.path.join(base_dir, img_src)
-                
-                # Special handling for component visualization alternatives
-                filename = os.path.basename(img_src)
-                test_id = os.path.basename(html_file).split('_')[0]
-                
-                # The component visualization reference checking logic
-                if filename == f"{test_id}_component_distribution.png":
-                    # If this references component_distribution.png, check if component_errors.png exists instead
-                    component_error_path = os.path.join(base_dir, "supporting_images", f"{test_id}_component_errors.png")
-                    if os.path.exists(component_error_path):
-                        # We found the standardized file, don't report as nonexistent
-                        continue
-                    
-                # Standard existence check
                 if not os.path.exists(file_path):
                     issues["references_to_nonexistent_files"].append(img_src)
         
@@ -316,35 +276,12 @@ def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
                     except Exception as e:
                         logging.error(f"Error fixing nested visualization file: {str(e)}")
     
-    # CORRECTED APPROACH: When checking for expected files, standardize on component_errors.png
-    # Create component_errors.png from component_distribution.png if needed
+    # Report presence of component visualization file
     component_error_path = os.path.join(images_dir, f"{test_id}_component_errors.png")
-    component_dist_path = os.path.join(images_dir, f"{test_id}_component_distribution.png")
-    
-    # Check existing files
-    has_error_file = os.path.exists(component_error_path)
-    has_dist_file = os.path.exists(component_dist_path)
-    
-    # Handle standardization needs
-    if not has_error_file and has_dist_file:
-        # Copy from distribution to error (the standard we want to enforce)
-        try:
-            shutil.copy2(component_dist_path, component_error_path)
-            logging.info(f"Created {component_error_path} from {component_dist_path} for standardization")
-            issues["fixed_files"].append(f"Copied {component_dist_path} to {component_error_path}")
-            has_error_file = True  # We've created it now
-        except Exception as e:
-            logging.error(f"Failed to copy {component_dist_path} to {component_error_path}: {str(e)}")
-    
-    # During transition, we want both files to exist for backward compatibility
-    # Copy from error to distribution if needed
-    if has_error_file and not has_dist_file:
-        try:
-            shutil.copy2(component_error_path, component_dist_path)
-            logging.info(f"Created {component_dist_path} from {component_error_path} for backward compatibility")
-            issues["fixed_files"].append(f"Copied {component_error_path} to {component_dist_path}")
-        except Exception as e:
-            logging.error(f"Failed to copy {component_error_path} to {component_dist_path}: {str(e)}")
+
+    # Report missing component_errors.png
+    if not os.path.exists(component_error_path):
+        issues["expected_but_missing"].append(component_error_path)
     
     # Fix all HTML files to ensure correct references
     html_files = glob.glob(os.path.join(base_dir, f"{test_id}*.html"))
@@ -368,74 +305,32 @@ def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
 
 def fix_html_references(html_path: str, base_dir: str) -> List[str]:
     """
-    Fix HTML references to supporting files.
-    
+    Check HTML references to supporting files without modifying them.
+
     Args:
         html_path: Path to HTML file
         base_dir: Base directory for the test
-        
+
     Returns:
-        List of fixes made
+        List of issues found
     """
-    fixes = []
-    
+    issues: List[str] = []
+
     try:
         with open(html_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            
-        original_content = content
-        
-        # Fix references without supporting_images prefix
-        for match in re.finditer(r'<img\s+src="([^"]+\.(png|jpg|jpeg|gif))"', content):
-            img_ref = match.group(1)
-            if not img_ref.startswith("supporting_images/"):
-                filename = os.path.basename(img_ref)
-                new_ref = f"supporting_images/{filename}"
-                content = content.replace(f'src="{img_ref}"', f'src="{new_ref}"')
-                fixes.append(f"Fixed reference: {img_ref} -> {new_ref}")
-                logging.info(f"Fixed HTML reference: {img_ref} -> {new_ref}")
-        
-        # CORRECTED: Update HTML to reference component_errors.png
-        # Check for references to component_distribution.png
-        test_id = os.path.basename(html_path).split('_')[0]
-        if "component_distribution.png" in content:
-            # Update HTML to reference component_errors.png
-            new_content = content.replace(
-                f"supporting_images/{test_id}_component_distribution.png", 
-                f"supporting_images/{test_id}_component_errors.png"
-            )
-            new_content = new_content.replace(
-                f"{test_id}_component_distribution.png", 
-                f"supporting_images/{test_id}_component_errors.png"
-            )
-            
-            if new_content != content:
-                content = new_content
-                fixes.append("Updated component_distribution.png references to component_errors.png")
-                logging.info(f"Updated component_distribution.png references to component_errors.png in {html_path}")
-        
-        # Fix style="display:none" on images
+
+        results = check_html_references(html_path)
+        for values in results.values():
+            issues.extend(values)
+
         if 'style="display:none"' in content:
-            content_before = content
-            content = re.sub(r'<img([^>]+)style="display:none"([^>]*)>', r'<img\1\2>', content)
-            if content != content_before:
-                fixes.append("Removed display:none style from images")
-                logging.info(f"Removed display:none style from images in {html_path}")
-            
-        # Fix hidden div containers
+            issues.append('display_none_style_present')
+
         if '<div style="display:none">' in content:
-            content_before = content
-            content = re.sub(r'<div style="display:none">', r'<div class="visualization">', content)
-            if content != content_before:
-                fixes.append("Fixed hidden visualization containers")
-                logging.info(f"Fixed hidden visualization containers in {html_path}")
-        
-        # Write changes back to file if needed
-        if content != original_content:
-            with open(html_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            
+            issues.append('hidden_container_present')
+
     except Exception as e:
-        logging.error(f"Error fixing HTML references in {html_path}: {str(e)}")
-    
-    return fixes
+        logging.error(f"Error checking HTML references in {html_path}: {str(e)}")
+
+    return issues
