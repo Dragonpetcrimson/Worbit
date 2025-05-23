@@ -96,8 +96,7 @@ def generate_bug_document(
     background_text: str = "",
     scenario_text: str = "",
     component_analysis: Optional[Dict[str, Any]] = None,
-    primary_issue_component: str = "unknown",
-    component_report_path: Optional[str] = None
+    primary_issue_component: str = "unknown"
 ) -> str:
     """
     Generate a DOCX file formatted for Jira bug submission.
@@ -113,7 +112,6 @@ def generate_bug_document(
         scenario_text: Scenario section from feature file
         component_analysis: Optional component relationship analysis results
         primary_issue_component: Primary component identified as causing issues
-        component_report_path: Path to component report file
         
     Returns:
         Path to the generated document
@@ -296,8 +294,7 @@ class DocxReportGenerator(ReportGenerator):
                 background_text=data.background_text,
                 scenario_text=data.scenario_text,
                 component_analysis=data.component_analysis,
-                primary_issue_component=self.config.primary_issue_component,
-                component_report_path=data.component_analysis.get("report_path") if data.component_analysis else None
+                primary_issue_component=self.config.primary_issue_component
             )
             
             logging.info(f"Bug report document written to: {docx_path}")

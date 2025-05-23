@@ -790,22 +790,7 @@ def run_pipeline(test_id: str, gpt_model: str = None, enable_ocr: bool = None, t
     
     # Generate component report with enhanced error handling
     try:
-        enable_component_html = str(os.getenv("ENABLE_COMPONENT_HTML", "True")).lower() in ("true", "1", "yes")
         component_report_path = None
-        if enable_component_html:
-            component_report_path = generate_with_fallback(
-                generate_component_report,
-                output_paths["base"],
-                output_paths["test_id"],
-                component_analysis_results,
-                primary_issue_component=primary_issue_component
-            )
-            if component_report_path:
-                logging.info(f"Generated component report: {component_report_path}")
-            else:
-                logging.warning("Component report generation returned None")
-        else:
-            logging.info("Component HTML report generation disabled via configuration")
     except Exception as e:
         logging.warning(f"Failed to generate component report: {str(e)}")
         component_report_path = None

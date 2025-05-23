@@ -439,54 +439,6 @@ class TestComponentAnalyzer(unittest.TestCase):
         self.assertEqual(unknown_info["name"], "unknown")
         self.assertIn("description", unknown_info)
         
-    def test_component_report_generation(self):
-        """
-        Test component report generation with path verification.
-        
-        Verifies that component reports are generated with the correct
-        directory structure and file paths.
-        """
-        # Skip if required imports aren't available
-        if generate_component_report is None:
-            self.skipTest("generate_component_report function not available")
-        
-        # Test ID
-        test_id = "TEST-ANALYZER-999"
-
-        # Setup output directories
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_dirs = setup_test_output_directories(test_id)
-
-            # Create test component analysis
-            component_analysis = {
-                "primary_issue_component": "soa",
-                "root_cause_component": "soa",
-                "component_summary": [
-                    {"id": "soa", "name": "SOA", "description": "Test", "error_count": 10}
-                ],
-                "component_error_counts": {"soa": 10, "android": 5}
-            }
-
-            # Generate component report
-            report_path = generate_component_report(
-                output_dirs["base"],
-                test_id,
-                component_analysis,
-                "soa"
-            )
-
-            # Verify report was generated
-            self.assertIsNotNone(report_path)
-            self.assertTrue(os.path.exists(report_path))
-
-            # Check the JSON files are in the right location
-            json_dir = os.path.join(output_dirs["base"], "json")
-            self.assertTrue(os.path.exists(json_dir))
-            
-            # Check for component_analysis.json in the JSON directory
-            component_analysis_files = [f for f in os.listdir(json_dir) if "component_analysis" in f]
-            self.assertTrue(len(component_analysis_files) > 0, 
-                           f"No component_analysis.json found in {json_dir}")
 
 
 @TestRegistry.register(category='component', importance=1, tags=['integration'])
