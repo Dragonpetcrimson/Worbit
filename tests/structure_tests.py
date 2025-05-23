@@ -830,31 +830,23 @@ class DirectoryFixingTest(unittest.TestCase):
             </html>
             """)
         
-        # Run the fix function
-        fixes = fix_html_references(html_path, self.temp_dir)
-        
-        # Verify fixes were made
-        self.assertGreater(len(fixes), 0, "No fixes were made")
-        
-        # Read the fixed HTML
+        # Capture original content and run the check function
+        with open(html_path, 'r') as f:
+            original_content = f.read()
+
+        issues = fix_html_references(html_path, self.temp_dir)
+
+        # Verify issues were reported and file was not modified
+        self.assertGreater(len(issues), 0, "No issues reported")
+
         with open(html_path, 'r') as f:
             content = f.read()
-        
-        # Verify all images have supporting_images prefix
-        self.assertIn('src="supporting_images/test.png"', content,
-                   "Missing prefix not fixed")
-        self.assertIn('src="supporting_images/correct.png"', content,
-                   "Correct path was modified incorrectly")
-        self.assertIn('src="supporting_images/hidden.png"', content,
-                   "Hidden image path not fixed")
-        
-        # Verify display:none style was removed
-        self.assertNotIn('style="display:none"', content,
-                      "display:none style not removed")
-        
-        # Verify div display:none was changed to visualization class
-        self.assertIn('class="visualization"', content,
-                   "Hidden div not converted to visualization class")
+
+        self.assertEqual(content, original_content, "HTML file should not be modified")
+
+        # Confirm expected issues were detected
+        self.assertIn('test.png', issues, "Missing prefix issue not reported")
+        self.assertIn('hidden.png', issues, "Hidden image issue not reported")
 
 
 @TestRegistry.register(category='structure', importance=1, tags=['component_preservation'])
