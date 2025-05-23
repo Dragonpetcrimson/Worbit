@@ -219,29 +219,12 @@ def check_step_aware_analyzer():
     
     try:
         import step_aware_analyzer
+        logging.info("Successfully imported step_aware_analyzer module")
+        available_attrs = dir(step_aware_analyzer)
+        deprecated = [name for name in ("generate_step_report", "run_step_aware_analysis") if name in available_attrs]
+        if deprecated:
+            logging.warning(f"Deprecated functions present: {deprecated}")
         
-        logging.info("Successfully imported step-aware analyzer functions")
-        
-        # Inspect generate_step_report function
-        step_report_sig = str(inspect.signature(step_aware_analyzer.generate_step_report))
-        logging.info(f"generate_step_report signature: {step_report_sig}")
-        
-        # Inspect run_step_aware_analysis function
-        step_analysis_sig = str(inspect.signature(step_aware_analyzer.run_step_aware_analysis))
-        logging.info(f"run_step_aware_analysis signature: {step_analysis_sig}")
-        
-        # Check if generate_step_report calls generate_timeline_image
-        source = inspect.getsource(step_aware_analyzer.generate_step_report)
-        if "generate_timeline_image" in source:
-            logging.info("generate_step_report calls generate_timeline_image")
-        else:
-            logging.warning("generate_step_report does not call generate_timeline_image")
-        
-        # Check if generate_step_report calls generate_cluster_timeline_image
-        if "generate_cluster_timeline_image" in source:
-            logging.info("generate_step_report calls generate_cluster_timeline_image")
-        else:
-            logging.warning("generate_step_report does not call generate_cluster_timeline_image")
         
         return True
     except Exception as e:
