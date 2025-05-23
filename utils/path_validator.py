@@ -54,10 +54,8 @@ def validate_file_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]
     # Look for expected files
     expected_files = [
         (os.path.join(base_dir, f"{test_id}_bug_report.docx"), "Primary report"),
-        (os.path.join(base_dir, f"{test_id}_component_report.html"), "Primary report"),
         (os.path.join(base_dir, f"{test_id}_log_analysis.xlsx"), "Primary report"),
         (os.path.join(json_dir, f"{test_id}_log_analysis.json"), "JSON data"),
-        (os.path.join(images_dir, f"{test_id}_cluster_timeline.png"), "Visualization"),
         (os.path.join(images_dir, f"{test_id}_component_errors.png"), "Component Visualization")
     ]
     
@@ -155,35 +153,11 @@ def print_validation_results(base_dir: str, test_id: str):
                 if len(issues) > 3:
                     print(f"    - ... and {len(issues) - 3} more")
     
-    # Check HTML references
-    html_file = os.path.join(base_dir, f"{test_id}_component_report.html")
-    
-    # Initialize total_html_issues
-    total_html_issues = 0
-    
-    if os.path.exists(html_file):
-        html_issues = check_html_references(html_file)
-        
-        print("\nHTML Reference Issues:")
-        total_html_issues = sum(len(issues) for issues in html_issues.values())
-        if total_html_issues == 0:
-            print("  ✅ No HTML reference issues found")
-        else:
-            for issue_type, issues in html_issues.items():
-                if issues:
-                    print(f"  ❌ {issue_type}: {len(issues)} issues")
-                    for issue in issues[:3]:
-                        print(f"    - {issue}")
-                    if len(issues) > 3:
-                        print(f"    - ... and {len(issues) - 3} more")
-    else:
-        print(f"\n⚠️ HTML file not found: {html_file}")
-    
     # Print overall result
-    if total_structure_issues == 0 and total_html_issues == 0:
-        print("\n✅ VALIDATION PASSED: All files are in correct locations and properly referenced")
+    if total_structure_issues == 0:
+        print("\n✅ VALIDATION PASSED: All files are in correct locations")
     else:
-        print(f"\n❌ VALIDATION FAILED: Found {total_structure_issues} structure issues and {total_html_issues} HTML issues")
+        print(f"\n❌ VALIDATION FAILED: Found {total_structure_issues} structure issues")
 
 def fix_directory_structure(base_dir: str, test_id: str) -> Dict[str, List[str]]:
     """

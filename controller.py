@@ -18,7 +18,6 @@ import logging
 import warnings
 import copy
 from sklearn.exceptions import ConvergenceWarning
-from reports.component_report import generate_component_report
 # Import new utilities
 from utils.path_utils import (
     normalize_test_id, 
@@ -315,19 +314,7 @@ def run_diagnostics(test_id: str) -> Dict[str, Any]:
     output_dir = os.path.join(Config.OUTPUT_BASE_DIR, test_id)
     output_results = {"output_dir_exists": os.path.exists(output_dir)}
     
-    if output_results["output_dir_exists"]:
-        # Check for HTML report
-        component_report_path = os.path.join(output_dir, f"{test_id}_component_report.html")
-        output_results["component_report_exists"] = os.path.exists(component_report_path)
-        
-        # Validate timeline in HTML report if it exists
-        if output_results["component_report_exists"]:
-            try:
-                timeline_valid = validate_timeline_in_report(output_dir, test_id)
-                output_results["timeline_valid"] = timeline_valid
-            except Exception as e:
-                logging.error(f"Error validating timeline: {str(e)}")
-                output_results["timeline_error"] = str(e)
+
     
     # Check Gherkin correlation modules
     gherkin_results = {"modules_available": GHERKIN_AVAILABLE}
@@ -371,12 +358,7 @@ def run_diagnostics(test_id: str) -> Dict[str, Any]:
     print(f"Image files: {log_results.get('image_count', 0)}")
     print(f"Output directory: {output_dir} - {'FOUND' if output_results['output_dir_exists'] else 'MISSING'}")
     
-    if output_results["output_dir_exists"] and output_results.get("component_report_exists", False):
-        print(f"Component report: FOUND")
-        if "timeline_valid" in output_results:
-            print(f"Timeline in report: {'VALID' if output_results['timeline_valid'] else 'MISSING'}")
-    else:
-        print("Component report: MISSING")
+
     
     print(f"Gherkin modules: {'AVAILABLE' if gherkin_results['modules_available'] else 'MISSING'}")
     if gherkin_results["modules_available"]:
@@ -778,12 +760,8 @@ def run_pipeline(test_id: str, gpt_model: str = None, enable_ocr: bool = None, t
         primary_issue_component = "unknown"
         logging.warning("Primary issue component was None, defaulting to 'unknown'")
     
-    # Generate component report with enhanced error handling
-    try:
-        component_report_path = None
-    except Exception as e:
-        logging.warning(f"Failed to generate component report: {str(e)}")
-        component_report_path = None
+    # Placeholder for component report path (no generation)
+    component_report_path = None
     
     # Write reports - updated to use the new output path structure
     try:
@@ -969,8 +947,6 @@ def run_pipeline_interactive():
                 print(f" - {file}")
                 if file.endswith("_bug_report.docx"):
                     docx_file = os.path.join(output_dir, file)
-                if file.endswith("_component_report.html"):
-                    component_report_path = os.path.join(output_dir, file)
         
         # Check JSON directory
         json_dir = os.path.join(output_dir, "json")
@@ -1033,22 +1009,11 @@ def diagnose_output_structure(test_id: str):
     structure_issues = validate_file_structure(output_dir, test_id)
     
     # Enhance error handling for HTML checks
-    html_issues = {}
-    component_report_path = os.path.join(output_dir, f"{test_id}_component_report.html")
-    if os.path.exists(component_report_path):
-        try:
-            html_issues = check_html_references(component_report_path)
-        except Exception as e:
-            html_issues = {"error": f"Error checking HTML references: {str(e)}"}
-    else:
-        html_issues = {"error": f"Component report not found: {component_report_path}"}
-    
     # Combine results
     return {
         "test_id": test_id,
         "output_dir": output_dir,
         "structure_issues": structure_issues,
-        "html_issues": html_issues
     }
 
 # Modified main entry point to use argparse
