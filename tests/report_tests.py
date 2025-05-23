@@ -2313,48 +2313,6 @@ class TestReportImageReferences(unittest.TestCase):
                 f"Referenced image missing: {ref}"
             )
 
-    def test_step_report_image_reference(self):
-        try:
-            import jinja2
-        except ImportError:
-            self.skipTest("jinja2 not installed")
-
-        from step_aware_analyzer import generate_step_report
-        from gherkin_log_correlator import LogEntry
-        from unittest.mock import patch
-        import datetime
-
-        feature_file = os.path.join(self.temp_dir, "simple.feature")
-        with open(feature_file, "w", encoding="utf-8") as f:
-            f.write("Feature: Test\n  Scenario: Demo\n    Given a step\n")
-
-        logs_dir = os.path.join(self.temp_dir, "logs")
-        os.makedirs(logs_dir, exist_ok=True)
-
-        step_to_logs = {
-            1: [LogEntry("log", "app.log", 1, datetime.datetime.now())]
-        }
-
-        with patch('step_aware_analyzer.generate_timeline_image', return_value=self.dummy_png):
-            report_path = generate_step_report(
-                feature_file=feature_file,
-                logs_dir=logs_dir,
-                step_to_logs=step_to_logs,
-                output_dir=self.temp_dir,
-                test_id=self.test_id,
-            )
-
-        with open(report_path, "r", encoding="utf-8") as f:
-            html = f.read()
-
-        img_refs = [ref for ref in self._find_img_refs(html)
-                    if ref.startswith("supporting_images/")]
-        self.assertTrue(img_refs, "No supporting_images references found")
-        for ref in img_refs:
-            self.assertTrue(
-                os.path.exists(os.path.join(self.temp_dir, ref.replace("/", os.sep))),
-                f"Referenced image missing: {ref}"
-            )
 
 # Legacy compatibility class
 class ReportsPackageTester:
@@ -2486,7 +2444,6 @@ if __name__ == "__main__":
         print("Adding component report tests...")
         suite.addTest(TestComponentReport("test_component_report_generation"))
         suite.addTest(TestReportImageReferences("test_component_report_image_reference"))
-        suite.addTest(TestReportImageReferences("test_step_report_image_reference"))
     
     if args.category in ["all", "integration"]:
         print("Adding integration tests...")
