@@ -57,8 +57,7 @@ def write_reports(
     primary_issue_component: str = "unknown",
     component_report_path: str = None,
     component_diagnostic: dict = None,
-    enable_step_report: Optional[bool] = None,
-    enable_component_html: Optional[bool] = None
+    enable_step_report: Optional[bool] = None
 ) -> dict:
     """
     Write comprehensive reports with enhanced component information preservation.
@@ -104,9 +103,6 @@ def write_reports(
         env_flag = os.getenv("ENABLE_STEP_REPORT")
         enable_step_report = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
 
-    if enable_component_html is None:
-        env_flag = os.getenv("ENABLE_COMPONENT_HTML")
-        enable_component_html = str(env_flag).lower() in ("true", "1", "yes") if env_flag is not None else True
 
     # Create config
     config = ReportConfig(
@@ -118,8 +114,7 @@ def write_reports(
         enable_json=True,
         enable_docx=True,
         enable_component_report=True,
-        enable_step_report=enable_step_report,
-        enable_component_html=enable_component_html
+        enable_step_report=enable_step_report
     )
     
     # Create data container

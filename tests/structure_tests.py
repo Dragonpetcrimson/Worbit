@@ -321,7 +321,7 @@ class DirectoryStructureTest(unittest.TestCase):
         template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                     "reports", "templates")
         self.assertTrue(os.path.isdir(template_dir), "Template directory missing")
-        for name in ["base.html.j2", "component_report.html.j2", "step_report.html.j2"]:
+        for name in ["base.html.j2", "step_report.html.j2"]:
             self.assertTrue(os.path.exists(os.path.join(template_dir, name)), f"Missing template {name}")
 
 

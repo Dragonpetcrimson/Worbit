@@ -216,7 +216,6 @@ A formatted document ready for Jira submission with:
 
 * **Include diverse logs**: Logs from different components provide better analysis of relationships and root causes
 * **Organize by test ID**: Use the standard SXM-#### format for your test ID folders
-* **Check component reports**: The component analysis can quickly pinpoint which component is causing issues
 * **Review visualizations**: The timeline and component visualizations often make patterns obvious at a glance
 * **Use batch processing**: When analyzing multiple test failures, use batch processing to save time
 

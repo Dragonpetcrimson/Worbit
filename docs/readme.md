@@ -136,11 +136,7 @@ The main HTML report provides a comprehensive analysis including:
 
 ### Component Analysis
 
-The component report shows:
-- Primary issue component (root cause)
-- Affected components and their relationships
-- Error propagation paths
-- Component error distribution
+Orbit analyzes components and generates visualizations showing error distribution and relationships.
 
 ### Step-Aware Analysis
 

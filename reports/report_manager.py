@@ -20,7 +20,7 @@ from utils.path_utils import (
 )
 from reports.base import ReportConfig, ReportData, DateTimeEncoder, COMPONENT_FIELDS
 from reports.data_preprocessor import preprocess_errors, preprocess_clusters, normalize_data
-from reports.component_analyzer import build_component_analysis, generate_component_report
+from reports.component_analyzer import build_component_analysis
 from reports.json_generator import JsonReportGenerator
 from reports.markdown_generator import MarkdownReportGenerator
 from reports.excel_generator import ExcelReportGenerator
@@ -520,29 +520,9 @@ class ReportManager:
             # STEP 8: Verify component consistency after propagation
             self._verify_component_consistency(normalized_errors, self.config.primary_issue_component)
             
-            # STEP 9: Generate component report (using path utilities)
-            if self.config.enable_component_report and self.config.enable_component_html:
-                component_report_filename = get_standardized_filename(self.config.test_id, "component_report", "html")
-                component_report_path = get_output_path(
-                    self.base_dir,
-                    self.config.test_id,
-                    component_report_filename,
-                    OutputType.PRIMARY_REPORT
-                )
-                
-                # Call the component report generator with the correct path
-                component_report_path = generate_component_report(
-                    self.base_dir,  # Use base_dir as the output directory for primary reports
-                    self.config.test_id,
-                    component_analysis,
-                    self.config.primary_issue_component
-                )
-                
-                results["reports"]["component_report"] = component_report_path
-                
-                # Add this path to component_analysis for other generators to use
-                if component_report_path:
-                    component_analysis["report_path"] = component_report_path
+            # STEP 9: Generate component report (deprecated)
+            if False:
+                pass
             
             # STEP 10: Generate visualizations
             if self.visualization_generator:

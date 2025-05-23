@@ -485,7 +485,7 @@ class DocxReportGenerator(ReportGenerator):
 def generate_bug_document(output_dir: str, test_id: str, summary: str, errors: List[Dict],
     ocr_data: List[Dict], clusters: Dict[int, List[Dict]], background_text: str = "",
     scenario_text: str = "", component_analysis: Optional[Dict[str, Any]] = None,
-    primary_issue_component: str = "unknown", component_report_path: Optional[str] = None) -> str:
+    primary_issue_component: str = "unknown") -> str:
     """Generate a DOCX file formatted for Jira bug submission."""
 ```
 
