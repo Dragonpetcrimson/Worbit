@@ -49,17 +49,17 @@ except ImportError as e:
 CLUSTER_TIMELINE_AVAILABLE = False
 
 def generate_visualization_placeholder(output_dir, test_id, message):
-        """
-        Generate a placeholder image with informative text.
-        
-        Args:
-            output_dir: Output directory
-            test_id: Test ID
-            message: Message to display in the placeholder
-            
-        Returns:
-            Path to the generated placeholder image
-        """
+    """
+    Generate a placeholder image with informative text.
+
+    Args:
+        output_dir: Output directory
+        test_id: Test ID
+        message: Message to display in the placeholder
+
+    Returns:
+        Path to the generated placeholder image
+    """
     try:
         import matplotlib.pyplot as plt
         # Sanitize output directory to prevent nested directories
