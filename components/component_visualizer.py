@@ -623,7 +623,7 @@ class ComponentVisualizer:
                 # Silence warning messages from Pydot
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    return graphviz_layout(G, prog='dot')
+                    return graphviz_layout(G, prog="dot", args="-Grankdir=LR")
             except Exception as e:
                 logging.debug(f"Pydot layout failed ({str(e)}), trying next option")
         
